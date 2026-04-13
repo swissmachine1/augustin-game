@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Architecture & Game Flow** - Registry, scene scaffold, Boot/Title flow, cleanup handlers
 - [x] **Phase 2: Player Controller & Animations** - Celeste-quality movement, coyote time, jump buffer, sprite states (completed 2026-04-13)
-- [ ] **Phase 3: HUD & Stats System** - Persistent HUD scene, 7-stat registry, TAB overlay, localStorage
+- [x] **Phase 3: HUD & Stats System** - Persistent HUD scene, 7-stat registry, TAB overlay, localStorage (completed 2026-04-13)
 - [ ] **Phase 4: Level 1 — Shanghai Awakening** - Complete playable level with collectibles, enemies, and boss fight
 - [ ] **Phase 5: Juice & Polish** - Screen shake, particles, hit-pause — the feel layer that makes sharing worthwhile
 
@@ -75,7 +75,7 @@ Plans:
 
 - [x] 03-01-PLAN.md — StatsManager: 7-stat class with localStorage persistence (STAT-01, STAT-02, STAT-03)
 - [x] 03-02-PLAN.md — HUDScene: parallel scene, hearts, coin counter, registry listeners (HUD-01–HUD-04)
-- [ ] 03-03-PLAN.md — TAB stats overlay + GameScene StatsManager integration + human verify (STAT-04)
+- [x] 03-03-PLAN.md — TAB stats overlay + GameScene StatsManager integration + human verify (STAT-04)
 
 ### Phase 4: Level 1 — Shanghai Awakening
 **Goal**: A recruiter can play a complete level — enter, explore, collect, fight a boss, and reach the level complete screen
@@ -111,6 +111,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Architecture & Game Flow | 4/4 | Complete | 2026-04-13 |
 | 2. Player Controller & Animations | 3/3 | Complete   | 2026-04-13 |
-| 3. HUD & Stats System | 2/3 | In Progress|  |
+| 3. HUD & Stats System | 3/3 | Complete   | 2026-04-13 |
 | 4. Level 1 — Shanghai Awakening | 0/? | Not started | - |
 | 5. Juice & Polish | 0/? | Not started | - |

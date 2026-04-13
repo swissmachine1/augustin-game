@@ -41,7 +41,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **STAT-01**: System tracks 7 stats: Sales, Tech, Grit, EQ, Languages, Independence, TeamPlayer
 - [x] **STAT-02**: Stats persist to localStorage across sessions
 - [x] **STAT-03**: Stats can be added to via gameplay events (collecting items, defeating bosses)
-- [ ] **STAT-04**: TAB key opens full stats screen overlay with all 7 stats as horizontal bars
+- [x] **STAT-04**: TAB key opens full stats screen overlay with all 7 stats as horizontal bars
 
 ### HUD
 
@@ -140,7 +140,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-01 | Phase 3 | Complete |
 | STAT-02 | Phase 3 | Complete |
 | STAT-03 | Phase 3 | Complete |
-| STAT-04 | Phase 3 | Pending |
+| STAT-04 | Phase 3 | Complete |
 | LVL1-01 | Phase 4 | Pending |
 | LVL1-02 | Phase 4 | Pending |
 | LVL1-03 | Phase 4 | Pending |
