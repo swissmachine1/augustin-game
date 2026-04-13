@@ -55,7 +55,8 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5)
   }
 
-  update() {
+  update(time, delta) {
+    if (this.player) this.player.update(delta)
     this.handleDeath()
   }
 
