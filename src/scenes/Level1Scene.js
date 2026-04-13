@@ -6,6 +6,7 @@ import { StatsManager } from '../systems/StatsManager.js'
 import { Coin } from '../sprites/Coin.js'
 import { Book } from '../sprites/Book.js'
 import { Enemy } from '../sprites/Enemy.js'
+import { Boss } from '../sprites/Boss.js'
 
 export class Level1Scene extends Phaser.Scene {
   constructor() {
@@ -162,8 +163,32 @@ export class Level1Scene extends Phaser.Scene {
     }
     this.registry.events.on('changedata', this._checkBossDoor, this)
 
-    // --- Placeholder for Plan 05 ---
-    this._boss = null
+    // --- Boss (Plan 05) ---
+    // Spawn boss in arena position
+    this._boss = new Boss(this, LEVEL1.bossSpawn.x, LEVEL1.bossSpawn.y)
+
+    // Boss collides with ground (gravity keeps it grounded)
+    this.physics.add.collider(this._boss.sprite, ground)
+
+    // Boss stomp overlap — process callback filters for falling player above boss
+    this.physics.add.overlap(
+      this.player.sprite,
+      this._boss.sprite,
+      this._handleBossHit,
+      // Process callback: only trigger if player is falling (velocity.y > 100)
+      // AND player is above boss center (not a side collision)
+      (playerSprite, bossSprite) => {
+        return playerSprite.body.velocity.y > 100 &&
+               playerSprite.y < bossSprite.y  // player above boss center
+      },
+      this
+    )
+
+    // Boss health bar UI — fixed to camera (setScrollFactor(0))
+    this._bossHealthBar = this._createBossHealthBar()
+
+    // Level complete state flag
+    this._levelComplete = false
   }
 
   _setupMovingPlatform(rect, data) {
@@ -190,6 +215,11 @@ export class Level1Scene extends Phaser.Scene {
 
     // Update enemies
     this._enemies.forEach(e => e.update())
+
+    // Update boss
+    if (this._boss && this._boss.hp > 0 && !this._levelComplete) {
+      this._boss.update(this.player.x)
+    }
   }
 
   handleDeath() {
@@ -220,5 +250,112 @@ export class Level1Scene extends Phaser.Scene {
       repeat: 7,  // 8 cycles × 200ms = 1600ms covers the i-frame window
       onComplete: () => { this.player.sprite.setAlpha(1) }
     })
+  }
+
+  _createBossHealthBar() {
+    const barY = 680  // near bottom of screen
+    const segW = 80
+    const segH = 20
+    const gap  = 8
+    const totalW = 3 * segW + 2 * gap
+    const startX = 1280 / 2 - totalW / 2
+
+    const segments = []
+    for (let i = 0; i < 3; i++) {
+      const seg = this.add.rectangle(
+        startX + i * (segW + gap) + segW / 2,
+        barY,
+        segW,
+        segH,
+        0xe74c3c  // red
+      ).setScrollFactor(0).setDepth(15)
+      segments.push(seg)
+    }
+
+    // Label above bar
+    this.add.text(1280 / 2, barY - 24, 'THE COMFORT ZONE', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#ff8888',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(15)
+
+    return segments  // array of 3 segment rectangles
+  }
+
+  _handleBossHit() {
+    if (this._levelComplete) return
+    if (!this._boss || this._boss.hp <= 0) return
+
+    const hitRegistered = this._boss.hit()
+    if (!hitRegistered) return
+
+    // Bounce player upward after stomp
+    this.player.body.setVelocityY(-400)
+
+    // Camera shake
+    this.cameras.main.shake(150, 0.01)
+
+    // Update health bar — dim segment matching remaining hp
+    // Segments: index 2 = first to disappear (right segment first)
+    const segIndex = this._boss.hp  // hp just decremented: 2→seg2, 1→seg1, 0→handled below
+    if (segIndex >= 0 && segIndex < this._bossHealthBar.length) {
+      this._bossHealthBar[segIndex].setFillStyle(0x333344)  // dim = dead
+    }
+
+    // All 3 stomps done
+    if (this._boss.hp <= 0) {
+      this._boss.defeat()
+      this.registry.set(KEYS.BOSS_DEFEATED, true)
+      // Small delay then level complete
+      this.time.delayedCall(600, () => this._triggerLevelComplete())
+    }
+  }
+
+  _triggerLevelComplete() {
+    if (this._levelComplete) return
+    this._levelComplete = true
+
+    // Freeze player input (stop movement)
+    this.player.body.setVelocityX(0)
+    this.player.body.setAccelerationX(0)
+
+    // Stat reward: +10 Grit (Curiosity maps to Grit)
+    this.stats.add(KEYS.STAT_GRIT, 10)
+    this.registry.set(KEYS.STAT_GRIT, this.stats.get(KEYS.STAT_GRIT))
+
+    // Overlay — fixed to camera
+    const W = 1280, H = 720
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x0a0a1a, 0.85)
+      .setScrollFactor(0).setDepth(30)
+
+    this.add.text(W / 2, H / 2 - 60, 'LEVEL COMPLETE', {
+      fontFamily: 'monospace',
+      fontSize: '48px',
+      color: '#f1c40f',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(31)
+
+    this.add.text(W / 2, H / 2 + 20, '+10 Curiosity', {
+      fontFamily: 'monospace',
+      fontSize: '28px',
+      color: '#3498db',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(31)
+
+    this.add.text(W / 2, H / 2 + 80, 'PRESS SPACE to continue', {
+      fontFamily: 'monospace',
+      fontSize: '18px',
+      color: '#888899',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(31)
+
+    // Input: Space to transition (or auto after 3s)
+    const doTransition = () => {
+      this.cameras.main.fadeOut(300, 0, 0, 0)
+      this.cameras.main.once(
+        Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
+        () => this.scene.start('TitleScene')
+      )
+    }
+
+    this.input.keyboard.once('keydown-SPACE', doTransition)
+    this.time.delayedCall(3000, doTransition)
   }
 }
