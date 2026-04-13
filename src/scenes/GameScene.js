@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { Player } from '../sprites/Player.js'
+import { StatsManager } from '../systems/StatsManager.js'
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -30,6 +31,19 @@ export class GameScene extends Phaser.Scene {
     // Player — module-based, rectangle placeholder
     this.player = new Player(this, 200, height - 120)
 
+    // Stats system — loads persisted values from localStorage (STAT-01, STAT-02)
+    this.stats = new StatsManager()
+
+    // Seed registry with persisted stat values so HUDScene bars initialise correctly
+    const allStats = this.stats.getAll()
+    Object.entries(allStats).forEach(([key, val]) => {
+      this.registry.set(key, val)
+    })
+
+    // Debug: E key simulates coin pickup (+10 Sales stat, +1 coin)
+    // Remove in Phase 4 when real collectibles are wired
+    this._debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
+
     // Collide player sprite with platforms
     this.physics.add.collider(this.player.sprite, ground)
     this.physics.add.collider(this.player.sprite, plat1)
@@ -51,7 +65,7 @@ export class GameScene extends Phaser.Scene {
     }, this)
 
     // Scene label
-    this.add.text(width / 2, 30, 'GAME SCENE — Registry wired, respawn active', {
+    this.add.text(width / 2, 30, 'GAME SCENE — [E] collect coin | [TAB] stats overlay', {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: '#8888aa',
@@ -61,6 +75,14 @@ export class GameScene extends Phaser.Scene {
   update(time, delta) {
     if (this.player) this.player.update(delta)
     this.handleDeath()
+
+    // Debug stat/coin pickup (E key) — proof of pipeline before Phase 4 collectibles
+    if (this._debugKey && Phaser.Input.Keyboard.JustDown(this._debugKey)) {
+      this.stats.add(KEYS.STAT_SALES, 10)
+      this.registry.set(KEYS.STAT_SALES, this.stats.get(KEYS.STAT_SALES))
+      const coins = (this.registry.get(KEYS.COINS) ?? 0) + 1
+      this.registry.set(KEYS.COINS, coins)
+    }
   }
 
   handleDeath() {
