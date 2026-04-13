@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 
-export const PLAYER_CONSTANTS = {
+export const PLAYER_CONSTANTS = Object.freeze({
   ACCEL_X: 1200,         // px/s^2 — acceleration when key held
   DRAG_X: 1000,          // px/s^2 — deceleration when no key
   MAX_VEL_X: 300,        // px/s — horizontal speed cap
@@ -9,7 +9,21 @@ export const PLAYER_CONSTANTS = {
   COYOTE_MS: 120,        // ms — coyote time window — Plan 02
   JUMP_BUFFER_MS: 150,   // ms — jump buffer window — Plan 02
   DOUBLE_JUMP_VEL: -480  // px/s — second jump at 80% — Plan 02
-}
+})
+
+const ANIM_STATE = Object.freeze({
+  IDLE: 'idle',
+  RUN:  'run',
+  JUMP: 'jump',
+  FALL: 'fall',
+})
+
+const ANIM_COLORS = Object.freeze({
+  [ANIM_STATE.IDLE]: 0x00ff88,  // green — standing still
+  [ANIM_STATE.RUN]:  0x00ccff,  // cyan — running
+  [ANIM_STATE.JUMP]: 0xffff00,  // yellow — airborne (rising)
+  [ANIM_STATE.FALL]: 0xff8800,  // orange — airborne (falling)
+})
 
 export class Player {
   constructor(scene, x, y) {
@@ -46,6 +60,9 @@ export class Player {
     this._coyoteTimeLeft = 0
     this._jumpBufferTimeLeft = 0
     this._wasOnGround = false
+
+    // Animation state — Plan 03
+    this._currentState = ANIM_STATE.IDLE
   }
 
   // Expose position for checkpoint reads
@@ -56,6 +73,7 @@ export class Player {
     this._handleHorizontal()
     this._handleJump(delta)
     this._applyAsymmetricGravity()
+    this._updateAnimState()
   }
 
   _handleHorizontal() {
@@ -133,6 +151,25 @@ export class Player {
       this.body.setGravityY(worldGravity * (PLAYER_CONSTANTS.GRAVITY_MULT_FALL - 1))
     } else {
       this.body.setGravityY(0)
+    }
+  }
+
+  _updateAnimState() {
+    const onGround = this.body.blocked.down
+    const moving   = Math.abs(this.body.velocity.x) > 10
+    const rising   = this.body.velocity.y < -50
+    const falling  = this.body.velocity.y > 50
+
+    let newState
+    if (!onGround && rising)       newState = ANIM_STATE.JUMP
+    else if (!onGround && falling) newState = ANIM_STATE.FALL
+    else if (onGround && moving)   newState = ANIM_STATE.RUN
+    else                           newState = ANIM_STATE.IDLE
+
+    if (newState !== this._currentState) {
+      this._currentState = newState
+      // Swap setFillStyle() for sprite.setTexture() / sprite.play() when real sprites are ready (ANIM-02)
+      this.sprite.setFillStyle(ANIM_COLORS[newState])
     }
   }
 
