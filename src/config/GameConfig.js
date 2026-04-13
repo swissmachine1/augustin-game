@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene.js';
 import { TitleScene } from '../scenes/TitleScene.js';
-import { GameScene } from '../scenes/GameScene.js';
+import { Level1Scene } from '../scenes/Level1Scene.js';
 import { HUDScene } from '../scenes/HUDScene.js';
 
 export const GameConfig = {
@@ -17,7 +17,7 @@ export const GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, GameScene, HUDScene],
+  scene: [BootScene, TitleScene, Level1Scene, HUDScene],
   pixelArt: true,
   scale: {
     mode: Phaser.Scale.FIT,

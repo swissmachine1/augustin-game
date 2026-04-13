@@ -42,7 +42,7 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard.once('keydown-SPACE', () => {
       this.cameras.main.fadeOut(300, 0, 0, 0)
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-        this.scene.start('GameScene')
+        this.scene.start('Level1Scene')
       }, this)
     })
 
