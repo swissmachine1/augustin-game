@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 01-04-PLAN.md — GameScene refactored with Player module, KEYS registry wiring, death/respawn, and SHUTDOWN handler. Phase 1 skeleton complete.
-last_updated: "2026-04-13T11:14:48.855Z"
+status: executing
+stopped_at: Completed 02-01-PLAN.md — Player.js extended with PLAYER_CONSTANTS, input wiring, smooth horizontal movement via acceleration/drag, and facing direction flip. Plan 02-01 complete.
+last_updated: "2026-04-13T11:22:48.563Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 7
+  completed_plans: 5
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** The game must be fun enough to play through to the end AND tell a compelling career story — if either fails, the game fails as a job application tool.
-**Current focus:** Phase 01 — Architecture & Game Flow
+**Current focus:** Phase 02 — Player Controller & Animations
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 02 (Player Controller & Animations) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-04-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 1 | 1 tasks | 1 files |
 | Phase 01-architecture-game-flow P03 | 1 | 2 tasks | 2 files |
 | Phase 01-architecture-game-flow P04 | 8 | 2 tasks | 1 files |
+| Phase 02-player-controller-animations P01 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 01-architecture-game-flow]: FLOW-03: scene transitions use fadeOut(300ms) + FADE_OUT_COMPLETE callback — never call scene.start directly from input handler
 - [Phase 01-architecture-game-flow]: Colliders wired to this.player.sprite (not this.player) — Player is a wrapper, Phaser needs the underlying game object for physics
 - [Phase 01-architecture-game-flow]: body.reset(cx, cy) used in respawn() — resets position AND velocity, preventing carried momentum from previous death fall
+- [Phase 02-player-controller-animations]: setAccelerationX + setDragX (not setVelocityX) for player movement — Celeste-feel weight over instant-snap
+- [Phase 02-player-controller-animations]: PLAYER_CONSTANTS includes Plan 02 jump values upfront to establish full tuning surface before jump logic added
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T11:11:12.074Z
-Stopped at: Completed 01-04-PLAN.md — GameScene refactored with Player module, KEYS registry wiring, death/respawn, and SHUTDOWN handler. Phase 1 skeleton complete.
+Last session: 2026-04-13T11:22:48.560Z
+Stopped at: Completed 02-01-PLAN.md — Player.js extended with PLAYER_CONSTANTS, input wiring, smooth horizontal movement via acceleration/drag, and facing direction flip. Plan 02-01 complete.
 Resume file: None

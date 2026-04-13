@@ -48,8 +48,12 @@ Plans:
   3. Walking off a platform edge and pressing Space within 120ms still triggers a jump (coyote time works)
   4. Pressing Space 150ms before landing queues the jump so it fires on touchdown (jump buffering works)
   5. The player rectangle visually switches to idle, run, jump, and fall states in sync with movement — all swappable for sprites without changing game logic
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 3 plans
+
+Plans:
+- [x] 02-01-PLAN.md — Player.js: PLAYER_CONSTANTS, input wiring, smooth horizontal movement, facing direction
+- [ ] 02-02-PLAN.md — Player.js: variable jump height, double jump, coyote time, jump buffer, asymmetric gravity
+- [ ] 02-03-PLAN.md — Player.js: animation state machine (idle/run/jump/fall colors) + GameScene.update() wiring
 
 ### Phase 3: HUD & Stats System
 **Goal**: A persistent HUD displays player state and a stats system tracks career progress — both reactive and persistent
@@ -93,8 +97,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Architecture & Game Flow | 2/4 | In Progress|  |
-| 2. Player Controller & Animations | 0/? | Not started | - |
+| 1. Architecture & Game Flow | 4/4 | Complete | 2026-04-13 |
+| 2. Player Controller & Animations | 1/3 | In Progress|  |
 | 3. HUD & Stats System | 0/? | Not started | - |
 | 4. Level 1 — Shanghai Awakening | 0/? | Not started | - |
 | 5. Juice & Polish | 0/? | Not started | - |
