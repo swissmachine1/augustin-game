@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 04-05-PLAN.md — Boss fight, level complete overlay, and stat reward
-last_updated: "2026-04-13T17:39:19.067Z"
+status: verifying
+stopped_at: "Completed 05-01-PLAN.md — Juice & Polish: screen shake, particles, hit-pause"
+last_updated: "2026-04-13T17:46:02.877Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 15
-  completed_plans: 15
+  completed_phases: 5
+  total_plans: 16
+  completed_plans: 16
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** The game must be fun enough to play through to the end AND tell a compelling career story — if either fails, the game fails as a job application tool.
-**Current focus:** Phase 04 — Level 1 — Shanghai Awakening
+**Current focus:** Phase 05 — Juice & Polish
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
-Status: Ready to execute
+Phase: 05 (Juice & Polish) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
 Last activity: 2026-04-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-level-1-shanghai-awakening P03 | 1min | 2 tasks | 3 files |
 | Phase 04-level-1-shanghai-awakening P04 | 47min | 2 tasks | 2 files |
 | Phase 04-level-1-shanghai-awakening P05 | 4min | 3 tasks | 2 files |
+| Phase 05-juice-polish P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - [Phase 04-level-1-shanghai-awakening]: Boss uses dynamic body so Arcade gravity keeps it grounded — no manual gravity tuning needed
 - [Phase 04-level-1-shanghai-awakening]: Stomp process callback checks velocity.y > 100 AND playerY < bossY — filters side collisions from stomp triggers
 - [Phase 04-level-1-shanghai-awakening]: _levelComplete flag gates both _handleBossHit and _triggerLevelComplete — prevents double-fire on defeat tween
+- [Phase 05-juice-polish]: Pre-generate shared 4x4 pixel texture once, reuse for both particle emitters — avoids redundant GPU texture uploads
+- [Phase 05-juice-polish]: Callback injection (_onCoinCollect) over scene reference in Coin — keeps Coin class decoupled from Level1Scene particle API
+- [Phase 05-juice-polish]: Hit-pause pattern: physics.pause() + tweens.pauseAll() + time.delayedCall(40, resume) — scene clock is independent of physics/tween systems in Phaser 4
 
 ### Pending Todos
 
@@ -123,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T17:36:16.679Z
-Stopped at: Completed 04-05-PLAN.md — Boss fight, level complete overlay, and stat reward
+Last session: 2026-04-13T17:46:02.874Z
+Stopped at: Completed 05-01-PLAN.md — Juice & Polish: screen shake, particles, hit-pause
 Resume file: None

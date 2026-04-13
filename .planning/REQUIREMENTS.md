@@ -59,10 +59,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Juice / Polish
 
-- [ ] **JUICE-01**: Screen shake on player damage and boss hits
-- [ ] **JUICE-02**: Particle burst on coin collection
-- [ ] **JUICE-03**: Particle effect on enemy defeat
-- [ ] **JUICE-04**: Brief hit-pause on damage events (30-50ms freeze)
+- [x] **JUICE-01**: Screen shake on player damage and boss hits
+- [x] **JUICE-02**: Particle burst on coin collection
+- [x] **JUICE-03**: Particle effect on enemy defeat
+- [x] **JUICE-04**: Brief hit-pause on damage events (30-50ms freeze)
 
 ### Architecture
 
@@ -151,10 +151,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LVL1-08 | Phase 4 | Complete |
 | LVL1-09 | Phase 4 | Complete |
 | LVL1-10 | Phase 4 | Complete |
-| JUICE-01 | Phase 5 | Pending |
-| JUICE-02 | Phase 5 | Pending |
-| JUICE-03 | Phase 5 | Pending |
-| JUICE-04 | Phase 5 | Pending |
+| JUICE-01 | Phase 5 | Complete |
+| JUICE-02 | Phase 5 | Complete |
+| JUICE-03 | Phase 5 | Complete |
+| JUICE-04 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 40 total

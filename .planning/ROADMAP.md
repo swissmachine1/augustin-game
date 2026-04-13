@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Player Controller & Animations** - Celeste-quality movement, coyote time, jump buffer, sprite states (completed 2026-04-13)
 - [x] **Phase 3: HUD & Stats System** - Persistent HUD scene, 7-stat registry, TAB overlay, localStorage (completed 2026-04-13)
 - [x] **Phase 4: Level 1 — Shanghai Awakening** - Complete playable level with collectibles, enemies, and boss fight (completed 2026-04-13)
-- [ ] **Phase 5: Juice & Polish** - Screen shake, particles, hit-pause — the feel layer that makes sharing worthwhile
+- [x] **Phase 5: Juice & Polish** - Screen shake, particles, hit-pause — the feel layer that makes sharing worthwhile (completed 2026-04-13)
 
 ## Phase Details
 
@@ -112,7 +112,7 @@ Plans:
 
 Plans:
 
-- [ ] 05-01-PLAN.md — Level1Scene + Coin: screen shake, particle emitters, hit-pause (JUICE-01, JUICE-02, JUICE-03, JUICE-04)
+- [x] 05-01-PLAN.md — Level1Scene + Coin: screen shake, particle emitters, hit-pause (JUICE-01, JUICE-02, JUICE-03, JUICE-04)
 
 ## Progress
 
@@ -125,4 +125,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Player Controller & Animations | 3/3 | Complete   | 2026-04-13 |
 | 3. HUD & Stats System | 3/3 | Complete   | 2026-04-13 |
 | 4. Level 1 — Shanghai Awakening | 5/5 | Complete   | 2026-04-13 |
-| 5. Juice & Polish | 0/1 | Not started | - |
+| 5. Juice & Polish | 1/1 | Complete   | 2026-04-13 |
