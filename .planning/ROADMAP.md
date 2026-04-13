@@ -108,7 +108,11 @@ Plans:
   3. Defeating an enemy produces a particle effect at its position
   4. Damage events freeze the frame for 30-50ms before resuming — the hit lands with weight
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+
+- [ ] 05-01-PLAN.md — Level1Scene + Coin: screen shake, particle emitters, hit-pause (JUICE-01, JUICE-02, JUICE-03, JUICE-04)
 
 ## Progress
 
@@ -121,4 +125,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Player Controller & Animations | 3/3 | Complete   | 2026-04-13 |
 | 3. HUD & Stats System | 3/3 | Complete   | 2026-04-13 |
 | 4. Level 1 — Shanghai Awakening | 5/5 | Complete   | 2026-04-13 |
-| 5. Juice & Polish | 0/? | Not started | - |
+| 5. Juice & Polish | 0/1 | Not started | - |
