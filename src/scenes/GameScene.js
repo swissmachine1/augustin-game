@@ -42,9 +42,12 @@ export class GameScene extends Phaser.Scene {
     // Death floor — 100px below the screen bottom
     this.deathFloorY = height + 100
 
-    // Shutdown handler (ARCH-03 — no audio yet, no-op cleanup wired for consistency)
+    // Launch HUD as parallel overlay scene (HUD-01)
+    this.scene.launch('HUDScene')
+
+    // Shutdown handler (ARCH-03 — stop HUDScene when GameScene stops)
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      // No audio in this scene yet — cleanup is a no-op but wired per ARCH-03
+      this.scene.stop('HUDScene')
     }, this)
 
     // Scene label
