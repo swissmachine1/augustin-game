@@ -42,7 +42,7 @@ export class GameScene extends Phaser.Scene {
 
     // Debug: E key simulates coin pickup (+10 Sales stat, +1 coin)
     // Remove in Phase 4 when real collectibles are wired
-    this._debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
+    this._debugKey = this.input.keyboard.addKey(69)
 
     // Collide player sprite with platforms
     this.physics.add.collider(this.player.sprite, ground)
@@ -60,7 +60,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('HUDScene')
 
     // Shutdown handler (ARCH-03 — stop HUDScene when GameScene stops)
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.events.once('shutdown', () => {
       this.scene.stop('HUDScene')
     }, this)
 

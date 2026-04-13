@@ -43,13 +43,13 @@ export class Player {
 
     // Input — cursor keys + WASD
     this.keys = scene.input.keyboard.addKeys({
-      left: Phaser.Input.Keyboard.KeyCodes.LEFT,
-      right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
-      up: Phaser.Input.Keyboard.KeyCodes.UP,
-      space: Phaser.Input.Keyboard.KeyCodes.SPACE,
-      a: Phaser.Input.Keyboard.KeyCodes.A,
-      d: Phaser.Input.Keyboard.KeyCodes.D,
-      w: Phaser.Input.Keyboard.KeyCodes.W
+      left: 37,
+      right: 39,
+      up: 38,
+      space: 32,
+      a: 65,
+      d: 68,
+      w: 87
     })
 
     // Facing direction — true = right

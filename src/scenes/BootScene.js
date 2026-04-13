@@ -34,7 +34,7 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     initRegistry(this)
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.events.once('shutdown', () => {
       // No cleanup needed for BootScene
     }, this)
     this.scene.start('TitleScene')

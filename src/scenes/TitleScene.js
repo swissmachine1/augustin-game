@@ -41,13 +41,13 @@ export class TitleScene extends Phaser.Scene {
     // Listen for space — fade to black then start GameScene
     this.input.keyboard.once('keydown-SPACE', () => {
       this.cameras.main.fadeOut(300, 0, 0, 0)
-      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('Level1Scene')
       }, this)
     })
 
     // Shutdown cleanup — remove keyboard listeners on scene stop
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.events.once('shutdown', () => {
       // Remove any lingering keyboard listeners (Phaser clears .once automatically,
       // but explicit removal guards against edge cases)
       this.input.keyboard.removeAllListeners()

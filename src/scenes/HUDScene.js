@@ -48,7 +48,7 @@ export class HUDScene extends Phaser.Scene {
     this.registry.events.on(`changedata-${KEYS.COINS}`,  this._onCoinsChange,  this)
 
     // Cleanup listeners on shutdown (ARCH-03 pattern)
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.events.once('shutdown', () => {
       this.registry.events.off(`changedata-${KEYS.HEALTH}`, this._onHealthChange, this)
       this.registry.events.off(`changedata-${KEYS.COINS}`,  this._onCoinsChange,  this)
     }, this)
@@ -124,7 +124,7 @@ export class HUDScene extends Phaser.Scene {
     })
 
     // TAB key toggles overlay
-    this._tabKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TAB)
+    this._tabKey = this.input.keyboard.addKey(9)
     this._tabKey.on('down', this._toggleStats, this)
 
     // Reactive stat listeners — update bars when registry changes
@@ -140,7 +140,7 @@ export class HUDScene extends Phaser.Scene {
     })
 
     // Cleanup stat overlay listeners on shutdown
-    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.events.on('shutdown', () => {
       this.registry.events.off('changedata', this._onStatChange, this)
     }, this)
   }

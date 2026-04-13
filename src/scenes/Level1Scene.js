@@ -115,7 +115,7 @@ export class Level1Scene extends Phaser.Scene {
     this.scene.launch('HUDScene')
 
     // --- Shutdown handler (ARCH-03) ---
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    this.events.once('shutdown', () => {
       this.scene.stop('HUDScene')
       this.registry.events.off('changedata', this._checkBossDoor, this)
     }, this)
@@ -407,7 +407,7 @@ export class Level1Scene extends Phaser.Scene {
     const doTransition = () => {
       this.cameras.main.fadeOut(300, 0, 0, 0)
       this.cameras.main.once(
-        Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
+        'camerafadeoutcomplete',
         () => this.scene.start('TitleScene')
       )
     }
