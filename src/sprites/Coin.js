@@ -1,8 +1,9 @@
 import { KEYS } from '../systems/GameRegistry.js'
 
 export class Coin {
-  constructor(scene, x, y) {
+  constructor(scene, x, y, onCollect) {
     this.scene = scene
+    this._onCollect = onCollect ?? null
     // Gold rectangle: 20×20
     this.sprite = scene.add.rectangle(x, y, 20, 20, 0xf1c40f)
     scene.physics.add.existing(this.sprite, true) // static body — player overlaps
@@ -11,6 +12,9 @@ export class Coin {
   collect() {
     if (this._collected) return
     this._collected = true
+
+    // Particle burst callback — JUICE-02
+    if (this._onCollect) this._onCollect(this.sprite.x, this.sprite.y)
 
     // Flash: briefly white then disappear
     this.scene.tweens.add({

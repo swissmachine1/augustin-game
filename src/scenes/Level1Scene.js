@@ -75,6 +75,42 @@ export class Level1Scene extends Phaser.Scene {
     this.registry.set(KEYS.CHECKPOINT_X, LEVEL1.checkpoint.x)
     this.registry.set(KEYS.CHECKPOINT_Y, LEVEL1.checkpoint.y)
 
+    // --- Particle texture (shared by coin and defeat emitters) ---
+    if (!this.textures.exists('particle')) {
+      const pg = this.make.graphics({ x: 0, y: 0, add: false })
+      pg.fillStyle(0xffffff, 1)
+      pg.fillRect(0, 0, 4, 4)
+      pg.generateTexture('particle', 4, 4)
+      pg.destroy()
+    }
+
+    // Coin burst emitter — JUICE-02
+    this._coinEmitter = this.add.particles(0, 0, 'particle', {
+      speed: { min: 80, max: 160 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 1.5, end: 0 },
+      lifespan: 350,
+      tint: 0xf1c40f,  // gold
+      quantity: 12,
+      emitting: false,
+    }).setDepth(5)
+
+    // Boss defeat emitter — JUICE-03
+    this._defeatEmitter = this.add.particles(0, 0, 'particle', {
+      speed: { min: 120, max: 250 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 2, end: 0 },
+      lifespan: 500,
+      tint: 0xaaaacc,  // grey-purple
+      quantity: 30,
+      emitting: false,
+    }).setDepth(5)
+
+    // Coin collect callback — fires emitter at pickup location
+    this._onCoinCollect = (x, y) => {
+      this._coinEmitter.explode(12, x, y)
+    }
+
     // --- HUD ---
     this.scene.launch('HUDScene')
 
@@ -86,7 +122,7 @@ export class Level1Scene extends Phaser.Scene {
 
     // --- Collectibles (Plan 03) ---
     // Spawn coins from data
-    this._coins = LEVEL1.coins.map(pos => new Coin(this, pos.x, pos.y))
+    this._coins = LEVEL1.coins.map(pos => new Coin(this, pos.x, pos.y, this._onCoinCollect))
 
     // Spawn book
     this._book = new Book(this, LEVEL1.book.x, LEVEL1.book.y)
@@ -305,6 +341,8 @@ export class Level1Scene extends Phaser.Scene {
     // All 3 stomps done
     if (this._boss.hp <= 0) {
       this._boss.defeat()
+      // Particle explosion on boss defeat — JUICE-03
+      this._defeatEmitter.explode(30, this._boss.sprite.x, this._boss.sprite.y)
       this.registry.set(KEYS.BOSS_DEFEATED, true)
       // Small delay then level complete
       this.time.delayedCall(600, () => this._triggerLevelComplete())
