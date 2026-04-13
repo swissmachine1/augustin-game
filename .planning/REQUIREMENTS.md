@@ -38,17 +38,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Stats System
 
-- [ ] **STAT-01**: System tracks 7 stats: Sales, Tech, Grit, EQ, Languages, Independence, TeamPlayer
-- [ ] **STAT-02**: Stats persist to localStorage across sessions
-- [ ] **STAT-03**: Stats can be added to via gameplay events (collecting items, defeating bosses)
+- [x] **STAT-01**: System tracks 7 stats: Sales, Tech, Grit, EQ, Languages, Independence, TeamPlayer
+- [x] **STAT-02**: Stats persist to localStorage across sessions
+- [x] **STAT-03**: Stats can be added to via gameplay events (collecting items, defeating bosses)
 - [ ] **STAT-04**: TAB key opens full stats screen overlay with all 7 stats as horizontal bars
 
 ### HUD
 
-- [ ] **HUD-01**: HUD runs as persistent parallel scene on top of game scene
-- [ ] **HUD-02**: Top-left shows player health as hearts (3 max)
-- [ ] **HUD-03**: Top-right shows coin count
-- [ ] **HUD-04**: HUD updates reactively via Registry changedata events
+- [x] **HUD-01**: HUD runs as persistent parallel scene on top of game scene
+- [x] **HUD-02**: Top-left shows player health as hearts (3 max)
+- [x] **HUD-03**: Top-right shows coin count
+- [x] **HUD-04**: HUD updates reactively via Registry changedata events
 
 ### Game Flow
 
@@ -133,13 +133,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ANIM-01 | Phase 2 | Complete |
 | ANIM-02 | Phase 2 | Complete |
 | ANIM-03 | Phase 2 | Complete |
-| HUD-01 | Phase 3 | Pending |
-| HUD-02 | Phase 3 | Pending |
-| HUD-03 | Phase 3 | Pending |
-| HUD-04 | Phase 3 | Pending |
-| STAT-01 | Phase 3 | Pending |
-| STAT-02 | Phase 3 | Pending |
-| STAT-03 | Phase 3 | Pending |
+| HUD-01 | Phase 3 | Complete |
+| HUD-02 | Phase 3 | Complete |
+| HUD-03 | Phase 3 | Complete |
+| HUD-04 | Phase 3 | Complete |
+| STAT-01 | Phase 3 | Complete |
+| STAT-02 | Phase 3 | Complete |
+| STAT-03 | Phase 3 | Complete |
 | STAT-04 | Phase 3 | Pending |
 | LVL1-01 | Phase 4 | Pending |
 | LVL1-02 | Phase 4 | Pending |
