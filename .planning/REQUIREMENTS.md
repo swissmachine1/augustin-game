@@ -19,9 +19,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Animations
 
-- [ ] **ANIM-01**: Player has idle, run, jump, and fall animation states
-- [ ] **ANIM-02**: Animations use placeholder colored rectangles that can be swapped for sprites later
-- [ ] **ANIM-03**: Animation state transitions are smooth and responsive to input
+- [x] **ANIM-01**: Player has idle, run, jump, and fall animation states
+- [x] **ANIM-02**: Animations use placeholder colored rectangles that can be swapped for sprites later
+- [x] **ANIM-03**: Animation state transitions are smooth and responsive to input
 
 ### Level 1 — Shanghai Awakening
 
@@ -130,9 +130,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CTRL-05 | Phase 2 | Complete |
 | CTRL-06 | Phase 2 | Complete |
 | CTRL-07 | Phase 2 | Complete |
-| ANIM-01 | Phase 2 | Pending |
-| ANIM-02 | Phase 2 | Pending |
-| ANIM-03 | Phase 2 | Pending |
+| ANIM-01 | Phase 2 | Complete |
+| ANIM-02 | Phase 2 | Complete |
+| ANIM-03 | Phase 2 | Complete |
 | HUD-01 | Phase 3 | Pending |
 | HUD-02 | Phase 3 | Pending |
 | HUD-03 | Phase 3 | Pending |

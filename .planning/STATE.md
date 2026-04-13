@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-02-PLAN.md — jump system with variable height, double jump, coyote time (120ms), jump buffer (150ms), and asymmetric gravity. Plan 02-02 complete.
-last_updated: "2026-04-13T11:25:02.751Z"
+status: verifying
+stopped_at: Completed 02-03-PLAN.md — animation state machine (IDLE/RUN/JUMP/FALL), rectangle color states, GameScene.update(time, delta) wired. Phase 02 complete.
+last_updated: "2026-04-13T11:27:47.347Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 
 Phase: 02 (Player Controller & Animations) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-architecture-game-flow P04 | 8 | 2 tasks | 1 files |
 | Phase 02-player-controller-animations P01 | 1 | 1 tasks | 1 files |
 | Phase 02-player-controller-animations P02 | 1 | 1 tasks | 1 files |
+| Phase 02-player-controller-animations P03 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [Phase 02-player-controller-animations]: PLAYER_CONSTANTS includes Plan 02 jump values upfront to establish full tuning surface before jump logic added
 - [Phase 02-player-controller-animations]: setGravityY is additive: worldGravity*(MULT-1) adds on top of world gravity — 2x fall achieved by adding 1x extra, not replacing
 - [Phase 02-player-controller-animations]: Jump buffer consumed on landing (!_wasOnGround + _jumpBufferTimeLeft>0) — covers pre-landing input; coyote via delta-decremented _coyoteTimeLeft
+- [Phase 02-player-controller-animations]: setFillStyle called only on state change (not every frame) — avoids redundant GPU calls per state machine
+- [Phase 02-player-controller-animations]: ANIM_STATE/ANIM_COLORS Object.freeze establishes consistent immutability pattern alongside PLAYER_CONSTANTS
+- [Phase 02-player-controller-animations]: Comment in _updateAnimState marks exact sprite swap point — no logic rewrite needed when real sprites arrive (ANIM-02)
 
 ### Pending Todos
 
@@ -93,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T11:25:02.748Z
-Stopped at: Completed 02-02-PLAN.md — jump system with variable height, double jump, coyote time (120ms), jump buffer (150ms), and asymmetric gravity. Plan 02-02 complete.
+Last session: 2026-04-13T11:27:47.344Z
+Stopped at: Completed 02-03-PLAN.md — animation state machine (IDLE/RUN/JUMP/FALL), rectangle color states, GameScene.update(time, delta) wired. Phase 02 complete.
 Resume file: None

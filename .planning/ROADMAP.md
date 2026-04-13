@@ -13,7 +13,7 @@ Five phases that take the project from a static green rectangle to a fully playa
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Architecture & Game Flow** - Registry, scene scaffold, Boot/Title flow, cleanup handlers
-- [ ] **Phase 2: Player Controller & Animations** - Celeste-quality movement, coyote time, jump buffer, sprite states
+- [x] **Phase 2: Player Controller & Animations** - Celeste-quality movement, coyote time, jump buffer, sprite states (completed 2026-04-13)
 - [ ] **Phase 3: HUD & Stats System** - Persistent HUD scene, 7-stat registry, TAB overlay, localStorage
 - [ ] **Phase 4: Level 1 — Shanghai Awakening** - Complete playable level with collectibles, enemies, and boss fight
 - [ ] **Phase 5: Juice & Polish** - Screen shake, particles, hit-pause — the feel layer that makes sharing worthwhile
@@ -53,7 +53,7 @@ Plans:
 Plans:
 - [x] 02-01-PLAN.md — Player.js: PLAYER_CONSTANTS, input wiring, smooth horizontal movement, facing direction
 - [x] 02-02-PLAN.md — Player.js: variable jump height, double jump, coyote time, jump buffer, asymmetric gravity
-- [ ] 02-03-PLAN.md — Player.js: animation state machine (idle/run/jump/fall colors) + GameScene.update() wiring
+- [x] 02-03-PLAN.md — Player.js: animation state machine (idle/run/jump/fall colors) + GameScene.update() wiring
 
 ### Phase 3: HUD & Stats System
 **Goal**: A persistent HUD displays player state and a stats system tracks career progress — both reactive and persistent
@@ -98,7 +98,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Architecture & Game Flow | 4/4 | Complete | 2026-04-13 |
-| 2. Player Controller & Animations | 2/3 | In Progress|  |
+| 2. Player Controller & Animations | 3/3 | Complete   | 2026-04-13 |
 | 3. HUD & Stats System | 0/? | Not started | - |
 | 4. Level 1 — Shanghai Awakening | 0/? | Not started | - |
 | 5. Juice & Polish | 0/? | Not started | - |
