@@ -115,52 +115,52 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CTRL-01 | — | Pending |
-| CTRL-02 | — | Pending |
-| CTRL-03 | — | Pending |
-| CTRL-04 | — | Pending |
-| CTRL-05 | — | Pending |
-| CTRL-06 | — | Pending |
-| CTRL-07 | — | Pending |
-| ANIM-01 | — | Pending |
-| ANIM-02 | — | Pending |
-| ANIM-03 | — | Pending |
-| LVL1-01 | — | Pending |
-| LVL1-02 | — | Pending |
-| LVL1-03 | — | Pending |
-| LVL1-04 | — | Pending |
-| LVL1-05 | — | Pending |
-| LVL1-06 | — | Pending |
-| LVL1-07 | — | Pending |
-| LVL1-08 | — | Pending |
-| LVL1-09 | — | Pending |
-| LVL1-10 | — | Pending |
-| STAT-01 | — | Pending |
-| STAT-02 | — | Pending |
-| STAT-03 | — | Pending |
-| STAT-04 | — | Pending |
-| HUD-01 | — | Pending |
-| HUD-02 | — | Pending |
-| HUD-03 | — | Pending |
-| HUD-04 | — | Pending |
-| FLOW-01 | — | Pending |
-| FLOW-02 | — | Pending |
-| FLOW-03 | — | Pending |
-| FLOW-04 | — | Pending |
-| JUICE-01 | — | Pending |
-| JUICE-02 | — | Pending |
-| JUICE-03 | — | Pending |
-| JUICE-04 | — | Pending |
-| ARCH-01 | — | Pending |
-| ARCH-02 | — | Pending |
-| ARCH-03 | — | Pending |
-| ARCH-04 | — | Pending |
+| ARCH-01 | Phase 1 | Pending |
+| ARCH-02 | Phase 1 | Pending |
+| ARCH-03 | Phase 1 | Pending |
+| ARCH-04 | Phase 1 | Pending |
+| FLOW-01 | Phase 1 | Pending |
+| FLOW-02 | Phase 1 | Pending |
+| FLOW-03 | Phase 1 | Pending |
+| FLOW-04 | Phase 1 | Pending |
+| CTRL-01 | Phase 2 | Pending |
+| CTRL-02 | Phase 2 | Pending |
+| CTRL-03 | Phase 2 | Pending |
+| CTRL-04 | Phase 2 | Pending |
+| CTRL-05 | Phase 2 | Pending |
+| CTRL-06 | Phase 2 | Pending |
+| CTRL-07 | Phase 2 | Pending |
+| ANIM-01 | Phase 2 | Pending |
+| ANIM-02 | Phase 2 | Pending |
+| ANIM-03 | Phase 2 | Pending |
+| HUD-01 | Phase 3 | Pending |
+| HUD-02 | Phase 3 | Pending |
+| HUD-03 | Phase 3 | Pending |
+| HUD-04 | Phase 3 | Pending |
+| STAT-01 | Phase 3 | Pending |
+| STAT-02 | Phase 3 | Pending |
+| STAT-03 | Phase 3 | Pending |
+| STAT-04 | Phase 3 | Pending |
+| LVL1-01 | Phase 4 | Pending |
+| LVL1-02 | Phase 4 | Pending |
+| LVL1-03 | Phase 4 | Pending |
+| LVL1-04 | Phase 4 | Pending |
+| LVL1-05 | Phase 4 | Pending |
+| LVL1-06 | Phase 4 | Pending |
+| LVL1-07 | Phase 4 | Pending |
+| LVL1-08 | Phase 4 | Pending |
+| LVL1-09 | Phase 4 | Pending |
+| LVL1-10 | Phase 4 | Pending |
+| JUICE-01 | Phase 5 | Pending |
+| JUICE-02 | Phase 5 | Pending |
+| JUICE-03 | Phase 5 | Pending |
+| JUICE-04 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 40 total
-- Mapped to phases: 0
-- Unmapped: 40
+- Mapped to phases: 40
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-13*
-*Last updated: 2026-04-13 after initial definition*
+*Last updated: 2026-04-13 after roadmap creation — all 40 requirements mapped*
