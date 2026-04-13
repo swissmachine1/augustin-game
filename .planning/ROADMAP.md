@@ -30,9 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Dying in the game scene triggers a respawn at the last checkpoint without a full reload
   4. All registry keys are defined in a single GameRegistry module — no magic strings anywhere in the codebase
   5. Closing or switching scenes does not leave orphaned audio or event listeners
+
 **Plans**: 4 plans
 
 Plans:
+
 - [x] 01-01-PLAN.md — GameRegistry module with typed KEYS constants and initRegistry()
 - [x] 01-02-PLAN.md — Player.js module (rectangle placeholder + physics body)
 - [x] 01-03-PLAN.md — BootScene + TitleScene: registry init, fade transition, shutdown handlers
@@ -48,9 +50,11 @@ Plans:
   3. Walking off a platform edge and pressing Space within 120ms still triggers a jump (coyote time works)
   4. Pressing Space 150ms before landing queues the jump so it fires on touchdown (jump buffering works)
   5. The player rectangle visually switches to idle, run, jump, and fall states in sync with movement — all swappable for sprites without changing game logic
+
 **Plans**: 3 plans
 
 Plans:
+
 - [x] 02-01-PLAN.md — Player.js: PLAYER_CONSTANTS, input wiring, smooth horizontal movement, facing direction
 - [x] 02-02-PLAN.md — Player.js: variable jump height, double jump, coyote time, jump buffer, asymmetric gravity
 - [x] 02-03-PLAN.md — Player.js: animation state machine (idle/run/jump/fall colors) + GameScene.update() wiring
@@ -64,8 +68,14 @@ Plans:
   2. Pressing TAB opens a full-screen stats overlay showing all 7 stats (Sales, Tech, Grit, EQ, Languages, Independence, TeamPlayer) as filled bars
   3. Collecting an item or defeating an enemy visibly increments the relevant stat on the overlay
   4. Closing the browser and reopening it restores the same stat values from localStorage
-**Plans**: TBD
-**UI hint**: yes
+
+**Plans**: 3 plans
+
+Plans:
+
+- [x] 03-01-PLAN.md — StatsManager: 7-stat class with localStorage persistence (STAT-01, STAT-02, STAT-03)
+- [x] 03-02-PLAN.md — HUDScene: parallel scene, hearts, coin counter, registry listeners (HUD-01–HUD-04)
+- [ ] 03-03-PLAN.md — TAB stats overlay + GameScene StatsManager integration + human verify (STAT-04)
 
 ### Phase 4: Level 1 — Shanghai Awakening
 **Goal**: A recruiter can play a complete level — enter, explore, collect, fight a boss, and reach the level complete screen
@@ -77,6 +87,7 @@ Plans:
   3. Three patrol enemies move back and forth on platforms; touching one damages the player with invincibility frames
   4. The boss door stays locked until all 5 coins and the book are collected — then opens
   5. The boss fight runs to completion: "The Comfort Zone" blob can be jumped on 3 times, shows a health bar, and defeating it triggers the "LEVEL COMPLETE" screen with +10 Curiosity stat
+
 **Plans**: TBD
 
 ### Phase 5: Juice & Polish
@@ -88,6 +99,7 @@ Plans:
   2. Collecting a coin produces a particle burst at the pickup location
   3. Defeating an enemy produces a particle effect at its position
   4. Damage events freeze the frame for 30-50ms before resuming — the hit lands with weight
+
 **Plans**: TBD
 
 ## Progress
@@ -99,6 +111,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Architecture & Game Flow | 4/4 | Complete | 2026-04-13 |
 | 2. Player Controller & Animations | 3/3 | Complete   | 2026-04-13 |
-| 3. HUD & Stats System | 0/? | Not started | - |
+| 3. HUD & Stats System | 2/3 | In Progress|  |
 | 4. Level 1 — Shanghai Awakening | 0/? | Not started | - |
 | 5. Juice & Polish | 0/? | Not started | - |
