@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 
 const HEART_FULL  = 0xe74c3c  // red

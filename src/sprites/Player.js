@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 
 export const PLAYER_CONSTANTS = Object.freeze({
   ACCEL_X: 1200,         // px/s^2 — acceleration when key held

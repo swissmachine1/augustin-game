@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 
 const ENEMY_SPEED = 100  // px/s horizontal
 

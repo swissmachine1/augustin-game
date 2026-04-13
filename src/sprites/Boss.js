@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 
 const BOSS_SPEED = 60  // px/s — slow but menacing
 const BOSS_HP    = 3

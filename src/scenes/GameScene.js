@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { Player } from '../sprites/Player.js'
 import { StatsManager } from '../systems/StatsManager.js'
