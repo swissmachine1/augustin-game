@@ -30,7 +30,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Dying in the game scene triggers a respawn at the last checkpoint without a full reload
   4. All registry keys are defined in a single GameRegistry module — no magic strings anywhere in the codebase
   5. Closing or switching scenes does not leave orphaned audio or event listeners
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — GameRegistry module with typed KEYS constants and initRegistry()
+- [ ] 01-02-PLAN.md — Player.js module (rectangle placeholder + physics body)
+- [ ] 01-03-PLAN.md — BootScene + TitleScene: registry init, fade transition, shutdown handlers
+- [ ] 01-04-PLAN.md — GameScene: Player module wiring, registry state, death/respawn
 
 ### Phase 2: Player Controller & Animations
 **Goal**: The player character moves with Celeste-quality feel — tight, responsive, and predictable enough to design levels around
@@ -87,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Architecture & Game Flow | 0/? | Not started | - |
+| 1. Architecture & Game Flow | 0/4 | Not started | - |
 | 2. Player Controller & Animations | 0/? | Not started | - |
 | 3. HUD & Stats System | 0/? | Not started | - |
 | 4. Level 1 — Shanghai Awakening | 0/? | Not started | - |
