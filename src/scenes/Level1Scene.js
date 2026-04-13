@@ -3,6 +3,8 @@ import { LEVEL1 } from '../data/level1Data.js'
 import { KEYS } from '../systems/GameRegistry.js'
 import { Player } from '../sprites/Player.js'
 import { StatsManager } from '../systems/StatsManager.js'
+import { Coin } from '../sprites/Coin.js'
+import { Book } from '../sprites/Book.js'
 
 export class Level1Scene extends Phaser.Scene {
   constructor() {
@@ -77,9 +79,34 @@ export class Level1Scene extends Phaser.Scene {
       this.scene.stop('HUDScene')
     }, this)
 
-    // --- Placeholder arrays for Plans 03–05 ---
-    this._coins = []
-    this._book = null
+    // --- Collectibles (Plan 03) ---
+    // Spawn coins from data
+    this._coins = LEVEL1.coins.map(pos => new Coin(this, pos.x, pos.y))
+
+    // Spawn book
+    this._book = new Book(this, LEVEL1.book.x, LEVEL1.book.y)
+
+    // Overlap: coin collection
+    this._coins.forEach(coin => {
+      this.physics.add.overlap(
+        this.player.sprite,
+        coin.sprite,
+        () => coin.collect(),
+        null,
+        this
+      )
+    })
+
+    // Overlap: book collection
+    this.physics.add.overlap(
+      this.player.sprite,
+      this._book.sprite,
+      () => this._book.collect(),
+      null,
+      this
+    )
+
+    // --- Placeholder arrays for Plans 04–05 ---
     this._enemies = []
     this._boss = null
     this._bossDoor = null
