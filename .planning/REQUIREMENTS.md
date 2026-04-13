@@ -26,10 +26,10 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Level 1 — Shanghai Awakening
 
 - [x] **LVL1-01**: Level has programmatic layout with ground, platforms at varying heights, and moving platforms
-- [ ] **LVL1-02**: Level has 5 "skill coin" collectibles placed across the level with pickup feedback
+- [x] **LVL1-02**: Level has 5 "skill coin" collectibles placed across the level with pickup feedback
 - [ ] **LVL1-03**: Level has 3 "Safe Career Suit" patrol enemies that move left-right on platforms
 - [ ] **LVL1-04**: Player takes damage on enemy contact with invincibility frames
-- [ ] **LVL1-05**: Level has a book collectible titled "The Exchange Student's Guide to China"
+- [x] **LVL1-05**: Level has a book collectible titled "The Exchange Student's Guide to China"
 - [ ] **LVL1-06**: Boss door requires all 5 coins + book to open
 - [ ] **LVL1-07**: Boss fight: "The Comfort Zone" — grey blob that moves toward player, defeated by jumping on top 3 times
 - [ ] **LVL1-08**: Boss has health bar UI visible during fight
@@ -142,10 +142,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-03 | Phase 3 | Complete |
 | STAT-04 | Phase 3 | Complete |
 | LVL1-01 | Phase 4 | Complete |
-| LVL1-02 | Phase 4 | Pending |
+| LVL1-02 | Phase 4 | Complete |
 | LVL1-03 | Phase 4 | Pending |
 | LVL1-04 | Phase 4 | Pending |
-| LVL1-05 | Phase 4 | Pending |
+| LVL1-05 | Phase 4 | Complete |
 | LVL1-06 | Phase 4 | Pending |
 | LVL1-07 | Phase 4 | Pending |
 | LVL1-08 | Phase 4 | Pending |
