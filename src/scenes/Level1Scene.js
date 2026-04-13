@@ -286,6 +286,17 @@ export class Level1Scene extends Phaser.Scene {
       repeat: 7,  // 8 cycles × 200ms = 1600ms covers the i-frame window
       onComplete: () => { this.player.sprite.setAlpha(1) }
     })
+
+    // Screen shake — JUICE-01
+    this.cameras.main.shake(120, 0.008)
+
+    // Hit-pause 40ms — JUICE-04
+    this.physics.pause()
+    this.tweens.pauseAll()
+    this.time.delayedCall(40, () => {
+      this.physics.resume()
+      this.tweens.resumeAll()
+    })
   }
 
   _createBossHealthBar() {
@@ -330,6 +341,14 @@ export class Level1Scene extends Phaser.Scene {
 
     // Camera shake
     this.cameras.main.shake(150, 0.01)
+
+    // Hit-pause 40ms on stomp — JUICE-04
+    this.physics.pause()
+    this.tweens.pauseAll()
+    this.time.delayedCall(40, () => {
+      this.physics.resume()
+      this.tweens.resumeAll()
+    })
 
     // Update health bar — dim segment matching remaining hp
     // Segments: index 2 = first to disappear (right segment first)
