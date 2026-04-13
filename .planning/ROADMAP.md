@@ -95,7 +95,7 @@ Plans:
 - [x] 04-01-PLAN.md — level1Data.js: external data file with all platform/collectible/enemy positions (LVL1-10, LVL1-01)
 - [x] 04-02-PLAN.md — Level1Scene.js: world bounds, platforms from data, moving platform tween, camera follow, Player wiring (LVL1-01)
 - [x] 04-03-PLAN.md — Coin.js + Book.js: collectible entities with pickup feedback, wired into Level1Scene (LVL1-02, LVL1-05)
-- [ ] 04-04-PLAN.md — Enemy.js: patrol AI with i-frames damage, boss door gate logic (LVL1-03, LVL1-04, LVL1-06)
+- [x] 04-04-PLAN.md — Enemy.js: patrol AI with i-frames damage, boss door gate logic (LVL1-03, LVL1-04, LVL1-06)
 - [ ] 04-05-PLAN.md — Boss.js: stomp fight, health bar UI, LEVEL COMPLETE overlay, +10 Grit reward, fade to title (LVL1-07, LVL1-08, LVL1-09)
 
 ### Phase 5: Juice & Polish

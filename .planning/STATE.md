@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md — Coin and Book collectibles wired into Level1Scene
-last_updated: "2026-04-13T16:42:26.674Z"
+stopped_at: Completed 04-04-PLAN.md — Patrol enemies, i-frames, and boss door gate
+last_updated: "2026-04-13T17:31:06.223Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 ## Current Position
 
 Phase: 04 (Level 1 — Shanghai Awakening) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-04-13
 
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-level-1-shanghai-awakening P01 | 3min | 1 tasks | 1 files |
 | Phase 04-level-1-shanghai-awakening P02 | 1min | 2 tasks | 3 files |
 | Phase 04-level-1-shanghai-awakening P03 | 1min | 2 tasks | 3 files |
+| Phase 04-level-1-shanghai-awakening P04 | 47min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,9 @@ Recent decisions affecting current work:
 - [Phase 04-level-1-shanghai-awakening]: Moving platform: static body + tween + body.reset(rect.x, rect.y) each frame — required for static body position sync in Phaser 4 arcade physics
 - [Phase 04-level-1-shanghai-awakening]: Coin and Book are factory classes (not Phaser.Scene subclasses) — consistent with Player.js pattern; no Phaser import needed, scene reference injected via constructor
 - [Phase 04-level-1-shanghai-awakening]: Collectible _collected guard flag prevents double-fire from overlap callback triggering multiple frames during tween
+- [Phase 04-level-1-shanghai-awakening]: Enemy uses dynamic body so world gravity keeps it grounded on platforms; patrolMin/patrolMax world-X bounds replace edge detection
+- [Phase 04-level-1-shanghai-awakening]: _iFrames stored as ms-remaining, decremented by delta each frame — avoids timer/tween complexity for gate logic
+- [Phase 04-level-1-shanghai-awakening]: Boss door gate uses registry changedata listener (not polling) — consistent with Phase 03 HUD reactive pattern
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T16:42:26.671Z
-Stopped at: Completed 04-03-PLAN.md — Coin and Book collectibles wired into Level1Scene
+Last session: 2026-04-13T17:31:06.220Z
+Stopped at: Completed 04-04-PLAN.md — Patrol enemies, i-frames, and boss door gate
 Resume file: None
