@@ -55,7 +55,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **FLOW-01**: Boot scene loads assets and shows loading bar
 - [x] **FLOW-02**: Title scene shows game title and "PRESS SPACE TO START"
 - [x] **FLOW-03**: Scene transitions use fade-to-black effect
-- [ ] **FLOW-04**: Player death triggers respawn at last checkpoint
+- [x] **FLOW-04**: Player death triggers respawn at last checkpoint
 
 ### Juice / Polish
 
@@ -122,7 +122,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FLOW-01 | Phase 1 | Complete |
 | FLOW-02 | Phase 1 | Complete |
 | FLOW-03 | Phase 1 | Complete |
-| FLOW-04 | Phase 1 | Pending |
+| FLOW-04 | Phase 1 | Complete |
 | CTRL-01 | Phase 2 | Pending |
 | CTRL-02 | Phase 2 | Pending |
 | CTRL-03 | Phase 2 | Pending |

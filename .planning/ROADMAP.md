@@ -36,7 +36,7 @@ Plans:
 - [x] 01-01-PLAN.md — GameRegistry module with typed KEYS constants and initRegistry()
 - [x] 01-02-PLAN.md — Player.js module (rectangle placeholder + physics body)
 - [x] 01-03-PLAN.md — BootScene + TitleScene: registry init, fade transition, shutdown handlers
-- [ ] 01-04-PLAN.md — GameScene: Player module wiring, registry state, death/respawn
+- [x] 01-04-PLAN.md — GameScene: Player module wiring, registry state, death/respawn
 
 ### Phase 2: Player Controller & Animations
 **Goal**: The player character moves with Celeste-quality feel — tight, responsive, and predictable enough to design levels around
