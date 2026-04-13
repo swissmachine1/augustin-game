@@ -66,8 +66,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Architecture
 
-- [ ] **ARCH-01**: GameRegistry module defines typed constants for all registry keys
-- [ ] **ARCH-02**: Cross-scene state managed through Phaser Registry (not scene params)
+- [x] **ARCH-01**: GameRegistry module defines typed constants for all registry keys
+- [x] **ARCH-02**: Cross-scene state managed through Phaser Registry (not scene params)
 - [ ] **ARCH-03**: Scene shutdown handlers clean up audio and event listeners
 - [ ] **ARCH-04**: Player class is a separate module in src/sprites/Player.js
 
@@ -115,8 +115,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | Phase 1 | Pending |
-| ARCH-02 | Phase 1 | Pending |
+| ARCH-01 | Phase 1 | Complete |
+| ARCH-02 | Phase 1 | Complete |
 | ARCH-03 | Phase 1 | Pending |
 | ARCH-04 | Phase 1 | Pending |
 | FLOW-01 | Phase 1 | Pending |

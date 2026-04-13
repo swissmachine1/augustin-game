@@ -33,8 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — GameRegistry module with typed KEYS constants and initRegistry()
-- [ ] 01-02-PLAN.md — Player.js module (rectangle placeholder + physics body)
+- [x] 01-01-PLAN.md — GameRegistry module with typed KEYS constants and initRegistry()
+- [x] 01-02-PLAN.md — Player.js module (rectangle placeholder + physics body)
 - [ ] 01-03-PLAN.md — BootScene + TitleScene: registry init, fade transition, shutdown handlers
 - [ ] 01-04-PLAN.md — GameScene: Player module wiring, registry state, death/respawn
 
@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Architecture & Game Flow | 0/4 | Not started | - |
+| 1. Architecture & Game Flow | 2/4 | In Progress|  |
 | 2. Player Controller & Animations | 0/? | Not started | - |
 | 3. HUD & Stats System | 0/? | Not started | - |
 | 4. Level 1 — Shanghai Awakening | 0/? | Not started | - |
