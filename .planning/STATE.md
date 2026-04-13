@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md — Player.js extended with PLAYER_CONSTANTS, input wiring, smooth horizontal movement via acceleration/drag, and facing direction flip. Plan 02-01 complete.
-last_updated: "2026-04-13T11:22:48.563Z"
+stopped_at: Completed 02-02-PLAN.md — jump system with variable height, double jump, coyote time (120ms), jump buffer (150ms), and asymmetric gravity. Plan 02-02 complete.
+last_updated: "2026-04-13T11:25:02.751Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 ## Current Position
 
 Phase: 02 (Player Controller & Animations) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-13
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-architecture-game-flow P03 | 1 | 2 tasks | 2 files |
 | Phase 01-architecture-game-flow P04 | 8 | 2 tasks | 1 files |
 | Phase 02-player-controller-animations P01 | 1 | 1 tasks | 1 files |
+| Phase 02-player-controller-animations P02 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 01-architecture-game-flow]: body.reset(cx, cy) used in respawn() — resets position AND velocity, preventing carried momentum from previous death fall
 - [Phase 02-player-controller-animations]: setAccelerationX + setDragX (not setVelocityX) for player movement — Celeste-feel weight over instant-snap
 - [Phase 02-player-controller-animations]: PLAYER_CONSTANTS includes Plan 02 jump values upfront to establish full tuning surface before jump logic added
+- [Phase 02-player-controller-animations]: setGravityY is additive: worldGravity*(MULT-1) adds on top of world gravity — 2x fall achieved by adding 1x extra, not replacing
+- [Phase 02-player-controller-animations]: Jump buffer consumed on landing (!_wasOnGround + _jumpBufferTimeLeft>0) — covers pre-landing input; coyote via delta-decremented _coyoteTimeLeft
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T11:22:48.560Z
-Stopped at: Completed 02-01-PLAN.md — Player.js extended with PLAYER_CONSTANTS, input wiring, smooth horizontal movement via acceleration/drag, and facing direction flip. Plan 02-01 complete.
+Last session: 2026-04-13T11:25:02.748Z
+Stopped at: Completed 02-02-PLAN.md — jump system with variable height, double jump, coyote time (120ms), jump buffer (150ms), and asymmetric gravity. Plan 02-02 complete.
 Resume file: None

@@ -52,7 +52,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Player.js: PLAYER_CONSTANTS, input wiring, smooth horizontal movement, facing direction
-- [ ] 02-02-PLAN.md — Player.js: variable jump height, double jump, coyote time, jump buffer, asymmetric gravity
+- [x] 02-02-PLAN.md — Player.js: variable jump height, double jump, coyote time, jump buffer, asymmetric gravity
 - [ ] 02-03-PLAN.md — Player.js: animation state machine (idle/run/jump/fall colors) + GameScene.update() wiring
 
 ### Phase 3: HUD & Stats System
@@ -98,7 +98,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Architecture & Game Flow | 4/4 | Complete | 2026-04-13 |
-| 2. Player Controller & Animations | 1/3 | In Progress|  |
+| 2. Player Controller & Animations | 2/3 | In Progress|  |
 | 3. HUD & Stats System | 0/? | Not started | - |
 | 4. Level 1 — Shanghai Awakening | 0/? | Not started | - |
 | 5. Juice & Polish | 0/? | Not started | - |

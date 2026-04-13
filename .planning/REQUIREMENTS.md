@@ -9,13 +9,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Player Controller
 
-- [ ] **CTRL-01**: Player moves left/right with arrow keys or A/D with smooth acceleration/deceleration
-- [ ] **CTRL-02**: Player jumps with Space or W with variable height (tap = small, hold = full)
-- [ ] **CTRL-03**: Player has double-jump ability (second jump slightly weaker)
-- [ ] **CTRL-04**: Player has coyote time (120ms grace period to jump after leaving platform)
-- [ ] **CTRL-05**: Player has jump buffering (150ms grace period to queue jump before landing)
-- [ ] **CTRL-06**: Player has asymmetric gravity (1.5-2.5x multiplier on descent for crisp feel)
-- [ ] **CTRL-07**: Player faces the direction of movement
+- [x] **CTRL-01**: Player moves left/right with arrow keys or A/D with smooth acceleration/deceleration
+- [x] **CTRL-02**: Player jumps with Space or W with variable height (tap = small, hold = full)
+- [x] **CTRL-03**: Player has double-jump ability (second jump slightly weaker)
+- [x] **CTRL-04**: Player has coyote time (120ms grace period to jump after leaving platform)
+- [x] **CTRL-05**: Player has jump buffering (150ms grace period to queue jump before landing)
+- [x] **CTRL-06**: Player has asymmetric gravity (1.5-2.5x multiplier on descent for crisp feel)
+- [x] **CTRL-07**: Player faces the direction of movement
 
 ### Animations
 
@@ -123,13 +123,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FLOW-02 | Phase 1 | Complete |
 | FLOW-03 | Phase 1 | Complete |
 | FLOW-04 | Phase 1 | Complete |
-| CTRL-01 | Phase 2 | Pending |
-| CTRL-02 | Phase 2 | Pending |
-| CTRL-03 | Phase 2 | Pending |
-| CTRL-04 | Phase 2 | Pending |
-| CTRL-05 | Phase 2 | Pending |
-| CTRL-06 | Phase 2 | Pending |
-| CTRL-07 | Phase 2 | Pending |
+| CTRL-01 | Phase 2 | Complete |
+| CTRL-02 | Phase 2 | Complete |
+| CTRL-03 | Phase 2 | Complete |
+| CTRL-04 | Phase 2 | Complete |
+| CTRL-05 | Phase 2 | Complete |
+| CTRL-06 | Phase 2 | Complete |
+| CTRL-07 | Phase 2 | Complete |
 | ANIM-01 | Phase 2 | Pending |
 | ANIM-02 | Phase 2 | Pending |
 | ANIM-03 | Phase 2 | Pending |
