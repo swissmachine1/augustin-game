@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Architecture & Game Flow** - Registry, scene scaffold, Boot/Title flow, cleanup handlers
 - [x] **Phase 2: Player Controller & Animations** - Celeste-quality movement, coyote time, jump buffer, sprite states (completed 2026-04-13)
 - [x] **Phase 3: HUD & Stats System** - Persistent HUD scene, 7-stat registry, TAB overlay, localStorage (completed 2026-04-13)
-- [ ] **Phase 4: Level 1 — Shanghai Awakening** - Complete playable level with collectibles, enemies, and boss fight
+- [x] **Phase 4: Level 1 — Shanghai Awakening** - Complete playable level with collectibles, enemies, and boss fight (completed 2026-04-13)
 - [ ] **Phase 5: Juice & Polish** - Screen shake, particles, hit-pause — the feel layer that makes sharing worthwhile
 
 ## Phase Details
@@ -96,7 +96,7 @@ Plans:
 - [x] 04-02-PLAN.md — Level1Scene.js: world bounds, platforms from data, moving platform tween, camera follow, Player wiring (LVL1-01)
 - [x] 04-03-PLAN.md — Coin.js + Book.js: collectible entities with pickup feedback, wired into Level1Scene (LVL1-02, LVL1-05)
 - [x] 04-04-PLAN.md — Enemy.js: patrol AI with i-frames damage, boss door gate logic (LVL1-03, LVL1-04, LVL1-06)
-- [ ] 04-05-PLAN.md — Boss.js: stomp fight, health bar UI, LEVEL COMPLETE overlay, +10 Grit reward, fade to title (LVL1-07, LVL1-08, LVL1-09)
+- [x] 04-05-PLAN.md — Boss.js: stomp fight, health bar UI, LEVEL COMPLETE overlay, +10 Grit reward, fade to title (LVL1-07, LVL1-08, LVL1-09)
 
 ### Phase 5: Juice & Polish
 **Goal**: Damage, collection, and defeat events feel punchy and satisfying — the difference between a demo and a game worth sending
@@ -120,5 +120,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Architecture & Game Flow | 4/4 | Complete | 2026-04-13 |
 | 2. Player Controller & Animations | 3/3 | Complete   | 2026-04-13 |
 | 3. HUD & Stats System | 3/3 | Complete   | 2026-04-13 |
-| 4. Level 1 — Shanghai Awakening | 3/5 | In Progress|  |
+| 4. Level 1 — Shanghai Awakening | 5/5 | Complete   | 2026-04-13 |
 | 5. Juice & Polish | 0/? | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-04-PLAN.md — Patrol enemies, i-frames, and boss door gate
-last_updated: "2026-04-13T17:31:06.223Z"
+stopped_at: Completed 04-05-PLAN.md — Boss fight, level complete overlay, and stat reward
+last_updated: "2026-04-13T17:36:16.682Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 15
-  completed_plans: 14
+  completed_plans: 15
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 ## Current Position
 
 Phase: 04 (Level 1 — Shanghai Awakening) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-04-13
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-level-1-shanghai-awakening P02 | 1min | 2 tasks | 3 files |
 | Phase 04-level-1-shanghai-awakening P03 | 1min | 2 tasks | 3 files |
 | Phase 04-level-1-shanghai-awakening P04 | 47min | 2 tasks | 2 files |
+| Phase 04-level-1-shanghai-awakening P05 | 4min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,9 @@ Recent decisions affecting current work:
 - [Phase 04-level-1-shanghai-awakening]: Enemy uses dynamic body so world gravity keeps it grounded on platforms; patrolMin/patrolMax world-X bounds replace edge detection
 - [Phase 04-level-1-shanghai-awakening]: _iFrames stored as ms-remaining, decremented by delta each frame — avoids timer/tween complexity for gate logic
 - [Phase 04-level-1-shanghai-awakening]: Boss door gate uses registry changedata listener (not polling) — consistent with Phase 03 HUD reactive pattern
+- [Phase 04-level-1-shanghai-awakening]: Boss uses dynamic body so Arcade gravity keeps it grounded — no manual gravity tuning needed
+- [Phase 04-level-1-shanghai-awakening]: Stomp process callback checks velocity.y > 100 AND playerY < bossY — filters side collisions from stomp triggers
+- [Phase 04-level-1-shanghai-awakening]: _levelComplete flag gates both _handleBossHit and _triggerLevelComplete — prevents double-fire on defeat tween
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T17:31:06.220Z
-Stopped at: Completed 04-04-PLAN.md — Patrol enemies, i-frames, and boss door gate
+Last session: 2026-04-13T17:36:16.679Z
+Stopped at: Completed 04-05-PLAN.md — Boss fight, level complete overlay, and stat reward
 Resume file: None

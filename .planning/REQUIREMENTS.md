@@ -31,9 +31,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LVL1-04**: Player takes damage on enemy contact with invincibility frames
 - [x] **LVL1-05**: Level has a book collectible titled "The Exchange Student's Guide to China"
 - [x] **LVL1-06**: Boss door requires all 5 coins + book to open
-- [ ] **LVL1-07**: Boss fight: "The Comfort Zone" — grey blob that moves toward player, defeated by jumping on top 3 times
-- [ ] **LVL1-08**: Boss has health bar UI visible during fight
-- [ ] **LVL1-09**: On boss defeat: "LEVEL COMPLETE" screen with stats earned (+10 Curiosity)
+- [x] **LVL1-07**: Boss fight: "The Comfort Zone" — grey blob that moves toward player, defeated by jumping on top 3 times
+- [x] **LVL1-08**: Boss has health bar UI visible during fight
+- [x] **LVL1-09**: On boss defeat: "LEVEL COMPLETE" screen with stats earned (+10 Curiosity)
 - [x] **LVL1-10**: Level data defined in external data file, not hardcoded in scene logic
 
 ### Stats System
@@ -147,9 +147,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LVL1-04 | Phase 4 | Complete |
 | LVL1-05 | Phase 4 | Complete |
 | LVL1-06 | Phase 4 | Complete |
-| LVL1-07 | Phase 4 | Pending |
-| LVL1-08 | Phase 4 | Pending |
-| LVL1-09 | Phase 4 | Pending |
+| LVL1-07 | Phase 4 | Complete |
+| LVL1-08 | Phase 4 | Complete |
+| LVL1-09 | Phase 4 | Complete |
 | LVL1-10 | Phase 4 | Complete |
 | JUICE-01 | Phase 5 | Pending |
 | JUICE-02 | Phase 5 | Pending |
