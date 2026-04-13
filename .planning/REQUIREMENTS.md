@@ -25,7 +25,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Level 1 — Shanghai Awakening
 
-- [ ] **LVL1-01**: Level has programmatic layout with ground, platforms at varying heights, and moving platforms
+- [x] **LVL1-01**: Level has programmatic layout with ground, platforms at varying heights, and moving platforms
 - [ ] **LVL1-02**: Level has 5 "skill coin" collectibles placed across the level with pickup feedback
 - [ ] **LVL1-03**: Level has 3 "Safe Career Suit" patrol enemies that move left-right on platforms
 - [ ] **LVL1-04**: Player takes damage on enemy contact with invincibility frames
@@ -34,7 +34,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **LVL1-07**: Boss fight: "The Comfort Zone" — grey blob that moves toward player, defeated by jumping on top 3 times
 - [ ] **LVL1-08**: Boss has health bar UI visible during fight
 - [ ] **LVL1-09**: On boss defeat: "LEVEL COMPLETE" screen with stats earned (+10 Curiosity)
-- [ ] **LVL1-10**: Level data defined in external data file, not hardcoded in scene logic
+- [x] **LVL1-10**: Level data defined in external data file, not hardcoded in scene logic
 
 ### Stats System
 
@@ -141,7 +141,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-02 | Phase 3 | Complete |
 | STAT-03 | Phase 3 | Complete |
 | STAT-04 | Phase 3 | Complete |
-| LVL1-01 | Phase 4 | Pending |
+| LVL1-01 | Phase 4 | Complete |
 | LVL1-02 | Phase 4 | Pending |
 | LVL1-03 | Phase 4 | Pending |
 | LVL1-04 | Phase 4 | Pending |
@@ -150,7 +150,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LVL1-07 | Phase 4 | Pending |
 | LVL1-08 | Phase 4 | Pending |
 | LVL1-09 | Phase 4 | Pending |
-| LVL1-10 | Phase 4 | Pending |
+| LVL1-10 | Phase 4 | Complete |
 | JUICE-01 | Phase 5 | Pending |
 | JUICE-02 | Phase 5 | Pending |
 | JUICE-03 | Phase 5 | Pending |

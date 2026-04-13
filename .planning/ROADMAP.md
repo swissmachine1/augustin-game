@@ -92,7 +92,7 @@ Plans:
 
 Plans:
 
-- [ ] 04-01-PLAN.md — level1Data.js: external data file with all platform/collectible/enemy positions (LVL1-10, LVL1-01)
+- [x] 04-01-PLAN.md — level1Data.js: external data file with all platform/collectible/enemy positions (LVL1-10, LVL1-01)
 - [ ] 04-02-PLAN.md — Level1Scene.js: world bounds, platforms from data, moving platform tween, camera follow, Player wiring (LVL1-01)
 - [ ] 04-03-PLAN.md — Coin.js + Book.js: collectible entities with pickup feedback, wired into Level1Scene (LVL1-02, LVL1-05)
 - [ ] 04-04-PLAN.md — Enemy.js: patrol AI with i-frames damage, boss door gate logic (LVL1-03, LVL1-04, LVL1-06)
@@ -120,5 +120,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Architecture & Game Flow | 4/4 | Complete | 2026-04-13 |
 | 2. Player Controller & Animations | 3/3 | Complete   | 2026-04-13 |
 | 3. HUD & Stats System | 3/3 | Complete   | 2026-04-13 |
-| 4. Level 1 — Shanghai Awakening | 0/5 | Not started | - |
+| 4. Level 1 — Shanghai Awakening | 1/5 | In Progress|  |
 | 5. Juice & Polish | 0/? | Not started | - |
