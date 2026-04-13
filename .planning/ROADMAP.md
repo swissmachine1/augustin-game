@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md — GameRegistry module with typed KEYS constants and initRegistry()
 - [x] 01-02-PLAN.md — Player.js module (rectangle placeholder + physics body)
-- [ ] 01-03-PLAN.md — BootScene + TitleScene: registry init, fade transition, shutdown handlers
+- [x] 01-03-PLAN.md — BootScene + TitleScene: registry init, fade transition, shutdown handlers
 - [ ] 01-04-PLAN.md — GameScene: Player module wiring, registry state, death/respawn
 
 ### Phase 2: Player Controller & Animations

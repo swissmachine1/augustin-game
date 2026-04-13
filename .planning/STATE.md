@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md — Player class module created
-last_updated: "2026-04-13T11:03:41.546Z"
+stopped_at: Completed 01-03-PLAN.md — BootScene and TitleScene wired with registry init, fade transition, and shutdown handlers
+last_updated: "2026-04-13T11:07:05.912Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 ## Current Position
 
 Phase: 01 (Architecture & Game Flow) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-04-13
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01-architecture-game-flow P01 | 3 | 1 tasks | 1 files |
 | Phase 01 P02 | 1 | 1 tasks | 1 files |
+| Phase 01-architecture-game-flow P03 | 1 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,9 @@ Recent decisions affecting current work:
 - Init: Placeholder-first art — all gameplay must run on colored rectangles before real art
 - [Phase 01-architecture-game-flow]: GameRegistry: KEYS frozen at module load; all cross-scene state references route through KEYS constants — no magic strings
 - [Phase 01]: Factory-style Player class (not extends Rectangle) — Phaser 4 does not support extending game objects like v3; body exposed directly on Player instance for clean collision setup
+- [Phase 01-architecture-game-flow]: Registry seeded in BootScene before TitleScene starts — ensures all registry keys exist before any scene reads them
+- [Phase 01-architecture-game-flow]: ARCH-03 pattern: every scene registers SHUTDOWN handler in create() even if no-op — confirms cleanup wiring is consistent
+- [Phase 01-architecture-game-flow]: FLOW-03: scene transitions use fadeOut(300ms) + FADE_OUT_COMPLETE callback — never call scene.start directly from input handler
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T11:03:41.544Z
-Stopped at: Completed 01-02-PLAN.md — Player class module created
+Last session: 2026-04-13T11:07:05.909Z
+Stopped at: Completed 01-03-PLAN.md — BootScene and TitleScene wired with registry init, fade transition, and shutdown handlers
 Resume file: None
