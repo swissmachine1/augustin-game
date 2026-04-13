@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md (GameRegistry module)
-last_updated: "2026-04-13T11:03:34.786Z"
+stopped_at: Completed 01-02-PLAN.md — Player class module created
+last_updated: "2026-04-13T11:03:41.546Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 5
@@ -66,6 +66,7 @@ Recent decisions affecting current work:
 - Init: Programmatic level generation — no Tiled integration
 - Init: Placeholder-first art — all gameplay must run on colored rectangles before real art
 - [Phase 01-architecture-game-flow]: GameRegistry: KEYS frozen at module load; all cross-scene state references route through KEYS constants — no magic strings
+- [Phase 01]: Factory-style Player class (not extends Rectangle) — Phaser 4 does not support extending game objects like v3; body exposed directly on Player instance for clean collision setup
 
 ### Pending Todos
 
@@ -79,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T11:03:29.082Z
-Stopped at: Completed 01-01-PLAN.md (GameRegistry module)
+Last session: 2026-04-13T11:03:41.544Z
+Stopped at: Completed 01-02-PLAN.md — Player class module created
 Resume file: None
