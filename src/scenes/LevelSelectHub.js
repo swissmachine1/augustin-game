@@ -31,7 +31,7 @@ const LEVELS = [
     title: 'Greenland',
     subtitle: 'Storm survival',
     teaser: 'Endurance at the edge of the world',
-    sceneKey: null,  // Phase 5
+    sceneKey: 'GreenlandScene',
     scoreKey: KEYS.SCORE_L3,
     completedKey: KEYS.COMPLETED_L3,
     color: 0x5dade2,      // ice blue (white/blue Greenland)
