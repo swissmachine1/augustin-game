@@ -3,11 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Augustin Files</title>
+    <title>The Augustin Files — A career in 5 mini-games</title>
+    <meta name="description" content="A playable CV by Augustin Romaneschi. Five career chapters. Five mini-games. 10 minutes." />
+    <meta property="og:title" content="The Augustin Files" />
+    <meta property="og:description" content="A playable CV. Five career chapters. Five mini-games." />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0a0a14" />
     <style>
-      * { margin: 0; padding: 0; }
-      body { background: #000; overflow: hidden; }
-      #game { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; }
+      body {
+        background: #0a0a14;
+        overflow: hidden;
+        font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+      }
+      #game {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+      }
+      /* Name input (created at runtime by TitleScene) inherits these via inline style,
+         but ensure autocomplete dropdowns don't leak outside */
+      input::placeholder { color: #444455; }
     </style>
   </head>
   <body>
