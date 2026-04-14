@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { BootScene } from '../scenes/BootScene.js'
 import { TitleScene } from '../scenes/TitleScene.js'
+import { OpeningCinematicScene } from '../scenes/OpeningCinematicScene.js'
 import { LevelSelectHub } from '../scenes/LevelSelectHub.js'
 import { HUDScene } from '../scenes/HUDScene.js'
 
@@ -17,7 +18,7 @@ export const GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, LevelSelectHub, HUDScene],
+  scene: [BootScene, TitleScene, OpeningCinematicScene, LevelSelectHub, HUDScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

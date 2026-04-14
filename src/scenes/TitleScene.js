@@ -141,7 +141,7 @@ export class TitleScene extends Phaser.Scene {
     // Fade + transition
     this.cameras.main.fadeOut(300, 0, 0, 0)
     this.time.delayedCall(320, () => {
-      this.scene.start('LevelSelectHub')
+      this.scene.start('OpeningCinematicScene')
     })
   }
 }
