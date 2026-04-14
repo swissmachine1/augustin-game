@@ -44,7 +44,11 @@ Success Criteria (what must be TRUE):
 4. LevelSelectHub.js exists as a registered Phaser scene that can be launched without errors (placeholder content acceptable)
 5. Stats persist across browser sessions — refreshing the page restores the same stat values from localStorage
 
-Plans: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Delete v1 platformer files, clean GameConfig, extend GameRegistry with PLAYER_NAME + SCORE_L1..L5
+- [ ] 01-02-PLAN.md — Extend TitleScene with name input + URL param, create LevelSelectHub placeholder, wire GameConfig
 
 ### Phase 2: Opening & Hub Foundation
 
@@ -192,7 +196,7 @@ Execution order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Mini-game phases (
 
 | Phase | Plans Complete | Status | Completed |
 | --- | --- | --- | --- |
-| 1. Infrastructure Cleanup | 0/? | Not started | - |
+| 1. Infrastructure Cleanup | 0/2 | Not started | - |
 | 2. Opening & Hub Foundation | 0/? | Not started | - |
 | 3. Level 1 — Shanghai | 0/? | Not started | - |
 | 4. Level 2 — Latin America | 0/? | Not started | - |

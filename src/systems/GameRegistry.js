@@ -1,41 +1,87 @@
 export const KEYS = Object.freeze({
-  // Player state
-  HEALTH:          'health',
-  HEALTH_MAX:      'healthMax',
-  COINS:           'coins',
-  CHECKPOINT_X:    'checkpointX',
-  CHECKPOINT_Y:    'checkpointY',
+  // Player identity (v2)
+  PLAYER_NAME:     'playerName',
 
-  // Level progress
-  COINS_COLLECTED: 'coinsCollected',
-  BOOK_COLLECTED:  'bookCollected',
-  BOSS_DEFEATED:   'bossDefeated',
+  // Per-level scores (v2 — 0-100%)
+  SCORE_L1:        'scoreL1',  // Shanghai
+  SCORE_L2:        'scoreL2',  // Latin America
+  SCORE_L3:        'scoreL3',  // Greenland
+  SCORE_L4:        'scoreL4',  // Agency Factory
+  SCORE_L5:        'scoreL5',  // Interview Room
 
-  // Stats (Phase 3 — define now so keys are stable)
+  // Level completion flags (v2)
+  COMPLETED_L1:    'completedL1',
+  COMPLETED_L2:    'completedL2',
+  COMPLETED_L3:    'completedL3',
+  COMPLETED_L4:    'completedL4',
+  COMPLETED_L5:    'completedL5',
+
+  // Stats (earned from mini-games)
+  STAT_CURIOSITY:     'statCuriosity',
   STAT_SALES:         'statSales',
-  STAT_TECH:          'statTech',
-  STAT_GRIT:          'statGrit',
   STAT_EQ:            'statEQ',
-  STAT_LANGUAGES:     'statLanguages',
+  STAT_GRIT:          'statGrit',
   STAT_INDEPENDENCE:  'statIndependence',
+  STAT_TECH:          'statTech',
   STAT_TEAMPLAYER:    'statTeamPlayer',
+  STAT_LANGUAGES:     'statLanguages',
 })
+
+const STORAGE_KEY = 'augustin-files-v2'
 
 export function initRegistry(scene) {
   const reg = scene.registry
-  reg.set(KEYS.HEALTH,          3)
-  reg.set(KEYS.HEALTH_MAX,      3)
-  reg.set(KEYS.COINS,           0)
-  reg.set(KEYS.CHECKPOINT_X,    200)
-  reg.set(KEYS.CHECKPOINT_Y,    500)
-  reg.set(KEYS.COINS_COLLECTED, 0)
-  reg.set(KEYS.BOOK_COLLECTED,  false)
-  reg.set(KEYS.BOSS_DEFEATED,   false)
-  reg.set(KEYS.STAT_SALES,        0)
-  reg.set(KEYS.STAT_TECH,         0)
-  reg.set(KEYS.STAT_GRIT,         0)
-  reg.set(KEYS.STAT_EQ,           0)
-  reg.set(KEYS.STAT_LANGUAGES,    0)
-  reg.set(KEYS.STAT_INDEPENDENCE, 0)
-  reg.set(KEYS.STAT_TEAMPLAYER,   0)
+
+  // Load persisted state from localStorage
+  const saved = loadSaved()
+
+  // Player name — default "friend"
+  reg.set(KEYS.PLAYER_NAME, saved.playerName ?? 'friend')
+
+  // Per-level scores (0-100, default 0)
+  reg.set(KEYS.SCORE_L1, saved.scoreL1 ?? 0)
+  reg.set(KEYS.SCORE_L2, saved.scoreL2 ?? 0)
+  reg.set(KEYS.SCORE_L3, saved.scoreL3 ?? 0)
+  reg.set(KEYS.SCORE_L4, saved.scoreL4 ?? 0)
+  reg.set(KEYS.SCORE_L5, saved.scoreL5 ?? 0)
+
+  // Completion flags
+  reg.set(KEYS.COMPLETED_L1, saved.completedL1 ?? false)
+  reg.set(KEYS.COMPLETED_L2, saved.completedL2 ?? false)
+  reg.set(KEYS.COMPLETED_L3, saved.completedL3 ?? false)
+  reg.set(KEYS.COMPLETED_L4, saved.completedL4 ?? false)
+  reg.set(KEYS.COMPLETED_L5, saved.completedL5 ?? false)
+
+  // Stats
+  reg.set(KEYS.STAT_CURIOSITY,    saved.statCuriosity ?? 0)
+  reg.set(KEYS.STAT_SALES,        saved.statSales ?? 0)
+  reg.set(KEYS.STAT_EQ,           saved.statEQ ?? 0)
+  reg.set(KEYS.STAT_GRIT,         saved.statGrit ?? 0)
+  reg.set(KEYS.STAT_INDEPENDENCE, saved.statIndependence ?? 0)
+  reg.set(KEYS.STAT_TECH,         saved.statTech ?? 0)
+  reg.set(KEYS.STAT_TEAMPLAYER,   saved.statTeamPlayer ?? 0)
+  reg.set(KEYS.STAT_LANGUAGES,    saved.statLanguages ?? 0)
+}
+
+export function saveRegistry(scene) {
+  const reg = scene.registry
+  const state = {}
+  Object.values(KEYS).forEach(key => {
+    state[key] = reg.get(key)
+  })
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch (e) {
+    // localStorage unavailable or quota exceeded — silent fail
+  }
+}
+
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return {}
+    return JSON.parse(raw)
+  } catch (e) {
+    return {}
+  }
 }
