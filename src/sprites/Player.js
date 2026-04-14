@@ -92,7 +92,8 @@ export class Player {
     }
 
     // Flip sprite to face movement direction
-    this.sprite.setFlipX(!this._facingRight)
+    // Rectangle placeholder: use scaleX (setFlipX only works on real Sprites)
+    this.sprite.scaleX = this._facingRight ? 1 : -1
   }
 
   _handleJump(delta) {
