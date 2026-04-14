@@ -9,7 +9,7 @@ const LEVELS = [
     title: 'Shanghai',
     subtitle: 'Day-in-the-life pivot',
     teaser: 'A law student has an aha moment',
-    sceneKey: null,  // 'ShanghaiScene' — Phase 3
+    sceneKey: 'ShanghaiScene',
     scoreKey: KEYS.SCORE_L1,
     completedKey: KEYS.COMPLETED_L1,
     color: 0xe74c3c,      // neon red (pixel Shanghai)
