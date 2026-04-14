@@ -4,6 +4,7 @@ import { TitleScene } from '../scenes/TitleScene.js'
 import { OpeningCinematicScene } from '../scenes/OpeningCinematicScene.js'
 import { LevelSelectHub } from '../scenes/LevelSelectHub.js'
 import { ShanghaiScene } from '../scenes/ShanghaiScene.js'
+import { LatinAmericaScene } from '../scenes/LatinAmericaScene.js'
 import { HUDScene } from '../scenes/HUDScene.js'
 
 export const GameConfig = {
@@ -19,7 +20,7 @@ export const GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, OpeningCinematicScene, LevelSelectHub, ShanghaiScene, HUDScene],
+  scene: [BootScene, TitleScene, OpeningCinematicScene, LevelSelectHub, ShanghaiScene, LatinAmericaScene, HUDScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

@@ -20,7 +20,7 @@ const LEVELS = [
     title: 'Latin America',
     subtitle: 'Network builder',
     teaser: 'Zero to $1M ARR across 11 countries',
-    sceneKey: null,  // Phase 4
+    sceneKey: 'LatinAmericaScene',
     scoreKey: KEYS.SCORE_L2,
     completedKey: KEYS.COMPLETED_L2,
     color: 0xe67e22,      // warm orange (vector LatAm)
