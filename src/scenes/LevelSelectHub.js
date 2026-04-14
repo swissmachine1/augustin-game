@@ -53,7 +53,7 @@ const LEVELS = [
     title: 'Interview Room',
     subtitle: 'Defend your CV',
     teaser: 'Everything you earned. Now use it.',
-    sceneKey: null,  // Phase 7
+    sceneKey: 'InterviewRoomScene',
     scoreKey: KEYS.SCORE_L5,
     completedKey: KEYS.COMPLETED_L5,
     color: 0xecf0f1,      // clean white (office)
