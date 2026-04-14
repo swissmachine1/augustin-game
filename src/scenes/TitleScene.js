@@ -41,9 +41,9 @@ export class TitleScene extends Phaser.Scene {
     // Listen for space — fade to black then start GameScene
     this.input.keyboard.once('keydown-SPACE', () => {
       this.cameras.main.fadeOut(300, 0, 0, 0)
-      this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.time.delayedCall(320, () => {
         this.scene.start('Level1Scene')
-      }, this)
+      })
     })
 
     // Shutdown cleanup — remove keyboard listeners on scene stop

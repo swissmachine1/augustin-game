@@ -406,10 +406,7 @@ export class Level1Scene extends Phaser.Scene {
     // Input: Space to transition (or auto after 3s)
     const doTransition = () => {
       this.cameras.main.fadeOut(300, 0, 0, 0)
-      this.cameras.main.once(
-        'camerafadeoutcomplete',
-        () => this.scene.start('TitleScene')
-      )
+      this.time.delayedCall(320, () => this.scene.start('TitleScene'))
     }
 
     this.input.keyboard.once('keydown-SPACE', doTransition)
