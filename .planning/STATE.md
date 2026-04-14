@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.0
-milestone_name: mini-game-anthology
-status: ready_to_plan
-stopped_at: "v2.0 roadmap created — 8 phases, 59 requirements mapped"
-last_updated: "2026-04-14T00:00:00.000Z"
+milestone_name: Eight phases that pivot from the v1.0 platformer to a Lumosity-style anthology of 5 distinct mini-games. Phase 1 cleans up v1 debris and extends the inherited infrastructure. Phase 2 builds the opening cinematic, name personalization, level-select hub, and scoring framework — the spine of the experience. Phases 3-7 each deliver one complete mini-game with its own visual identity and skill payoff. Phase 8 ships to Vercel.
+status: planning
+stopped_at: "v2.0 roadmap written — ready to run /gsd:plan-phase 1"
+last_updated: "2026-04-14T14:30:25.130Z"
 last_activity: 2026-04-14
 progress:
   total_phases: 8
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 5
+  total_plans: 18
+  completed_plans: 16
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 
 ## Current Position
 
-Phase: 1 of 8 (Infrastructure Cleanup)
+Phase: 02 of 8 (player controller animations)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-04-14 — v2.0 roadmap created, pivot from platformer to mini-game anthology
+Last activity: 2026-04-14
 
 Progress: [░░░░░░░░░░] 0%
 
