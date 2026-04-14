@@ -42,7 +42,7 @@ const LEVELS = [
     title: 'Agency Factory',
     subtitle: 'n8n routing + debug',
     teaser: 'Build it. Break it. Fix it.',
-    sceneKey: null,  // Phase 6
+    sceneKey: 'AgencyFactoryScene',
     scoreKey: KEYS.SCORE_L4,
     completedKey: KEYS.COMPLETED_L4,
     color: 0x2ecc71,      // terminal green (Agency)
