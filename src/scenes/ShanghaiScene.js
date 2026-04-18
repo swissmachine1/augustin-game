@@ -1,6 +1,8 @@
 import * as Phaser from 'phaser'
 import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
+import { COLORS, TEXT, C } from '../config/theme.js'
+import { JournalUI } from '../ui/JournalUI.js'
 
 // Level 1 — Shanghai: Day-in-the-Life Pivot
 // 3 beats: Morning law class → Afternoon startup weekend → Evening decision.
@@ -17,10 +19,10 @@ export class ShanghaiScene extends Phaser.Scene {
     this._score = 0  // 0-100% based on "curious" choices
     this._playerName = this.registry.get(KEYS.PLAYER_NAME) ?? 'friend'
 
-    // Night sky gradient background (simulated with layered rectangles)
-    this._drawBackground()
+    // Parchment background
+    JournalUI.drawParchment(this, 0, 0, 1280, 720)
 
-    // Shanghai skyline silhouette (pixelated rectangles)
+    // Shanghai skyline silhouette (ink sketch style)
     this._drawSkyline()
 
     // Beat container — all text and choices render here
@@ -30,47 +32,45 @@ export class ShanghaiScene extends Phaser.Scene {
     this._currentBeat = 0
     this._playBeat()
 
+    // Page number
+    JournalUI.drawPageNumber(this, 2)
+
     this.events.once('shutdown', () => {
       this.input.keyboard.removeAllListeners()
     }, this)
-  }
-
-  _drawBackground() {
-    const { width, height } = this.cameras.main
-    // Deep purple-black night
-    this.add.rectangle(width / 2, height / 2, width, height, 0x0a0618)
-
-    // Neon glow bands (distant city light)
-    this.add.rectangle(width / 2, height - 200, width, 200, 0x2a0b3a).setAlpha(0.5)
-    this.add.rectangle(width / 2, height - 100, width, 100, 0x4a1a5a).setAlpha(0.4)
   }
 
   _drawSkyline() {
     const { width, height } = this.cameras.main
     const baseY = height - 60
 
-    // Pixelated building silhouettes — neon edges
+    // Ink-sketch building silhouettes
     const buildings = [
-      { x: 100, w: 60, h: 280, color: 0x1a0a2a, edge: 0xff00ff },
-      { x: 180, w: 40, h: 200, color: 0x1a0a2a, edge: 0x00ffff },
-      { x: 240, w: 80, h: 340, color: 0x1a0a2a, edge: 0xff00aa },
-      { x: 340, w: 50, h: 180, color: 0x1a0a2a, edge: 0x00ff88 },
-      { x: 410, w: 70, h: 260, color: 0x1a0a2a, edge: 0xff6600 },
-      { x: 950, w: 60, h: 220, color: 0x1a0a2a, edge: 0x00ffff },
-      { x: 1030, w: 90, h: 360, color: 0x1a0a2a, edge: 0xff00ff },
-      { x: 1140, w: 50, h: 200, color: 0x1a0a2a, edge: 0x00ff88 },
-      { x: 1210, w: 60, h: 280, color: 0x1a0a2a, edge: 0xffff00 },
+      { x: 100, w: 60, h: 280 },
+      { x: 180, w: 40, h: 200 },
+      { x: 240, w: 80, h: 340 },
+      { x: 340, w: 50, h: 180 },
+      { x: 410, w: 70, h: 260 },
+      { x: 950, w: 60, h: 220 },
+      { x: 1030, w: 90, h: 360 },
+      { x: 1140, w: 50, h: 200 },
+      { x: 1210, w: 60, h: 280 },
     ]
 
+    const g = this.add.graphics()
     buildings.forEach(b => {
-      this.add.rectangle(b.x, baseY - b.h / 2, b.w, b.h, b.color)
-      // Neon edge line at the top
-      this.add.rectangle(b.x, baseY - b.h, b.w, 2, b.edge)
-      // Windows — tiny dots of light
+      // Faded ink silhouette
+      g.fillStyle(C.INK, 0.06)
+      g.fillRect(b.x - b.w / 2, baseY - b.h, b.w, b.h)
+      // Ink outline at top
+      g.lineStyle(0.5, C.INK, 0.15)
+      g.strokeRect(b.x - b.w / 2, baseY - b.h, b.w, b.h)
+      // Window dots — tiny ink marks
       for (let y = 20; y < b.h - 20; y += 18) {
         for (let x = -b.w / 2 + 8; x < b.w / 2 - 4; x += 12) {
           if (Math.random() > 0.4) {
-            this.add.rectangle(b.x + x, baseY - b.h + y, 3, 3, b.edge).setAlpha(0.6)
+            g.fillStyle(C.INK, 0.12)
+            g.fillRect(b.x + x, baseY - b.h + y, 2, 2)
           }
         }
       }
@@ -89,7 +89,7 @@ export class ShanghaiScene extends Phaser.Scene {
   _beatMorning() {
     const { width, height } = this.cameras.main
 
-    this._showBeatLabel('MORNING — Jiao Tong University', '#ff00aa')
+    this._showBeatLabel('MORNING — Jiao Tong University')
 
     this._showNarration(
       `You're in a lecture hall.\nInternational commercial law.\nRow 4. Back left. Exit in sight.`,
@@ -118,7 +118,7 @@ export class ShanghaiScene extends Phaser.Scene {
   _beatAfternoon() {
     const { width, height } = this.cameras.main
 
-    this._showBeatLabel('AFTERNOON — Xintiandi Startup Weekend', '#00ffff')
+    this._showBeatLabel('AFTERNOON — Xintiandi Startup Weekend')
 
     this._showNarration(
       `A friend dragged you here.\n54 hours. Strangers. An idea.\nThe pitch round starts in 20 minutes.`,
@@ -147,7 +147,7 @@ export class ShanghaiScene extends Phaser.Scene {
   _beatEvening() {
     const { width, height } = this.cameras.main
 
-    this._showBeatLabel('EVENING — 2am, Your dorm', '#00ff88')
+    this._showBeatLabel('EVENING — 2am, Your dorm')
 
     this._showNarration(
       `The weekend ended four hours ago.\nYour team didn't win. Didn't come close.\nBut something clicked.`,
@@ -168,12 +168,10 @@ export class ShanghaiScene extends Phaser.Scene {
     ])
   }
 
-  _showBeatLabel(text, color) {
+  _showBeatLabel(text) {
     const { width } = this.cameras.main
     const label = this.add.text(width / 2, 80, text, {
-      fontFamily: 'monospace',
-      fontSize: '18px',
-      color,
+      ...TEXT.heading,
       fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0)
     this._beatContainer.add(label)
@@ -183,9 +181,8 @@ export class ShanghaiScene extends Phaser.Scene {
 
   _showNarration(text, x, y) {
     const narration = this.add.text(x, y, text, {
-      fontFamily: 'monospace',
-      fontSize: '22px',
-      color: '#e8e8f0',
+      ...TEXT.chapter,
+      fontSize: '20px',
       align: 'center',
       lineSpacing: 10,
     }).setOrigin(0.5).setAlpha(0)
@@ -200,15 +197,14 @@ export class ShanghaiScene extends Phaser.Scene {
 
     choices.forEach((choice, i) => {
       const y = startY + i * spacing
-      const bg = this.add.rectangle(width / 2, y, 720, 40, 0x1a1a2a, 0.85)
-        .setStrokeStyle(1, 0x444466)
+      const bg = this.add.rectangle(width / 2, y, 720, 40, C.PARCHMENT_DARK, 0.6)
+        .setStrokeStyle(0.5, C.INK, 0.3)
         .setInteractive({ useHandCursor: true })
         .setAlpha(0)
 
       const txt = this.add.text(width / 2, y, choice.text, {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#aaaacc',
+        ...TEXT.body,
+        fontSize: '15px',
       }).setOrigin(0.5).setAlpha(0)
 
       this._beatContainer.add([bg, txt])
@@ -217,12 +213,14 @@ export class ShanghaiScene extends Phaser.Scene {
       this.tweens.add({ targets: [bg, txt], alpha: 1, duration: 400, delay: 700 + i * 150 })
 
       bg.on('pointerover', () => {
-        bg.setStrokeStyle(2, 0x00ff88)
-        txt.setColor('#ffffff')
+        bg.setStrokeStyle(1.5, C.INK, 0.6)
+        txt.setColor(COLORS.INK)
+        txt.setFontStyle('bold')
       })
       bg.on('pointerout', () => {
-        bg.setStrokeStyle(1, 0x444466)
-        txt.setColor('#aaaacc')
+        bg.setStrokeStyle(0.5, C.INK, 0.3)
+        txt.setColor(COLORS.INK)
+        txt.setFontStyle('')
       })
       bg.on('pointerdown', () => this._handleChoice(choice))
     })
@@ -240,11 +238,10 @@ export class ShanghaiScene extends Phaser.Scene {
 
     // Show feedback text
     const feedback = this.add.text(width / 2, height - 120, choice.feedback, {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#00ff88',
+      ...TEXT.bodyItalic,
+      fontSize: '15px',
+      color: COLORS.INK_LIGHT,
       align: 'center',
-      fontStyle: 'italic',
       wordWrap: { width: width - 100 },
     }).setOrigin(0.5).setAlpha(0)
     this._beatContainer.add(feedback)
@@ -280,57 +277,51 @@ export class ShanghaiScene extends Phaser.Scene {
     // Mark level complete + save
     completeLevel(this, KEYS.SCORE_L1, KEYS.COMPLETED_L1, finalScore)
 
-    // Show pivot reveal screen
-    this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85)
+    // Show pivot reveal screen — parchment overlay
+    this.add.rectangle(width / 2, height / 2, width, height, C.PARCHMENT, 0.92)
 
     this.add.text(width / 2, 200, 'THE PIVOT', {
-      fontFamily: 'monospace',
+      ...TEXT.title,
       fontSize: '36px',
-      color: '#00ff88',
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
     this.add.text(width / 2, 280,
       `Six months later, ${this._playerName},\nAugustin walked out of the law program.\nHe never looked back.`,
       {
-        fontFamily: 'monospace',
-        fontSize: '22px',
-        color: '#ffffff',
+        ...TEXT.chapter,
+        fontSize: '20px',
         align: 'center',
         lineSpacing: 10,
       }
     ).setOrigin(0.5)
 
     this.add.text(width / 2, 430, `+${gain} Curiosity`, {
-      fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#f1c40f',
-      fontStyle: 'bold',
+      ...TEXT.stamp,
+      fontSize: '22px',
+      color: COLORS.STAMP_GREEN,
     }).setOrigin(0.5)
 
     this.add.text(width / 2, 480, `Score: ${finalScore}%`, {
-      fontFamily: 'monospace',
-      fontSize: '18px',
-      color: '#888899',
+      ...TEXT.body,
+      fontSize: '16px',
+      color: COLORS.INK_FADED,
     }).setOrigin(0.5)
 
     // Vignette teaser
     this.add.text(width / 2, 560,
       `"A year later, Switzerland gets boring.\nYou buy a one-way ticket to Medellín..."`,
       {
-        fontFamily: 'monospace',
+        ...TEXT.prompt,
         fontSize: '14px',
-        color: '#666677',
         align: 'center',
-        fontStyle: 'italic',
         lineSpacing: 6,
       }
     ).setOrigin(0.5)
 
     this.add.text(width / 2, 650, 'PRESS SPACE to return to the hub', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#444455',
+      ...TEXT.small,
+      color: COLORS.INK_FADED,
     }).setOrigin(0.5)
 
     // Auto-advance after 8s, or SPACE to skip

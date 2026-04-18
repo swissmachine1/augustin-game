@@ -1,63 +1,43 @@
 import * as Phaser from 'phaser'
 import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
+import { COLORS, TEXT, C } from '../config/theme.js'
+import { JournalUI } from '../ui/JournalUI.js'
 
-// Level definitions — scene keys will be added in later phases.
-// For now only tiles render; "Coming soon" placeholder scenes don't exist yet.
 const LEVELS = [
   {
-    num: 1,
-    title: 'Shanghai',
-    subtitle: 'Day-in-the-life pivot',
-    teaser: 'A law student has an aha moment',
+    num: 1, title: 'Shanghai', subtitle: 'The Spark',
+    teaser: '"Something clicked that weekend."',
     sceneKey: 'ShanghaiScene',
-    scoreKey: KEYS.SCORE_L1,
-    completedKey: KEYS.COMPLETED_L1,
-    color: 0xe74c3c,      // neon red (pixel Shanghai)
-    teaserColor: '#ff6677',
+    scoreKey: KEYS.SCORE_L1, completedKey: KEYS.COMPLETED_L1,
+    stampColor: C.STAMP_BLUE, year: 2014,
   },
   {
-    num: 2,
-    title: 'Latin America',
-    subtitle: 'Network builder',
-    teaser: 'Zero to $1M ARR across 11 countries',
+    num: 2, title: 'Latin America', subtitle: 'The Network',
+    teaser: '"Zero to $1M, one doctor at a time."',
     sceneKey: 'LatinAmericaScene',
-    scoreKey: KEYS.SCORE_L2,
-    completedKey: KEYS.COMPLETED_L2,
-    color: 0xe67e22,      // warm orange (vector LatAm)
-    teaserColor: '#ffaa66',
+    scoreKey: KEYS.SCORE_L2, completedKey: KEYS.COMPLETED_L2,
+    stampColor: C.STAMP_GREEN, year: 2019,
   },
   {
-    num: 3,
-    title: 'Greenland',
-    subtitle: 'Storm survival',
-    teaser: 'Endurance at the edge of the world',
+    num: 3, title: 'Greenland', subtitle: 'The Storm',
+    teaser: '"Endurance at the edge of the world."',
     sceneKey: 'GreenlandScene',
-    scoreKey: KEYS.SCORE_L3,
-    completedKey: KEYS.COMPLETED_L3,
-    color: 0x5dade2,      // ice blue (white/blue Greenland)
-    teaserColor: '#aaccee',
+    scoreKey: KEYS.SCORE_L3, completedKey: KEYS.COMPLETED_L3,
+    stampColor: C.STAMP_BLUE, year: 2007,
   },
   {
-    num: 4,
-    title: 'Agency Factory',
-    subtitle: 'n8n routing + debug',
-    teaser: 'Build it. Break it. Fix it.',
+    num: 4, title: 'Agency Factory', subtitle: 'The Machine',
+    teaser: '"Build it. Break it. Fix it."',
     sceneKey: 'AgencyFactoryScene',
-    scoreKey: KEYS.SCORE_L4,
-    completedKey: KEYS.COMPLETED_L4,
-    color: 0x2ecc71,      // terminal green (Agency)
-    teaserColor: '#66ffaa',
+    scoreKey: KEYS.SCORE_L4, completedKey: KEYS.COMPLETED_L4,
+    stampColor: C.STAMP_GREEN, year: 2023,
   },
   {
-    num: 5,
-    title: 'Interview Room',
-    subtitle: 'Defend your CV',
-    teaser: 'Everything you earned. Now use it.',
+    num: 5, title: 'Interview Room', subtitle: 'The Proof',
+    teaser: '"Everything you earned. Now defend it."',
     sceneKey: 'InterviewRoomScene',
-    scoreKey: KEYS.SCORE_L5,
-    completedKey: KEYS.COMPLETED_L5,
-    color: 0xecf0f1,      // clean white (office)
-    teaserColor: '#ffffff',
+    scoreKey: KEYS.SCORE_L5, completedKey: KEYS.COMPLETED_L5,
+    stampColor: C.RED_MARGIN, year: 2026,
   },
 ]
 
@@ -68,151 +48,117 @@ export class LevelSelectHub extends Phaser.Scene {
 
   create() {
     const { width, height } = this.cameras.main
-
-    this.cameras.main.fadeIn(400, 0, 0, 0)
+    this.cameras.main.fadeIn(400, 244, 232, 208)
 
     const playerName = this.registry.get(KEYS.PLAYER_NAME) ?? 'friend'
 
-    // Header
-    this.add.text(width / 2, 60, `Welcome, ${playerName}.`, {
-      fontFamily: 'monospace',
-      fontSize: '28px',
-      color: '#00ff88',
-      fontStyle: 'bold',
-    }).setOrigin(0.5)
+    // Parchment background
+    JournalUI.drawParchment(this, 0, 0, width, height)
 
-    this.add.text(width / 2, 98, 'Choose a chapter. Each level is a different game.', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#8888aa',
-    }).setOrigin(0.5)
+    // Page header
+    this.add.text(140, 40, 'Table of Contents', TEXT.title).setOrigin(0)
 
-    // Tile grid — 5 tiles, centered
-    const tileW = 220
-    const tileH = 320
-    const gap = 16
-    const totalW = 5 * tileW + 4 * gap
-    const startX = (width - totalW) / 2 + tileW / 2
-    const tileY = height / 2 + 20
+    const g = this.add.graphics()
+    g.lineStyle(0.5, C.INK, 0.3)
+    g.beginPath()
+    g.moveTo(140, 72)
+    g.lineTo(500, 72)
+    g.strokePath()
+
+    this.add.text(140, 82, `${playerName}'s expedition journal`, TEXT.bodyItalic)
+
+    // Compass rose (top right)
+    JournalUI.drawCompass(this, width - 80, 70, 30)
+
+    // Page number
+    JournalUI.drawPageNumber(this, 1)
+
+    // Level entries — styled as chapter listings
+    const startY = 140
+    const spacing = 100
 
     LEVELS.forEach((level, i) => {
-      const x = startX + i * (tileW + gap)
-      this._createTile(x, tileY, tileW, tileH, level)
+      this._drawChapterEntry(level, 140, startY + i * spacing, width - 200)
     })
 
     // Footer
-    this.add.text(width / 2, height - 30, 'replay unlocked levels to improve your score', {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color: '#444455',
-      fontStyle: 'italic',
+    this.add.text(width / 2, height - 25, 'Click a chapter to begin. Replay to improve your score.', {
+      ...TEXT.label,
+      fontSize: '9px',
     }).setOrigin(0.5)
 
     this.events.once('shutdown', () => {}, this)
   }
 
-  _createTile(x, y, w, h, level) {
+  _drawChapterEntry(level, x, y, w) {
     const completed = this.registry.get(level.completedKey) === true
     const score = this.registry.get(level.scoreKey) ?? 0
-    const playable = level.sceneKey !== null
 
-    // Tile background
-    const bg = this.add.rectangle(x, y, w, h, completed ? 0x1a2a1a : 0x16161e)
-    bg.setStrokeStyle(2, completed ? level.color : 0x333344)
-    bg.setInteractive({ useHandCursor: playable })
+    // Chapter number + title
+    const chapterText = `Chapter ${level.num}. ${level.title}`
+    const titleT = this.add.text(x, y, chapterText, {
+      ...TEXT.heading,
+      fontSize: '18px',
+      color: completed ? COLORS.INK : COLORS.INK_LIGHT,
+    })
 
-    // Tile number
-    this.add.text(x, y - h / 2 + 28, `LEVEL ${level.num}`, {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#666677',
-    }).setOrigin(0.5)
+    // Dotted line from title to page number
+    const dots = this.add.graphics()
+    dots.lineStyle(0.3, C.INK_FADED, 0.4)
+    const titleEnd = x + titleT.width + 10
+    const lineEnd = x + w - 50
+    for (let dx = titleEnd; dx < lineEnd; dx += 6) {
+      dots.fillStyle(C.INK_FADED, 0.4)
+      dots.fillCircle(dx, y + 12, 0.5)
+    }
 
-    // Color accent strip (top)
-    this.add.rectangle(x, y - h / 2 + 52, w - 40, 3, level.color).setOrigin(0.5)
-
-    // Title
-    this.add.text(x, y - 60, level.title, {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: completed ? '#ffffff' : level.teaserColor,
-      fontStyle: 'bold',
-    }).setOrigin(0.5)
+    // "Page" number on right
+    this.add.text(x + w - 20, y, `p. ${level.num * 2}`, TEXT.pageNum).setOrigin(1, 0)
 
     // Subtitle
-    this.add.text(x, y - 30, level.subtitle, {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#888899',
-    }).setOrigin(0.5)
+    this.add.text(x + 20, y + 26, `— ${level.subtitle}`, TEXT.bodyItalic)
 
-    // Cryptic teaser (dim if not completed, bright if completed)
-    this.add.text(x, y + 10, level.teaser, {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color: completed ? '#aaaaaa' : '#555566',
-      fontStyle: 'italic',
-      align: 'center',
-      wordWrap: { width: w - 30 },
-    }).setOrigin(0.5)
-
-    // Silhouette or score display
+    // Teaser quote or score
     if (completed) {
-      this.add.text(x, y + 80, `SCORE: ${Math.round(score)}%`, {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#f1c40f',
-        fontStyle: 'bold',
-      }).setOrigin(0.5)
+      this.add.text(x + 20, y + 48, `Score: ${Math.round(score)}%`, {
+        ...TEXT.body,
+        color: COLORS.STAMP_GREEN,
+      })
 
-      this.add.text(x, y + h / 2 - 40, playable ? 'CLICK TO REPLAY' : 'COMING SOON', {
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        color: playable ? '#00ff88' : '#444455',
-      }).setOrigin(0.5)
+      // Small passport stamp
+      JournalUI.drawPassportStamp(this, x + w - 60, y + 30, level.title, level.year, -5 + Math.random() * 10)
     } else {
-      // Silhouette ? marker
-      this.add.text(x, y + 80, '?', {
-        fontFamily: 'monospace',
-        fontSize: '48px',
-        color: '#333344',
-      }).setOrigin(0.5)
-
-      this.add.text(x, y + h / 2 - 40, playable ? 'CLICK TO PLAY' : 'COMING SOON', {
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        color: playable ? '#00ff88' : '#444455',
-      }).setOrigin(0.5)
+      this.add.text(x + 20, y + 48, level.teaser, {
+        ...TEXT.label,
+        fontSize: '10px',
+        fontStyle: 'italic',
+      })
     }
 
-    // Hover / click handlers
-    if (playable) {
-      bg.on('pointerover', () => {
-        bg.setStrokeStyle(3, level.color)
-        bg.setFillStyle(completed ? 0x2a3a2a : 0x1e1e28)
-      })
-      bg.on('pointerout', () => {
-        bg.setStrokeStyle(2, completed ? level.color : 0x333344)
-        bg.setFillStyle(completed ? 0x1a2a1a : 0x16161e)
-      })
-      bg.on('pointerdown', () => this._launchLevel(level))
-    }
+    // Clickable hit area (invisible rect over the chapter entry)
+    const hitArea = this.add.rectangle(x + w / 2, y + 32, w, 70, 0x000000, 0)
+    hitArea.setInteractive({ useHandCursor: true })
+
+    hitArea.on('pointerover', () => {
+      titleT.setColor(COLORS.RED_MARGIN)
+    })
+    hitArea.on('pointerout', () => {
+      titleT.setColor(completed ? COLORS.INK : COLORS.INK_LIGHT)
+    })
+    hitArea.on('pointerdown', () => this._launchLevel(level))
   }
 
   _launchLevel(level) {
     if (!level.sceneKey) return
-    this.cameras.main.fadeOut(400, 0, 0, 0)
+    this.cameras.main.fadeOut(400, 244, 232, 208)
     this.time.delayedCall(420, () => {
       this.scene.start(level.sceneKey)
     })
   }
 }
 
-// Helper for level scenes to call when they complete — writes score,
-// marks completed, saves to localStorage, returns to hub.
 export function completeLevel(scene, scoreKey, completedKey, newScore) {
   const previous = scene.registry.get(scoreKey) ?? 0
-  // Keep higher score (replay policy)
   if (newScore > previous) {
     scene.registry.set(scoreKey, newScore)
   }

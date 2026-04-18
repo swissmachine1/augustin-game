@@ -1,8 +1,10 @@
 import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
+import { COLORS, TEXT, C } from '../config/theme.js'
+import { JournalUI } from '../ui/JournalUI.js'
 
-// Gritty text-reveal cinematic. Personalized with PLAYER_NAME.
-// Sequence of beats, each fades in, holds, fades out. Space/click skips.
+// Opening cinematic — handwritten journal entries appearing on parchment.
+// Each beat is a line of ink appearing on the page. Personal, intimate.
 export class OpeningCinematicScene extends Phaser.Scene {
   constructor() {
     super('OpeningCinematicScene')
@@ -10,45 +12,41 @@ export class OpeningCinematicScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.cameras.main
+    this.cameras.main.fadeIn(600, 58, 34, 16)
+
     const name = this.registry.get(KEYS.PLAYER_NAME) ?? 'friend'
 
-    this.cameras.main.fadeIn(500, 0, 0, 0)
+    // Parchment page
+    JournalUI.drawParchment(this, 0, 0, width, height)
+    JournalUI.drawPageNumber(this, 0)
 
-    // Narrative beats — personalized with name
+    // Beats — each appears as a handwritten line on the page
     this._beats = [
-      `Hey ${name}.`,
-      `2014. Shanghai.`,
-      `20 years old. Finishing a law degree I no longer want.`,
-      `Don't speak Mandarin. Don't know anyone.`,
-      `One bag. Three months. One ticket home.`,
-      ``,
-      `What you're about to play is 10 years\nof my career compressed into 5 mini-games.`,
-      `Each one tests a skill I had to build from zero.`,
-      ``,
-      `Beat level 5, ${name},\nand you'll know why you should hire me.`,
+      { text: `Dear ${name},`,                                          y: 120, style: 'bodyItalic' },
+      { text: '2014. Shanghai.',                                        y: 170, style: 'heading' },
+      { text: 'I am twenty years old and finishing a law degree',        y: 220, style: 'body' },
+      { text: 'I no longer want.',                                      y: 250, style: 'bodyItalic' },
+      { text: '',                                                       y: 280 },
+      { text: 'What follows are five chapters',                         y: 310, style: 'body' },
+      { text: 'from a decade of expeditions.',                          y: 340, style: 'body' },
+      { text: '',                                                       y: 370 },
+      { text: 'Each one tested a skill',                                y: 400, style: 'body' },
+      { text: 'I had to build from zero.',                              y: 430, style: 'bodyItalic' },
+      { text: '',                                                       y: 460 },
+      { text: `Finish all five, ${name},`,                              y: 510, style: 'body' },
+      { text: 'and you will know why you should hire me.',              y: 540, style: 'bodyItalic' },
     ]
 
     this._currentBeat = 0
-    this._beatText = this.add.text(width / 2, height / 2, '', {
-      fontFamily: 'monospace',
-      fontSize: '28px',
-      color: '#e8e8f0',
-      align: 'center',
-      lineSpacing: 12,
-      wordWrap: { width: width - 120 },
-    }).setOrigin(0.5).setAlpha(0)
+    this._marginX = 140  // text starts after the red margin line
 
-    // Skip prompt (bottom)
-    this.add.text(width / 2, height - 30, 'press SPACE to skip', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#444455',
-    }).setOrigin(0.5)
+    // Skip prompt
+    this.add.text(width - 40, height - 20, 'SPACE to skip', {
+      ...TEXT.label,
+      fontSize: '8px',
+    }).setOrigin(1, 1)
 
-    // Skip on any space press
     this.input.keyboard.once('keydown-SPACE', () => this._finish())
-
-    // Start the sequence
     this._playNextBeat()
 
     this.events.once('shutdown', () => {
@@ -59,38 +57,28 @@ export class OpeningCinematicScene extends Phaser.Scene {
 
   _playNextBeat() {
     if (this._currentBeat >= this._beats.length) {
-      this._finish()
+      this.time.delayedCall(1500, () => this._finish())
       return
     }
 
-    const text = this._beats[this._currentBeat]
+    const beat = this._beats[this._currentBeat]
     this._currentBeat++
 
-    // Empty string = pause beat (just wait, no text)
-    if (text === '') {
-      this._beatTimer = this.time.delayedCall(800, () => this._playNextBeat())
+    if (beat.text === '') {
+      this._beatTimer = this.time.delayedCall(400, () => this._playNextBeat())
       return
     }
 
-    this._beatText.setText(text).setAlpha(0)
+    const style = beat.style ? TEXT[beat.style] : TEXT.body
+    const t = this.add.text(this._marginX, beat.y, beat.text, style).setAlpha(0)
 
-    // Fade in
     this.tweens.add({
-      targets: this._beatText,
+      targets: t,
       alpha: 1,
-      duration: 600,
+      duration: 500,
       onComplete: () => {
-        // Hold based on length (longer text = longer hold)
-        const holdMs = Math.max(1400, text.length * 40)
-        this._beatTimer = this.time.delayedCall(holdMs, () => {
-          // Fade out
-          this.tweens.add({
-            targets: this._beatText,
-            alpha: 0,
-            duration: 500,
-            onComplete: () => this._playNextBeat(),
-          })
-        })
+        const holdMs = Math.max(800, beat.text.length * 30)
+        this._beatTimer = this.time.delayedCall(holdMs, () => this._playNextBeat())
       },
     })
   }
@@ -98,7 +86,7 @@ export class OpeningCinematicScene extends Phaser.Scene {
   _finish() {
     if (this._finishing) return
     this._finishing = true
-    this.cameras.main.fadeOut(500, 0, 0, 0)
+    this.cameras.main.fadeOut(500, 244, 232, 208)  // fade to parchment
     this.time.delayedCall(520, () => {
       this.scene.start('LevelSelectHub')
     })

@@ -1,6 +1,8 @@
 import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
+import { COLORS, TEXT, C, FONT } from '../config/theme.js'
+import { JournalUI } from '../ui/JournalUI.js'
 
 // Level 2 — Latin America: Network Builder
 // Player clicks doctors on a stylized LatAm map. Each trained doctor connects to
@@ -33,9 +35,8 @@ export class LatinAmericaScene extends Phaser.Scene {
     const { width, height } = this.cameras.main
     this.cameras.main.fadeIn(400, 0, 0, 0)
 
-    // Warm vector background — terracotta → sand gradient
-    this.add.rectangle(width / 2, height / 2, width, height, 0x2a1810)
-    this.add.rectangle(width / 2, height / 2, width, height, 0x3a2520).setAlpha(0.5)
+    // Parchment background
+    JournalUI.drawParchment(this, 0, 0, 1280, 720)
 
     this._playerName = this.registry.get(KEYS.PLAYER_NAME) ?? 'friend'
     this._startTime = this.time.now
@@ -54,6 +55,9 @@ export class LatinAmericaScene extends Phaser.Scene {
     this._spawnInitialDoctors()
     this._drawIntro()
 
+    // Page number
+    JournalUI.drawPageNumber(this, 4)
+
     this.events.once('shutdown', () => {
       this.input.keyboard.removeAllListeners()
     }, this)
@@ -61,82 +65,70 @@ export class LatinAmericaScene extends Phaser.Scene {
 
   _drawInfoPanel() {
     const panelX = 900
-    // Panel background
-    this.add.rectangle(panelX + 175, 360, 350, 680, 0x16110a).setStrokeStyle(2, 0x8b6b4a)
+    // Panel background — parchment-dark inset
+    const g = this.add.graphics()
+    g.fillStyle(C.PARCHMENT_DARK, 0.5)
+    g.fillRect(panelX, 20, 350, 680)
+    g.lineStyle(0.5, C.INK, 0.3)
+    g.strokeRect(panelX, 20, 350, 680)
 
     // Title
     this.add.text(panelX + 175, 60, 'LATAM EXPANSION', {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#e67e22',
-      fontStyle: 'bold',
+      ...TEXT.title,
+      color: COLORS.INK,
     }).setOrigin(0.5)
 
     this.add.text(panelX + 175, 90, 'Train Key Opinion Leaders', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#8b6b4a',
+      ...TEXT.label,
     }).setOrigin(0.5)
 
     // ARR ticker
     this.add.text(panelX + 175, 150, 'ARR', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#b88a5a',
+      ...TEXT.body,
+      color: COLORS.INK_LIGHT,
     }).setOrigin(0.5)
 
     this._arrText = this.add.text(panelX + 175, 180, '$0', {
-      fontFamily: 'monospace',
-      fontSize: '32px',
-      color: '#f1c40f',
+      ...TEXT.stat,
+      fontSize: '28px',
+      color: COLORS.LEATHER,
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
     this.add.text(panelX + 175, 220, `Target: $1,000,000`, {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color: '#8b6b4a',
+      ...TEXT.label,
     }).setOrigin(0.5)
 
     // Progress bar
-    this.add.rectangle(panelX + 175, 250, 260, 8, 0x2a1810).setStrokeStyle(1, 0x8b6b4a)
-    this._arrBar = this.add.rectangle(panelX + 45, 250, 0, 6, 0xf1c40f).setOrigin(0, 0.5)
+    this.add.rectangle(panelX + 175, 250, 260, 8, C.PARCHMENT_DARK).setStrokeStyle(0.5, C.INK, 0.3)
+    this._arrBar = this.add.rectangle(panelX + 45, 250, 0, 6, C.LEATHER).setOrigin(0, 0.5)
 
     // Countries counter
     this.add.text(panelX + 175, 300, 'COUNTRIES LIT', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#b88a5a',
+      ...TEXT.label,
     }).setOrigin(0.5)
 
     this._countriesText = this.add.text(panelX + 175, 330, '0 / 11', {
-      fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#e67e22',
-      fontStyle: 'bold',
+      ...TEXT.stat,
+      color: COLORS.INK,
     }).setOrigin(0.5)
 
     // Doctors counter
     this.add.text(panelX + 175, 390, 'DOCTORS TRAINED', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#b88a5a',
+      ...TEXT.label,
     }).setOrigin(0.5)
 
     this._doctorText = this.add.text(panelX + 175, 420, '0', {
-      fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#ecf0f1',
-      fontStyle: 'bold',
+      ...TEXT.stat,
+      color: COLORS.INK,
     }).setOrigin(0.5)
 
     // Instructions
     this.add.text(panelX + 175, 500,
       'Click a pulsing doctor\nto train them.\n\nEach doctor trained\nconnects to 3-5 more.\n\nStar doctors (★) unlock\nentire countries.',
       {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#b88a5a',
+        ...TEXT.body,
+        color: COLORS.INK_LIGHT,
         align: 'center',
         lineSpacing: 8,
       }
@@ -147,11 +139,10 @@ export class LatinAmericaScene extends Phaser.Scene {
     // Dim country labels and hit zones
     this._countryLabels = {}
     COUNTRIES.forEach(c => {
-      const bg = this.add.circle(c.x, c.y, 60, 0x8b6b4a, 0.1)
+      const bg = this.add.circle(c.x, c.y, 60, C.INK_FADED, 0.06)
       const label = this.add.text(c.x, c.y, c.name, {
-        fontFamily: 'monospace',
-        fontSize: '10px',
-        color: '#5a4a3a',
+        ...TEXT.label,
+        color: COLORS.INK_FADED,
       }).setOrigin(0.5)
       this._countryLabels[c.id] = { bg, label }
     })
@@ -162,9 +153,8 @@ export class LatinAmericaScene extends Phaser.Scene {
     const intro = this.add.text(420, 40,
       `No Spanish. No network. No experience.\nClick doctors. Grow the network. Reach $1M.`,
       {
-        fontFamily: 'monospace',
-        fontSize: '13px',
-        color: '#d2b48c',
+        ...TEXT.bodyItalic,
+        color: COLORS.INK_LIGHT,
         align: 'center',
         lineSpacing: 4,
       }
@@ -182,9 +172,9 @@ export class LatinAmericaScene extends Phaser.Scene {
 
   _spawnDoctor(x, y, countryId, influential) {
     const radius = influential ? 14 : 8
-    const color = influential ? 0xf1c40f : 0xecf0f1
+    const color = influential ? C.LEATHER : C.INK
     const node = this.add.circle(x, y, radius, color)
-    node.setStrokeStyle(2, 0xe67e22)
+    node.setStrokeStyle(2, C.RED_MARGIN)
     node.setInteractive({ useHandCursor: true })
 
     // Pulsing effect
@@ -201,9 +191,9 @@ export class LatinAmericaScene extends Phaser.Scene {
     let starLabel = null
     if (influential) {
       starLabel = this.add.text(x, y, '★', {
-        fontFamily: 'monospace',
+        fontFamily: FONT,
         fontSize: '14px',
-        color: '#8b4513',
+        color: COLORS.LEATHER_DARK,
       }).setOrigin(0.5)
     }
 
@@ -229,8 +219,8 @@ export class LatinAmericaScene extends Phaser.Scene {
     // Stop pulse, change appearance — trained doctors are solid
     doctor.pulseTween.stop()
     doctor.node.setScale(1)
-    doctor.node.setFillStyle(0x27ae60)  // green = trained
-    doctor.node.setStrokeStyle(2, 0x1e8449)
+    doctor.node.setFillStyle(C.STAMP_GREEN)  // green = trained
+    doctor.node.setStrokeStyle(2, C.STAMP_GREEN)
     doctor.node.disableInteractive()
 
     this._doctorsTrained++
@@ -280,9 +270,9 @@ export class LatinAmericaScene extends Phaser.Scene {
     const newDoctor = this._spawnDoctor(x, y, country.id, influential)
     newDoctor.node.setAlpha(0)
 
-    // Draw connection line
-    const line = this.add.line(0, 0, fromDoctor.x, fromDoctor.y, x, y, 0x8b6b4a, 0.4)
-    line.setOrigin(0, 0).setLineWidth(1)
+    // Draw connection line (ink style)
+    const line = this.add.line(0, 0, fromDoctor.x, fromDoctor.y, x, y, C.INK_FADED, 0.3)
+    line.setOrigin(0, 0).setLineWidth(0.5)
     this._connections.push(line)
 
     // Fade in new doctor with delay
@@ -319,12 +309,12 @@ export class LatinAmericaScene extends Phaser.Scene {
     const country = COUNTRIES.find(c => c.id === countryId)
     const ui = this._countryLabels[countryId]
     if (ui) {
-      ui.bg.setFillStyle(0xe67e22, 0.3)
+      ui.bg.setFillStyle(C.RED_MARGIN, 0.2)
       ui.bg.setRadius(70)
-      ui.label.setColor('#f1c40f')
+      ui.label.setColor(COLORS.LEATHER)
       ui.label.setFontStyle('bold')
       // Small flash
-      const flash = this.add.circle(country.x, country.y, 80, 0xf1c40f, 0.6)
+      const flash = this.add.circle(country.x, country.y, 80, C.RED_MARGIN, 0.3)
       this.tweens.add({
         targets: flash,
         alpha: 0,
@@ -376,39 +366,36 @@ export class LatinAmericaScene extends Phaser.Scene {
 
     completeLevel(this, KEYS.SCORE_L2, KEYS.COMPLETED_L2, score)
 
-    // Overlay
-    this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85)
+    // Overlay — parchment
+    this.add.rectangle(width / 2, height / 2, width, height, C.PARCHMENT, 0.92)
 
     this.add.text(width / 2, 180, '$1M ARR. 11 COUNTRIES.', {
-      fontFamily: 'monospace',
-      fontSize: '32px',
-      color: '#f1c40f',
+      ...TEXT.title,
+      fontSize: '30px',
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
     this.add.text(width / 2, 260,
       `From zero Spanish to a full-scale LatAm operation.\nOne trained doctor became a thousand.`,
       {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: '#ffffff',
+        ...TEXT.chapter,
+        fontSize: '17px',
         align: 'center',
         lineSpacing: 8,
       }
     ).setOrigin(0.5)
 
     this.add.text(width / 2, 380, `Score: ${score}%`, {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#888899',
+      ...TEXT.body,
+      fontSize: '18px',
+      color: COLORS.INK_FADED,
     }).setOrigin(0.5)
 
     this.add.text(width / 2, 420,
       `+${salesGain} Sales   +${eqGain} EQ   +${gritGain} Grit`,
       {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: '#00ff88',
+        ...TEXT.stamp,
+        fontSize: '16px',
       }
     ).setOrigin(0.5)
 
@@ -416,19 +403,15 @@ export class LatinAmericaScene extends Phaser.Scene {
     this.add.text(width / 2, 540,
       `"Success feels hollow. You need something\nthat actually hurts. You buy a plane ticket north..."`,
       {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#666677',
+        ...TEXT.prompt,
         align: 'center',
-        fontStyle: 'italic',
         lineSpacing: 6,
       }
     ).setOrigin(0.5)
 
     this.add.text(width / 2, 650, 'PRESS SPACE to return to the hub', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#444455',
+      ...TEXT.small,
+      color: COLORS.INK_FADED,
     }).setOrigin(0.5)
 
     const returnToHub = () => {

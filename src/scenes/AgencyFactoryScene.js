@@ -1,11 +1,14 @@
 import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
+import { COLORS, TEXT, C, FONT } from '../config/theme.js'
+import { JournalUI } from '../ui/JournalUI.js'
 
 // Level 4 — Agency Factory: n8n node routing + debug
 // Stage 1: click nodes in correct order to build a lead pipeline
 //   Lead Source → Enrich → Filter → Personalize → Send
 // Stage 2: broken pipeline — click the buggy node from a list of diagnoses
+// Visual: "engineering notebook" — graph paper grid, ink-colored nodes
 
 const NODE_W = 160
 const NODE_H = 70
@@ -14,11 +17,11 @@ const NODE_H = 70
 const PIPELINE_ORDER = ['leadSource', 'enrich', 'filter', 'personalize', 'send']
 
 const NODES = {
-  leadSource:  { label: 'Lead Source',   sub: 'Apollo CSV',       x: 200, y: 280, color: 0x3498db },
-  enrich:      { label: 'Enrich',        sub: 'Clay API',         x: 400, y: 280, color: 0x9b59b6 },
-  filter:      { label: 'Filter',        sub: 'ICP match',        x: 600, y: 280, color: 0xe67e22 },
-  personalize: { label: 'Personalize',   sub: 'AI Snippet',       x: 800, y: 280, color: 0xe91e63 },
-  send:        { label: 'Send',          sub: 'Instantly SMTP',   x: 1000, y: 280, color: 0x27ae60 },
+  leadSource:  { label: 'Lead Source',   sub: 'Apollo CSV',       x: 200, y: 280 },
+  enrich:      { label: 'Enrich',        sub: 'Clay API',         x: 400, y: 280 },
+  filter:      { label: 'Filter',        sub: 'ICP match',        x: 600, y: 280 },
+  personalize: { label: 'Personalize',   sub: 'AI Snippet',       x: 800, y: 280 },
+  send:        { label: 'Send',          sub: 'Instantly SMTP',   x: 1000, y: 280 },
 }
 
 // Stage 2 — the broken campaign. Bug options presented to player.
@@ -46,43 +49,45 @@ export class AgencyFactoryScene extends Phaser.Scene {
     this._stage1NextIndex = 0
     this._stage1Nodes = {}
 
-    // --- Terminal-green background ---
-    this.add.rectangle(width / 2, height / 2, width, height, 0x0a1a10)
+    // --- Parchment background ---
+    JournalUI.drawParchment(this, 0, 0, 1280, 720)
 
-    // Grid backdrop
-    const gridColor = 0x1a3a22
+    // Graph paper grid (engineering notebook style)
+    const gridG = this.add.graphics()
+    gridG.lineStyle(0.3, C.INK_FADED, 0.15)
     for (let x = 0; x < width; x += 40) {
-      this.add.rectangle(x, height / 2, 1, height, gridColor).setAlpha(0.3)
+      gridG.beginPath()
+      gridG.moveTo(x, 0)
+      gridG.lineTo(x, height)
+      gridG.strokePath()
     }
     for (let y = 0; y < height; y += 40) {
-      this.add.rectangle(width / 2, y, width, 1, gridColor).setAlpha(0.3)
-    }
-
-    // CRT-style scanlines overlay
-    for (let y = 0; y < height; y += 4) {
-      this.add.rectangle(width / 2, y, width, 1, 0x000000).setAlpha(0.12)
+      gridG.beginPath()
+      gridG.moveTo(0, y)
+      gridG.lineTo(width, y)
+      gridG.strokePath()
     }
 
     // Header
     this.add.text(width / 2, 40, 'AGENCY FACTORY v2.0', {
-      fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#2ecc71',
+      ...TEXT.title,
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
     this._stageText = this.add.text(width / 2, 75, '', {
-      fontFamily: 'monospace',
+      ...TEXT.heading,
       fontSize: '14px',
-      color: '#66ffaa',
+      color: COLORS.INK_LIGHT,
     }).setOrigin(0.5)
 
     this._instructionText = this.add.text(width / 2, 110, '', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#aaccaa',
+      ...TEXT.body,
+      color: COLORS.INK_LIGHT,
       align: 'center',
     }).setOrigin(0.5)
+
+    // Page number
+    JournalUI.drawPageNumber(this, 8)
 
     // Start with Stage 1
     this._startStage1()
@@ -103,7 +108,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
       'Click the nodes IN THE RIGHT ORDER to wire the campaign.\nStart with the lead source, end with send.'
     )
 
-    // Draw all node boxes (in scrambled visual order initially — actual x/y from NODES config)
+    // Draw all node boxes
     Object.entries(NODES).forEach(([id, def]) => {
       this._createNode(id, def)
     })
@@ -113,30 +118,27 @@ export class AgencyFactoryScene extends Phaser.Scene {
   }
 
   _createNode(id, def) {
-    const bg = this.add.rectangle(def.x, def.y, NODE_W, NODE_H, 0x16211a)
-    bg.setStrokeStyle(2, def.color)
+    const bg = this.add.rectangle(def.x, def.y, NODE_W, NODE_H, C.PARCHMENT_DARK, 0.5)
+    bg.setStrokeStyle(1, C.INK, 0.4)
     bg.setInteractive({ useHandCursor: true })
 
     const label = this.add.text(def.x, def.y - 12, def.label, {
-      fontFamily: 'monospace',
+      ...TEXT.heading,
       fontSize: '14px',
-      color: `#${def.color.toString(16).padStart(6, '0')}`,
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
     const sub = this.add.text(def.x, def.y + 14, def.sub, {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color: '#88aa88',
+      ...TEXT.label,
     }).setOrigin(0.5)
 
     bg.on('pointerover', () => {
       if (this._stage1Nodes[id]?.wired) return
-      bg.setFillStyle(0x1e2e22)
+      bg.setFillStyle(C.PARCHMENT_DARK, 0.8)
     })
     bg.on('pointerout', () => {
       if (this._stage1Nodes[id]?.wired) return
-      bg.setFillStyle(0x16211a)
+      bg.setFillStyle(C.PARCHMENT_DARK, 0.5)
     })
     bg.on('pointerdown', () => this._clickNode(id, def))
 
@@ -150,9 +152,9 @@ export class AgencyFactoryScene extends Phaser.Scene {
       // Wrong click — red flash
       this._stage1Errors++
       this.cameras.main.shake(120, 0.006)
-      this._stage1Nodes[id].bg.setFillStyle(0x4a1a1a)
+      this._stage1Nodes[id].bg.setFillStyle(C.WAX_RED, 0.3)
       this.time.delayedCall(300, () => {
-        if (!this._stage1Nodes[id].wired) this._stage1Nodes[id].bg.setFillStyle(0x16211a)
+        if (!this._stage1Nodes[id].wired) this._stage1Nodes[id].bg.setFillStyle(C.PARCHMENT_DARK, 0.5)
       })
       return
     }
@@ -160,8 +162,8 @@ export class AgencyFactoryScene extends Phaser.Scene {
     // Correct click — mark wired, draw connection
     const node = this._stage1Nodes[id]
     node.wired = true
-    node.bg.setFillStyle(0x1a3a22)
-    node.bg.setStrokeStyle(3, 0x2ecc71)
+    node.bg.setFillStyle(C.PARCHMENT_DARK, 0.8)
+    node.bg.setStrokeStyle(2, C.STAMP_GREEN, 0.7)
     node.bg.disableInteractive()
 
     // Draw connection from previous node
@@ -172,11 +174,11 @@ export class AgencyFactoryScene extends Phaser.Scene {
         0, 0,
         prev.def.x + NODE_W / 2, prev.def.y,
         def.x - NODE_W / 2, def.y,
-        0x2ecc71
-      ).setOrigin(0, 0).setLineWidth(3)
+        C.INK
+      ).setOrigin(0, 0).setLineWidth(1.5)
       // Arrow tip
-      const arrow = this.add.text(def.x - NODE_W / 2 - 6, def.y, '▶', {
-        fontFamily: 'monospace', fontSize: '14px', color: '#2ecc71',
+      const arrow = this.add.text(def.x - NODE_W / 2 - 6, def.y, '\u25B6', {
+        fontFamily: FONT, fontSize: '14px', color: COLORS.INK,
       }).setOrigin(0.5)
       this._stage1Connections.push(line, arrow)
     }
@@ -193,7 +195,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
     this._stage1Duration = (this.time.now - this._stage1Start) / 1000
 
     // Celebrate
-    const flash = this.add.rectangle(640, 280, 900, 100, 0x2ecc71, 0.2)
+    const flash = this.add.rectangle(640, 280, 900, 100, C.STAMP_GREEN, 0.1)
     this.tweens.add({
       targets: flash,
       alpha: 0,
@@ -201,10 +203,9 @@ export class AgencyFactoryScene extends Phaser.Scene {
       onComplete: () => flash.destroy(),
     })
 
-    const complete = this.add.text(640, 420, '✓ PIPELINE WIRED', {
-      fontFamily: 'monospace',
-      fontSize: '22px',
-      color: '#2ecc71',
+    const complete = this.add.text(640, 420, '\u2713 PIPELINE WIRED', {
+      ...TEXT.stamp,
+      fontSize: '20px',
       fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0)
 
@@ -225,7 +226,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
       n.sub.destroy()
     })
     this._stage1Connections.forEach(c => c.destroy())
-    this.children.list.filter(c => c.text === '✓ PIPELINE WIRED').forEach(c => c.destroy())
+    this.children.list.filter(c => c.text === '\u2713 PIPELINE WIRED').forEach(c => c.destroy())
 
     this._stage = 2
     this._stage2Start = this.time.now
@@ -237,19 +238,18 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     // Campaign metrics (visual context)
     const metricsY = 190
-    this._drawMetricRow(200, metricsY, 'OPEN RATE',     '41%',  0x2ecc71)
-    this._drawMetricRow(200, metricsY + 40, 'CLICK RATE', '3.2%', 0x2ecc71)
-    this._drawMetricRow(200, metricsY + 80, 'REPLY RATE', '0.3%', 0xe74c3c)
-    this._drawMetricRow(200, metricsY + 120, 'BOUNCE',    '1.1%', 0x2ecc71)
-    this._drawMetricRow(200, metricsY + 160, 'SPAM',      '0.4%', 0x2ecc71)
+    this._drawMetricRow(200, metricsY, 'OPEN RATE',     '41%',  false)
+    this._drawMetricRow(200, metricsY + 40, 'CLICK RATE', '3.2%', false)
+    this._drawMetricRow(200, metricsY + 80, 'REPLY RATE', '0.3%', true)
+    this._drawMetricRow(200, metricsY + 120, 'BOUNCE',    '1.1%', false)
+    this._drawMetricRow(200, metricsY + 160, 'SPAM',      '0.4%', false)
 
     // Context hint
     this.add.text(540, metricsY + 80,
-      '↑ Replies collapsed.\n   Not deliverability.\n   Not volume.\n   Look at who you\'re sending to.',
+      '\u2191 Replies collapsed.\n   Not deliverability.\n   Not volume.\n   Look at who you\'re sending to.',
       {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#ff8888',
+        ...TEXT.bodyItalic,
+        color: COLORS.WAX_RED,
         lineSpacing: 4,
       }
     )
@@ -261,35 +261,38 @@ export class AgencyFactoryScene extends Phaser.Scene {
     })
   }
 
-  _drawMetricRow(x, y, label, value, color) {
+  _drawMetricRow(x, y, label, value, isAlert) {
     this.add.text(x, y, label, {
-      fontFamily: 'monospace', fontSize: '13px', color: '#66aa88',
+      ...TEXT.body,
+      color: COLORS.INK_LIGHT,
     })
     this.add.text(x + 160, y, value, {
-      fontFamily: 'monospace', fontSize: '16px',
-      color: `#${color.toString(16).padStart(6, '0')}`,
+      ...TEXT.heading,
+      fontSize: '15px',
+      color: isAlert ? COLORS.WAX_RED : COLORS.STAMP_GREEN,
       fontStyle: 'bold',
     })
   }
 
   _drawBugOption(opt, x, y) {
-    const bg = this.add.rectangle(x, y, 720, 36, 0x16211a).setStrokeStyle(1, 0x2ecc71)
+    const bg = this.add.rectangle(x, y, 720, 36, C.PARCHMENT_DARK, 0.4).setStrokeStyle(0.5, C.INK, 0.3)
     bg.setInteractive({ useHandCursor: true })
 
     const txt = this.add.text(x - 340, y, opt.text, {
-      fontFamily: 'monospace', fontSize: '13px', color: '#aaccaa',
+      ...TEXT.body,
+      color: COLORS.INK_LIGHT,
     }).setOrigin(0, 0.5)
 
     bg.on('pointerover', () => {
-      bg.setFillStyle(0x1e2e22)
-      bg.setStrokeStyle(2, 0x66ffaa)
-      txt.setColor('#ffffff')
+      bg.setFillStyle(C.PARCHMENT_DARK, 0.7)
+      bg.setStrokeStyle(1, C.INK, 0.5)
+      txt.setColor(COLORS.INK)
     })
     bg.on('pointerout', () => {
       if (bg._locked) return
-      bg.setFillStyle(0x16211a)
-      bg.setStrokeStyle(1, 0x2ecc71)
-      txt.setColor('#aaccaa')
+      bg.setFillStyle(C.PARCHMENT_DARK, 0.4)
+      bg.setStrokeStyle(0.5, C.INK, 0.3)
+      txt.setColor(COLORS.INK_LIGHT)
     })
     bg.on('pointerdown', () => this._clickBug(opt, bg, txt))
   }
@@ -299,21 +302,21 @@ export class AgencyFactoryScene extends Phaser.Scene {
     if (!opt.correct) {
       this._stage2Errors++
       this.cameras.main.shake(120, 0.006)
-      bg.setFillStyle(0x4a1a1a)
-      bg.setStrokeStyle(2, 0xe74c3c)
-      txt.setColor('#ff6666')
+      bg.setFillStyle(C.WAX_RED, 0.15)
+      bg.setStrokeStyle(1, C.WAX_RED, 0.5)
+      txt.setColor(COLORS.WAX_RED)
       bg._locked = true
       // Cross it out effect
-      this.add.text(bg.x - 340, bg.y, '✗ ' + opt.text, {
-        fontFamily: 'monospace', fontSize: '13px', color: '#ff6666',
+      this.add.text(bg.x - 340, bg.y, '\u2717 ' + opt.text, {
+        fontFamily: FONT, fontSize: '13px', color: COLORS.WAX_RED,
       }).setOrigin(0, 0.5)
       return
     }
 
     // Correct!
-    bg.setFillStyle(0x1a3a22)
-    bg.setStrokeStyle(3, 0x2ecc71)
-    txt.setColor('#2ecc71')
+    bg.setFillStyle(C.PARCHMENT_DARK, 0.8)
+    bg.setStrokeStyle(2, C.STAMP_GREEN, 0.7)
+    txt.setColor(COLORS.STAMP_GREEN)
     bg._locked = true
 
     this.time.delayedCall(800, () => this._finish())
@@ -341,48 +344,47 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     completeLevel(this, KEYS.SCORE_L4, KEYS.COMPLETED_L4, score)
 
-    this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.88)
+    this.add.rectangle(width / 2, height / 2, width, height, C.PARCHMENT, 0.92)
 
     this.add.text(width / 2, 180, 'CAMPAIGN FIXED.', {
-      fontFamily: 'monospace',
-      fontSize: '32px',
-      color: '#2ecc71',
+      ...TEXT.title,
+      fontSize: '30px',
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
     this.add.text(width / 2, 260,
       `Build it. Break it. Fix it.\nThat's what the agency years taught you.`,
       {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: '#ffffff',
+        ...TEXT.chapter,
+        fontSize: '17px',
         align: 'center',
         lineSpacing: 8,
       }
     ).setOrigin(0.5)
 
     this.add.text(width / 2, 380, `Score: ${score}%`, {
-      fontFamily: 'monospace', fontSize: '20px', color: '#888899',
+      ...TEXT.body,
+      fontSize: '18px',
+      color: COLORS.INK_FADED,
     }).setOrigin(0.5)
 
     this.add.text(width / 2, 420, `+${techGain} Tech`, {
-      fontFamily: 'monospace', fontSize: '18px', color: '#00ff88',
+      ...TEXT.stamp,
+      fontSize: '16px',
     }).setOrigin(0.5)
 
     this.add.text(width / 2, 540,
       `"You could keep running the agency.\nBut you want to build, not manage..."`,
       {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#666677',
+        ...TEXT.prompt,
         align: 'center',
-        fontStyle: 'italic',
         lineSpacing: 6,
       }
     ).setOrigin(0.5)
 
     this.add.text(width / 2, 650, 'PRESS SPACE to return to the hub', {
-      fontFamily: 'monospace', fontSize: '12px', color: '#444455',
+      ...TEXT.small,
+      color: COLORS.INK_FADED,
     }).setOrigin(0.5)
 
     const returnToHub = () => {

@@ -1,5 +1,7 @@
 import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
+import { COLORS, TEXT, C } from '../config/theme.js'
+import { JournalUI } from '../ui/JournalUI.js'
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -9,53 +11,76 @@ export class TitleScene extends Phaser.Scene {
   create() {
     const { width, height } = this.cameras.main
 
+    // Leather book cover
+    JournalUI.drawLeatherCover(this, 0, 0, width, height)
+
     // Title
-    this.add.text(width / 2, height / 2 - 120, 'THE AUGUSTIN FILES', {
-      fontFamily: 'monospace',
-      fontSize: '48px',
-      color: '#00ff88',
-      fontStyle: 'bold',
+    this.add.text(width / 2, 180, 'The Augustin Files', {
+      ...TEXT.title,
+      fontSize: '36px',
+      color: COLORS.PARCHMENT,
     }).setOrigin(0.5)
+
+    // Decorative line beneath title
+    const g = this.add.graphics()
+    g.lineStyle(0.5, C.PARCHMENT_DARK, 0.6)
+    g.beginPath()
+    g.moveTo(width / 2 - 140, 210)
+    // Slight curve
+    g.lineTo(width / 2 - 40, 212)
+    g.lineTo(width / 2, 208)
+    g.lineTo(width / 2 + 40, 212)
+    g.lineTo(width / 2 + 140, 210)
+    g.strokePath()
 
     // Subtitle
-    this.add.text(width / 2, height / 2 - 60, '5 career chapters. 5 mini-games.', {
-      fontFamily: 'monospace',
-      fontSize: '18px',
-      color: '#8888aa',
+    this.add.text(width / 2, 240, 'Field journal of a go-to-market expedition', {
+      ...TEXT.bodyItalic,
+      fontSize: '14px',
+      color: COLORS.PARCHMENT_DARK,
     }).setOrigin(0.5)
 
-    // Pre-fill name from ?name= URL param (fallback empty)
-    const urlName = this._readUrlName()
+    // Volume
+    this.add.text(width / 2, 270, 'Vol. I — 2014–2026', {
+      ...TEXT.small,
+      color: COLORS.INK_FADED,
+    }).setOrigin(0.5)
 
-    // HTML input element (DOM overlay)
+    // Passport stamps (scattered)
+    JournalUI.drawPassportStamp(this, 320, 420, 'Shanghai', 2014, -8)
+    JournalUI.drawPassportStamp(this, 640, 380, 'Colombia', 2019, 5)
+    JournalUI.drawPassportStamp(this, 960, 430, 'Greenland', 2007, -3)
+
+    // Wax seal
+    JournalUI.drawWaxSeal(this, width / 2, 530, 'A', 30)
+
+    // Name input
+    const urlName = this._readUrlName()
     this._createNameInput(urlName)
 
-    // Name input label
-    this.add.text(width / 2, height / 2 + 20, 'Enter your name (optional):', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#666677',
+    this.add.text(width / 2, 570, 'Your name (optional):', {
+      ...TEXT.label,
+      fontSize: '10px',
+      color: COLORS.PARCHMENT_DARK,
     }).setOrigin(0.5)
 
-    // Prompt — blink it
-    const prompt = this.add.text(width / 2, height / 2 + 140, 'PRESS SPACE TO START', {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#ffffff',
+    // Blinking prompt
+    const prompt = this.add.text(width / 2, 660, 'Press SPACE to open journal', {
+      ...TEXT.prompt,
+      color: COLORS.PARCHMENT_DARK,
     }).setOrigin(0.5)
 
     this.tweens.add({
       targets: prompt,
-      alpha: 0,
-      duration: 500,
+      alpha: 0.3,
+      duration: 800,
       yoyo: true,
       repeat: -1,
     })
 
-    // Listen for space — capture name, fade, then start LevelSelectHub
+    // Input handlers
     this.input.keyboard.once('keydown-SPACE', () => this._start())
 
-    // Also accept Enter key from the input
     const inputEl = document.getElementById('name-input')
     if (inputEl) {
       inputEl.addEventListener('keydown', (e) => {
@@ -66,7 +91,6 @@ export class TitleScene extends Phaser.Scene {
       })
     }
 
-    // Shutdown cleanup
     this.events.once('shutdown', () => {
       this.input.keyboard.removeAllListeners()
       this._removeNameInput()
@@ -75,17 +99,12 @@ export class TitleScene extends Phaser.Scene {
 
   _readUrlName() {
     try {
-      const params = new URLSearchParams(window.location.search)
-      return params.get('name') ?? ''
-    } catch (e) {
-      return ''
-    }
+      return new URLSearchParams(window.location.search).get('name') ?? ''
+    } catch (e) { return '' }
   }
 
   _createNameInput(prefillValue) {
-    // Remove existing if any (hot reload safety)
     this._removeNameInput()
-
     const input = document.createElement('input')
     input.type = 'text'
     input.id = 'name-input'
@@ -94,21 +113,20 @@ export class TitleScene extends Phaser.Scene {
     input.value = prefillValue
     input.autocomplete = 'off'
 
-    // Positioned absolutely over the Phaser canvas
     Object.assign(input.style, {
       position: 'absolute',
       left: '50%',
-      top: '50%',
-      transform: 'translate(-50%, 20px)',
-      padding: '10px 16px',
-      fontSize: '20px',
-      fontFamily: 'monospace',
-      background: '#111122',
-      color: '#00ff88',
-      border: '2px solid #00ff88',
-      borderRadius: '4px',
+      top: '82%',
+      transform: 'translate(-50%, 0)',
+      padding: '8px 14px',
+      fontSize: '16px',
+      fontFamily: "'Lora', Georgia, serif",
+      background: COLORS.LEATHER,
+      color: COLORS.PARCHMENT,
+      border: `1px solid ${COLORS.INK_FADED}`,
+      borderRadius: '2px',
       textAlign: 'center',
-      width: '260px',
+      width: '220px',
       outline: 'none',
       zIndex: '10',
     })
@@ -116,31 +134,24 @@ export class TitleScene extends Phaser.Scene {
     const gameDiv = document.getElementById('game')
     if (gameDiv) {
       gameDiv.appendChild(input)
-      // Auto-focus if no URL pre-fill
       if (!prefillValue) input.focus()
     }
   }
 
   _removeNameInput() {
-    const input = document.getElementById('name-input')
-    if (input && input.parentNode) {
-      input.parentNode.removeChild(input)
-    }
+    const el = document.getElementById('name-input')
+    if (el && el.parentNode) el.parentNode.removeChild(el)
   }
 
   _start() {
-    // Read final name value
     const inputEl = document.getElementById('name-input')
     let name = inputEl ? inputEl.value.trim() : ''
     if (!name) name = 'friend'
     this.registry.set(KEYS.PLAYER_NAME, name)
-
-    // Hide input immediately (before fade)
     this._removeNameInput()
 
-    // Fade + transition
-    this.cameras.main.fadeOut(300, 0, 0, 0)
-    this.time.delayedCall(320, () => {
+    this.cameras.main.fadeOut(500, 58, 34, 16)  // fade to leather color
+    this.time.delayedCall(520, () => {
       this.scene.start('OpeningCinematicScene')
     })
   }
