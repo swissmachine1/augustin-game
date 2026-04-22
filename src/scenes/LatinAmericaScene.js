@@ -1,107 +1,45 @@
 import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
-import { COLORS, TEXT, C, FONT } from '../config/theme.js'
-import { JournalUI } from '../ui/JournalUI.js'
+import { COLORS, C, TEXT, FONT_DISPLAY, FONT_MONO, LEVEL_COLORS } from '../config/theme.js'
+import { BrutalUI } from '../ui/BrutalUI.js'
 
-// Level 2 — Latin America: CRACK THE MARKET
-// A memory-match game. Match each challenge to the skill it forged.
+// Level 2 — Latin America: brutalist memory match.
+// Match two cards with the SAME text. Deck mixes challenge labels and skill labels,
+// each appearing twice. Plus a $1M ARR wild card.
 
-const PAIRS = [
-  {
-    id: 0,
-    challenge: 'No Spanish',
-    skill: 'Adaptability',
-    insight: `No hablaba espanol. So I learned to sell with diagrams on napkins, body language, and sheer persistence. The language came later. The deals came first.`,
-    wild: false,
-  },
-  {
-    id: 1,
-    challenge: 'Zero network\nin LatAm',
-    skill: 'Cold outreach\nmastery',
-    insight: `I had nobody's number. So I cold-emailed every KOL I could find, showed up at conferences uninvited, and turned strangers into partners.`,
-    wild: false,
-  },
-  {
-    id: 2,
-    challenge: 'Cultural differences\nacross 11 countries',
-    skill: 'Cross-cultural EQ',
-    insight: `What closes in Colombia offends in Chile. I learned to read the room before I opened my mouth — and to never assume two Latin countries work the same way.`,
-    wild: false,
-  },
-  {
-    id: 3,
-    challenge: 'Training doctors\nremotely',
-    skill: 'Consultative\nselling',
-    insight: `You can't hard-sell a surgeon. I learned to teach first, prove value second, and let the product speak through results.`,
-    wild: false,
-  },
-  {
-    id: 4,
-    challenge: '11 countries,\n11 regulations',
-    skill: 'Navigating\ncomplexity',
-    insight: `Every country had its own medical device rules, tax codes, and approval timelines. I built a spreadsheet that became my bible.`,
-    wild: false,
-  },
-  {
-    id: 5,
-    challenge: 'Solo in Medellin,\nno backup',
-    skill: 'Independence\n& grit',
-    insight: `No team. No office. Just a laptop in a coworking space and a list of 200 doctors. Some weeks the only voice I heard was my own pitch.`,
-    wild: false,
-  },
-  {
-    id: 6,
-    challenge: 'Convincing\nskeptical KOLs',
-    skill: 'Stakeholder\nmanagement',
-    insight: `Senior surgeons don't take meetings with 25-year-olds. I earned the first meeting through a published case study. I earned the second by remembering their daughter's name.`,
-    wild: false,
-  },
-  {
-    id: 7,
-    challenge: 'No marketing\nbudget',
-    skill: 'Scrappy GTM',
-    insight: `Zero ad spend. I built the pipeline with WhatsApp groups, conference hallway ambushes, and a demo that fit in my backpack.`,
-    wild: false,
-  },
-  {
-    id: 8,
-    challenge: 'Product-market fit\nin a new continent',
-    skill: 'Market research',
-    insight: `The product worked in Europe. Latin America wanted something different. I spent 3 months just listening before I pitched a single feature change.`,
-    wild: false,
-  },
-  {
-    id: 9,
-    challenge: 'Hiring across\nborders',
-    skill: 'Remote\nleadership',
-    insight: `My first hire was in Bogota. My second in Mexico City. I managed a team across 4 time zones before I had a single direct report in the same room.`,
-    wild: false,
-  },
-  {
-    id: 10,
-    challenge: '$0 → $1M ARR',
-    skill: '11 Countries\nConquered',
-    insight: `From a one-way ticket to Medellin to a million in recurring revenue across an entire continent. Not bad for someone who couldn't order coffee in Spanish.`,
-    wild: true,
-  },
-  {
-    id: 11,
-    challenge: 'Building trust\nacross borders',
-    skill: 'Relationship\nbuilding',
-    insight: `Business in Latin America runs on relationships, not contracts. I learned that a 2-hour lunch matters more than a 20-page proposal.`,
-    wild: false,
-  },
+const LABELS = [
+  { text: 'NO SPANISH',            wild: false, insight: 'LEARNED TO SELL WITH DIAGRAMS AND PERSISTENCE.' },
+  { text: 'ZERO NETWORK',          wild: false, insight: 'COLD EMAILS. CONFERENCE AMBUSHES. STRANGERS TURNED PARTNERS.' },
+  { text: '11 COUNTRIES',          wild: false, insight: '11 REGULATORY FRAMEWORKS. 11 NETWORKS BUILT FROM ZERO.' },
+  { text: 'SOLO IN COLOMBIA',      wild: false, insight: 'NO TEAM. NO OFFICE. JUST A LAPTOP AND A LIST OF 200 DOCTORS.' },
+  { text: 'NO MARKETING BUDGET',   wild: false, insight: 'ZERO AD SPEND. WHATSAPP GROUPS AND HALLWAY DEMOS INSTEAD.' },
+  { text: 'SKEPTICAL KOLS',        wild: false, insight: 'EARNED MEETING ONE WITH A CASE STUDY. MEETING TWO BY REMEMBERING NAMES.' },
+  { text: 'CONSULTATIVE SELLING',  wild: false, insight: 'STOPPED SELLING PRODUCT. STARTED SELLING OUTCOMES.' },
+  { text: 'CROSS-CULTURAL EQ',     wild: false, insight: 'READ THE ROOM BEFORE OPENING YOUR MOUTH.' },
+  { text: 'SCRAPPY GTM',           wild: false, insight: 'PIPELINE BUILT ON DUCT TAPE AND CONVICTION.' },
+  { text: 'STAKEHOLDER MGMT',      wild: false, insight: 'EVERY DEAL — FIVE PEOPLE. EVERY PERSON — A REASON TO SAY NO.' },
+  { text: 'REMOTE LEADERSHIP',     wild: false, insight: 'FOUR TIME ZONES. ZERO DIRECT REPORTS IN THE SAME ROOM.' },
+  { text: 'RELATIONSHIP BUILDING', wild: false, insight: 'A 2-HOUR LUNCH BEATS A 20-PAGE PROPOSAL.' },
+  { text: '$1M ARR',               wild: true,  insight: '12 MONTHS. 11 COUNTRIES. ONE MILLION DOLLARS.' },
 ]
 
-const CARD_W = 150
-const CARD_H = 90
-const GRID_X = 20
-const GRID_Y = 140
-const H_GAP = 16
-const V_GAP = 14
-const COLS = 6
-const ROWS = 4
+const INTRO_BEATS = [
+  'I LANDED IN BOGOTA WITH NO SPANISH, NO NETWORK, AND A PITCH DECK THAT NEEDED TO WORK.',
+  'THE MARKET: 11 COUNTRIES. THE ASSIGNMENT: BUILD FROM ZERO.',
+  'MATCH THE PAIRS. EACH LABEL APPEARS TWICE. FIND THE $1M ARR WILD CARD.',
+]
+
+const COLS = 7
+// 26 cards / 7 cols → 4 rows (last row partial)
+
+// Grid geometry — left-aligned block, right side reserved for INSIGHTS panel.
+const CARD_W = 112
+const CARD_H = 88
+const H_GAP = 10
+const V_GAP = 10
+const GRID_X = 30
+const GRID_Y = 180
 
 export class LatinAmericaScene extends Phaser.Scene {
   constructor() {
@@ -109,7 +47,9 @@ export class LatinAmericaScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.fadeIn(500, 0, 0, 0)
+    const { width, height } = this.cameras.main
+    this.cameras.main.fadeIn(400, 10, 10, 10)
+    this.cameras.main.setBackgroundColor(COLORS.BLACK)
 
     // State
     this._cards = []
@@ -121,225 +61,269 @@ export class LatinAmericaScene extends Phaser.Scene {
     this._moves = 0
     this._pairsFound = 0
     this._ended = false
-    this._insightText = null
-    this._matchLabel = null
+    this._foundWild = false
+    this._insightEntries = []
     this._shutdownHandlers = []
 
-    // Background
-    JournalUI.drawParchment(this, 0, 0, 1280, 720)
-    this._drawLatAmOutlines()
-
-    // Scattered passport stamps in margins
-    JournalUI.drawPassportStamp(this, 60, 670, 'COLOMBIA', 2019, -12)
-    JournalUI.drawPassportStamp(this, 1120, 90, 'BRASIL', 2020, 8)
+    // Grid background
+    this._drawBackground(width, height)
 
     // Header
-    this._drawHeader()
+    BrutalUI.drawBlockType(this, 40, 70, '02', {
+      fontSize: '96px',
+      color: COLORS.BONE,
+      shadowColor: COLORS.SHOCK_LIME,
+      shadowOffset: 6,
+      origin: 0,
+    })
+    this.add.text(170, 50, 'LATIN AMERICA', {
+      fontFamily: FONT_DISPLAY, fontSize: '34px', color: COLORS.BONE,
+    }).setOrigin(0, 0)
+    this.add.text(170, 95, 'THE SCALE — $0 → $1M ARR', {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.SHOCK_LIME,
+      letterSpacing: 2,
+    }).setOrigin(0, 0)
 
-    // Right panel
-    this._drawRightPanel()
+    // Rule under header
+    const rule = this.add.graphics()
+    rule.fillStyle(C.SHOCK_LIME, 1)
+    rule.fillRect(0, 150, width, 4)
 
-    // Intro narration (above grid)
-    this._intro = this.add.text(500, 110,
-      'No Spanish. No network. No experience.\nMatch each challenge to the skill it forged.',
-      {
-        ...TEXT.bodyItalic,
-        fontSize: '13px',
-        color: COLORS.INK_LIGHT,
-        align: 'center',
-        lineSpacing: 3,
-      }
-    ).setOrigin(0.5).setAlpha(0)
+    // Timer / moves tags (top right)
+    this._timerTag = BrutalUI.drawTag(this, width - 90, 40, '0:00', {
+      fill: C.BONE, textColor: COLORS.BLACK, paddingX: 16, paddingY: 8,
+    })
+    this._timerLabel = this.add.text(width - 90, 65, 'TIME', {
+      fontFamily: FONT_MONO, fontSize: '9px', fontStyle: 'bold', color: COLORS.GREY_300,
+      letterSpacing: 2,
+    }).setOrigin(0.5)
 
-    this.tweens.add({ targets: this._intro, alpha: 1, duration: 400, delay: 600 })
+    this._movesTag = BrutalUI.drawTag(this, width - 210, 40, '00', {
+      fill: C.SHOCK_LIME, textColor: COLORS.BLACK, paddingX: 16, paddingY: 8,
+    })
+    this._movesLabel = this.add.text(width - 210, 65, 'MOVES', {
+      fontFamily: FONT_MONO, fontSize: '9px', fontStyle: 'bold', color: COLORS.GREY_300,
+      letterSpacing: 2,
+    }).setOrigin(0.5)
 
-    // Build & place cards
-    this._buildAndPlaceCards()
+    this._pairsTag = BrutalUI.drawTag(this, width - 330, 40, `0/${LABELS.length}`, {
+      fill: C.BONE, textColor: COLORS.BLACK, paddingX: 16, paddingY: 8,
+    })
+    this.add.text(width - 330, 65, 'PAIRS', {
+      fontFamily: FONT_MONO, fontSize: '9px', fontStyle: 'bold', color: COLORS.GREY_300,
+      letterSpacing: 2,
+    }).setOrigin(0.5)
 
-    // Prompt below grid
-    this._prompt = this.add.text(500, 570, 'Click any card to begin', {
-      ...TEXT.small,
-      fontSize: '12px',
-    }).setOrigin(0.5).setAlpha(0)
+    // Insights panel (right side)
+    this._drawInsightsPanel(width, height)
 
-    // Page number
-    JournalUI.drawPageNumber(this, 4)
+    // Build deck & cards (initially hidden; shown after narrative)
+    this._buildDeck()
+    this._cards.forEach(c => c.container.setAlpha(0))
 
-    // Kick off opening sequence
-    this.time.delayedCall(1000, () => this._startOpening())
+    // Home button (persistent top-left — but header covers 0-150, so draw above)
+    BrutalUI.drawHomeButton(this)
+
+    // Kick off intro narrative
+    this._showIntroBeat(0)
 
     // Shutdown cleanup
     this.events.once('shutdown', () => {
-      this.input.keyboard.removeAllListeners()
-      this._shutdownHandlers.forEach(fn => fn())
+      if (this.input && this.input.keyboard) this.input.keyboard.removeAllListeners()
+      this._shutdownHandlers.forEach(fn => { try { fn() } catch (e) {} })
       this._shutdownHandlers = []
     }, this)
   }
 
-  update(time, delta) {
+  update(time) {
     if (!this._timerStarted || this._ended) return
     const elapsed = Math.floor((time - this._gameStartTime) / 1000)
     const min = Math.floor(elapsed / 60)
     const sec = elapsed % 60
-    if (this._timerText) {
-      this._timerText.setText(`${min}:${sec.toString().padStart(2, '0')}`)
+    const str = `${min}:${sec.toString().padStart(2, '0')}`
+    const txt = this._timerTag.list[1]
+    if (txt && txt.setText) txt.setText(str)
+  }
+
+  // ─── Background ──────────────────────────────────────────────────
+
+  _drawBackground(width, height) {
+    const g = this.add.graphics()
+    g.fillStyle(C.BLACK, 1)
+    g.fillRect(0, 0, width, height)
+    g.lineStyle(1, C.GREY_900, 1)
+    for (let x = 0; x < width; x += 40) {
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, height); g.strokePath()
+    }
+    for (let y = 0; y < height; y += 40) {
+      g.beginPath(); g.moveTo(0, y); g.lineTo(width, y); g.strokePath()
     }
   }
 
-  // ─── Drawing ────────────────────────────────────────────────────
+  // ─── Intro narrative ─────────────────────────────────────────────
 
-  _drawLatAmOutlines() {
-    const g = this.add.graphics()
-    g.fillStyle(C.PARCHMENT_DARK, 0.08)
-    g.lineStyle(1, C.INK, 0.05)
-    g.beginPath()
-    g.moveTo(350, 120)
-    g.lineTo(280, 200)
-    g.lineTo(250, 320)
-    g.lineTo(300, 380)
-    g.lineTo(200, 500)
-    g.lineTo(250, 600)
-    g.lineTo(350, 650)
-    g.lineTo(500, 600)
-    g.lineTo(650, 450)
-    g.lineTo(550, 300)
-    g.lineTo(400, 200)
-    g.closePath()
-    g.fillPath()
-    g.strokePath()
-  }
-
-  _drawHeader() {
-    this.add.text(30, 30, 'Chapter 2', TEXT.label)
-    this.add.text(30, 50, 'CRACK THE MARKET', {
-      ...TEXT.title,
-      fontSize: '24px',
-      fontStyle: 'bold',
-    })
-    this.add.text(30, 85, 'Latin America, 2017-2020', TEXT.bodyItalic)
-  }
-
-  _drawRightPanel() {
-    const g = this.add.graphics()
-    g.fillStyle(C.PARCHMENT_DARK, 0.4)
-    g.fillRect(1010, 20, 250, 680)
-    g.lineStyle(0.5, C.INK, 0.3)
-    g.strokeRect(1010, 20, 250, 680)
-
-    const cx = 1135
-
-    // Counters
-    this.add.text(cx, 60, 'PAIRS FOUND', TEXT.label).setOrigin(0.5)
-    this._pairsText = this.add.text(cx, 85, '0 / 12', {
-      ...TEXT.stat,
-      fontSize: '20px',
-    }).setOrigin(0.5)
-
-    this.add.text(cx, 130, 'MOVES', TEXT.label).setOrigin(0.5)
-    this._movesText = this.add.text(cx, 155, '0', {
-      ...TEXT.stat,
-      fontSize: '20px',
-    }).setOrigin(0.5)
-
-    this.add.text(cx, 200, 'TIME', TEXT.label).setOrigin(0.5)
-    this._timerText = this.add.text(cx, 225, '0:00', {
-      ...TEXT.stat,
+  _showIntroBeat(idx) {
+    if (idx >= INTRO_BEATS.length) {
+      this._startGame()
+      return
+    }
+    BrutalUI.showNarrative(this, 640, 380, 720, 180, INTRO_BEATS[idx], () => {
+      this._showIntroBeat(idx + 1)
+    }, {
+      fill: C.BONE,
+      border: C.BLACK,
+      accentColor: C.SHOCK_LIME,
       fontSize: '18px',
-    }).setOrigin(0.5)
-
-    // Field notes box
-    this.add.text(cx, 268, 'FIELD NOTES', TEXT.label).setOrigin(0.5)
-    const box = this.add.graphics()
-    box.lineStyle(0.5, C.INK, 0.2)
-    box.strokeRect(1020, 280, 230, 220)
-
-    // Last matched pair label placeholder
-    this._matchLabelY = 515
-
-    // Legend
-    const legendY = 600
-    const legendG = this.add.graphics()
-    legendG.fillStyle(C.RED_MARGIN, 0.6)
-    legendG.fillRect(1030, legendY, 10, 14)
-    this.add.text(1050, legendY + 1, '= Challenge', {
-      ...TEXT.label,
-      fontSize: '9px',
-    })
-
-    legendG.fillStyle(C.STAMP_GREEN, 0.5)
-    legendG.fillRect(1030, legendY + 24, 10, 14)
-    this.add.text(1050, legendY + 25, '= Skill earned', {
-      ...TEXT.label,
-      fontSize: '9px',
     })
   }
 
-  // ─── Card construction ──────────────────────────────────────────
-
-  _buildAndPlaceCards() {
-    const cardData = []
-    PAIRS.forEach(pair => {
-      cardData.push({ pairId: pair.id, type: 'challenge', text: pair.challenge, wild: pair.wild })
-      cardData.push({ pairId: pair.id, type: 'skill', text: pair.skill, wild: pair.wild })
-    })
-
-    // Fisher-Yates shuffle
-    for (let i = cardData.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[cardData[i], cardData[j]] = [cardData[j], cardData[i]]
-    }
-
-    cardData.forEach((data, idx) => {
-      const col = idx % COLS
-      const row = Math.floor(idx / COLS)
-      const x = GRID_X + col * (CARD_W + H_GAP)
-      const y = GRID_Y + row * (CARD_H + V_GAP)
-      const card = this._createCard(x, y, data)
-      card.container.setAlpha(0)
-      this._cards.push(card)
-
-      // Staggered fade-in
+  _startGame() {
+    // Fade cards in
+    this._cards.forEach((card, i) => {
       this.tweens.add({
         targets: card.container,
         alpha: 1,
-        duration: 300,
-        delay: 1000 + idx * 40,
+        duration: 220,
+        delay: i * 22,
       })
+    })
+    this.time.delayedCall(this._cards.length * 22 + 250, () => {
+      this._gameActive = true
+      this._inputLocked = false
+      this._timerStarted = true
+      this._gameStartTime = this.time.now
+    })
+  }
+
+  // ─── Insights panel ──────────────────────────────────────────────
+
+  _drawInsightsPanel(width, height) {
+    const x = 900
+    const y = 170
+    const w = 360
+    const h = 530
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 1)
+    shadow.fillRect(x + 6, y + 6, w, h)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(C.OFF_BLACK, 1)
+    bg.fillRect(x, y, w, h)
+    bg.lineStyle(3, C.BONE, 1)
+    bg.strokeRect(x, y, w, h)
+
+    // Header stripe
+    const stripe = this.add.graphics()
+    stripe.fillStyle(C.SHOCK_LIME, 1)
+    stripe.fillRect(x, y, w, 36)
+
+    this.add.text(x + 16, y + 18, 'INSIGHTS', {
+      fontFamily: FONT_DISPLAY, fontSize: '20px', color: COLORS.BLACK,
+    }).setOrigin(0, 0.5)
+
+    this.add.text(x + w - 16, y + 18, 'JOURNAL // L2', {
+      fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold', color: COLORS.BLACK,
+      letterSpacing: 2,
+    }).setOrigin(1, 0.5)
+
+    this._insightsPanel = { x, y: y + 44, w, h: h - 44 }
+    this._insightsContainer = this.add.container(0, 0)
+  }
+
+  _addInsight(label, text, wild) {
+    const { x, y, w } = this._insightsPanel
+    const entryH = 32
+    const pad = 8
+    const gap = 4
+    const idx = this._insightEntries.length
+    const ex = x + pad
+    const ey = y + pad + idx * (entryH + gap)
+
+    if (ey + entryH > y + this._insightsPanel.h - 8) return // overflow guard
+
+    const entry = this.add.container(0, 0)
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 1)
+    shadow.fillRect(ex + 3, ey + 3, w - pad * 2, entryH)
+
+    const card = this.add.graphics()
+    card.fillStyle(wild ? C.HAZARD_YELLOW : C.BONE, 1)
+    card.fillRect(ex, ey, w - pad * 2, entryH)
+    card.lineStyle(2, C.BLACK, 1)
+    card.strokeRect(ex, ey, w - pad * 2, entryH)
+
+    // left stripe
+    const stripe = this.add.graphics()
+    stripe.fillStyle(wild ? C.BLACK : C.SHOCK_LIME, 1)
+    stripe.fillRect(ex, ey, 6, entryH)
+
+    const labelTxt = this.add.text(ex + 14, ey + 4, label, {
+      fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold', color: COLORS.BLACK,
+      letterSpacing: 1,
+    })
+
+    const insightTxt = this.add.text(ex + 14, ey + 18, text, {
+      fontFamily: FONT_MONO, fontSize: '8px', color: COLORS.GREY_700,
+      wordWrap: { width: w - pad * 2 - 20 },
+    })
+
+    entry.add([shadow, card, stripe, labelTxt, insightTxt])
+    entry.setAlpha(0)
+    this.tweens.add({ targets: entry, alpha: 1, duration: 260 })
+
+    this._insightEntries.push(entry)
+  }
+
+  // ─── Deck & cards ────────────────────────────────────────────────
+
+  _buildDeck() {
+    const deck = []
+    LABELS.forEach(l => {
+      deck.push({ text: l.text, wild: l.wild, insight: l.insight })
+      deck.push({ text: l.text, wild: l.wild, insight: l.insight })
+    })
+
+    // Fisher-Yates shuffle
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[deck[i], deck[j]] = [deck[j], deck[i]]
+    }
+
+    deck.forEach((data, idx) => {
+      const col = idx % COLS
+      const row = Math.floor(idx / COLS)
+      const x = GRID_X + col * (CARD_W + H_GAP) + CARD_W / 2
+      const y = GRID_Y + row * (CARD_H + V_GAP) + CARD_H / 2
+      const card = this._createCard(x, y, data)
+      this._cards.push(card)
     })
   }
 
   _createCard(x, y, data) {
-    const container = this.add.container(x + CARD_W / 2, y + CARD_H / 2)
+    const container = this.add.container(x, y)
 
-    const faceDownGroup = this.add.container(0, 0)
-    const faceUpGroup = this.add.container(0, 0)
+    const faceDown = this.add.container(0, 0)
+    const faceUp = this.add.container(0, 0)
 
-    this._drawFaceDown(faceDownGroup, data.wild)
-    if (data.type === 'challenge') {
-      this._drawChallengeFace(faceUpGroup, data.text, data.wild)
-    } else {
-      this._drawSkillFace(faceUpGroup, data.text, data.wild)
-    }
+    this._drawFaceDown(faceDown, data.wild)
+    this._drawFaceUp(faceUp, data.text, data.wild)
+    faceUp.setVisible(false)
 
-    faceUpGroup.setVisible(false)
+    container.add([faceDown, faceUp])
 
-    container.add(faceDownGroup)
-    container.add(faceUpGroup)
-
-    // Hit area — rectangle
-    const hit = this.add.rectangle(0, 0, CARD_W, CARD_H, 0x000000, 0)
+    const hit = this.add.rectangle(x, y, CARD_W, CARD_H, 0x000000, 0)
     hit.setInteractive({ useHandCursor: true })
-    container.add(hit)
 
     const card = {
       container,
-      faceDownGroup,
-      faceUpGroup,
+      faceDown,
+      faceUp,
       hit,
-      type: data.type,
-      pairId: data.pairId,
       text: data.text,
       wild: data.wild,
+      insight: data.insight,
       isFlipped: false,
       isMatched: false,
     }
@@ -347,196 +331,113 @@ export class LatinAmericaScene extends Phaser.Scene {
     hit.on('pointerdown', () => this._onCardClick(card))
     hit.on('pointerover', () => {
       if (card.isFlipped || card.isMatched || !this._gameActive) return
-      card.container.setScale(1.03)
+      container.setScale(1.04)
     })
     hit.on('pointerout', () => {
       if (card.isMatched) return
-      card.container.setScale(1)
+      container.setScale(1)
     })
 
     return card
   }
 
   _drawFaceDown(group, wild) {
-    const g = this.add.graphics()
     const w = CARD_W, h = CARD_H
-    const hx = -w / 2, hy = -h / 2
 
-    g.fillStyle(C.LEATHER, 1)
-    g.fillRoundedRect(hx, hy, w, h, 6)
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.SHOCK_LIME, 1)
+    shadow.fillRect(-w / 2 + 5, -h / 2 + 5, w, h)
 
-    g.lineStyle(1, C.INK, 0.5)
-    g.strokeRoundedRect(hx + 4, hy + 4, w - 8, h - 8, 4)
-
-    if (wild) {
-      g.lineStyle(1.5, C.GOLD_LEAF, 0.9)
-      g.strokeRoundedRect(hx, hy, w, h, 6)
-    }
-
-    // Center wax seal
-    g.fillStyle(C.WAX_RED, 0.8)
-    g.fillCircle(0, 0, 16)
-    g.fillStyle(C.WAX_RED_LIGHT, 1)
-    g.fillCircle(0, 0, 11)
-
-    group.add(g)
+    const bg = this.add.graphics()
+    bg.fillStyle(C.BLACK, 1)
+    bg.fillRect(-w / 2, -h / 2, w, h)
+    bg.lineStyle(3, C.BONE, 1)
+    bg.strokeRect(-w / 2, -h / 2, w, h)
 
     const q = this.add.text(0, 0, '?', {
-      fontFamily: FONT,
-      fontSize: '14px',
-      color: COLORS.PARCHMENT,
-      fontStyle: 'bold',
+      fontFamily: FONT_DISPLAY, fontSize: '42px', color: COLORS.BONE,
     }).setOrigin(0.5)
-    group.add(q)
+
+    group.add([shadow, bg, q])
+
+    if (wild) {
+      // Gold corners for wild (hidden on face-down is fine — they add intrigue, but gameplay-wise
+      // we avoid telegraphing. Keep face-down identical; only face-up shows wild styling.)
+    }
   }
 
-  _drawChallengeFace(group, textStr, wild) {
-    const g = this.add.graphics()
+  _drawFaceUp(group, text, wild) {
     const w = CARD_W, h = CARD_H
-    const hx = -w / 2, hy = -h / 2
 
-    g.fillStyle(C.PARCHMENT, 1)
-    g.fillRoundedRect(hx, hy, w, h, 6)
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 1)
+    shadow.fillRect(-w / 2 + 5, -h / 2 + 5, w, h)
 
-    const stripeColor = wild ? C.WAX_RED : C.RED_MARGIN
-    g.fillStyle(stripeColor, 0.6)
-    g.fillRect(hx, hy, 6, h)
+    const bg = this.add.graphics()
+    bg.fillStyle(C.BONE, 1)
+    bg.fillRect(-w / 2, -h / 2, w, h)
+    bg.lineStyle(3, C.BLACK, 1)
+    bg.strokeRect(-w / 2, -h / 2, w, h)
 
-    const borderColor = wild ? C.GOLD_LEAF : C.INK
-    g.lineStyle(1, borderColor, wild ? 0.8 : 0.4)
-    g.strokeRoundedRect(hx, hy, w, h, 6)
+    // Top stripe — shock lime (or hazard yellow for wild)
+    const stripe = this.add.graphics()
+    stripe.fillStyle(wild ? C.HAZARD_YELLOW : C.SHOCK_LIME, 1)
+    stripe.fillRect(-w / 2, -h / 2, w, 10)
 
-    group.add(g)
+    group.add([shadow, bg, stripe])
 
-    const label = this.add.text(hx + 14, hy + 8, 'CHALLENGE', {
-      ...TEXT.label,
-      fontSize: '7px',
-      color: COLORS.RED_MARGIN,
-    })
-    group.add(label)
-
-    const t = this.add.text(0, 4, textStr, {
-      ...TEXT.body,
-      fontSize: wild ? '13px' : '11px',
-      color: wild ? COLORS.WAX_RED : COLORS.INK,
-      fontStyle: wild ? 'bold' : 'normal',
-      align: 'center',
-      wordWrap: { width: w - 24 },
-    }).setOrigin(0.5)
-    group.add(t)
-  }
-
-  _drawSkillFace(group, textStr, wild) {
-    const g = this.add.graphics()
-    const w = CARD_W, h = CARD_H
-    const hx = -w / 2, hy = -h / 2
-
-    g.fillStyle(C.PARCHMENT, 1)
-    g.fillRoundedRect(hx, hy, w, h, 6)
-
-    const stripeColor = wild ? C.WAX_RED : C.STAMP_GREEN
-    g.fillStyle(stripeColor, 0.5)
-    g.fillRect(hx + w - 6, hy, 6, h)
-
-    const borderColor = wild ? C.GOLD_LEAF : C.STAMP_GREEN
-    g.lineStyle(1, borderColor, wild ? 0.8 : 0.4)
-    g.strokeRoundedRect(hx, hy, w, h, 6)
-
-    group.add(g)
-
-    const label = this.add.text(hx + w - 14, hy + 8, 'SKILL EARNED', {
-      ...TEXT.label,
-      fontSize: '7px',
-      color: COLORS.STAMP_GREEN,
-    }).setOrigin(1, 0)
-    group.add(label)
-
-    const t = this.add.text(0, 4, textStr, {
-      ...TEXT.body,
-      fontSize: wild ? '13px' : '11px',
-      color: wild ? COLORS.WAX_RED : COLORS.STAMP_GREEN,
-      fontStyle: 'bold',
-      align: 'center',
-      wordWrap: { width: w - 24 },
-    }).setOrigin(0.5)
-    group.add(t)
-  }
-
-  // ─── Opening sequence ───────────────────────────────────────────
-
-  _startOpening() {
-    // Preview peek — all cards face-up at ~2.5s mark (after fade-in wave done ~2s)
-    const peekStart = 1500
-    this.time.delayedCall(peekStart, () => {
-      this._cards.forEach((card, i) => {
-        this.time.delayedCall(i * 30, () => {
-          card.faceDownGroup.setVisible(false)
-          card.faceUpGroup.setVisible(true)
-        })
-      })
-    })
-
-    // Flip back after 2500ms peek
-    this.time.delayedCall(peekStart + 2500, () => {
-      this._cards.forEach((card, i) => {
-        this.time.delayedCall(i * 20, () => {
-          card.faceDownGroup.setVisible(true)
-          card.faceUpGroup.setVisible(false)
-        })
-      })
-
-      // Fade intro to dim
-      this.tweens.add({ targets: this._intro, alpha: 0.15, duration: 500 })
-
-      // Show prompt and enable input
-      this.time.delayedCall(this._cards.length * 20 + 100, () => {
-        this._gameActive = true
-        this._inputLocked = false
-        this._timerStarted = true
-        this._gameStartTime = this.time.now
-        this.tweens.add({ targets: this._prompt, alpha: 0.6, duration: 400 })
-      })
-    })
-  }
-
-  // ─── Input ──────────────────────────────────────────────────────
-
-  _onCardClick(card) {
-    if (!this._gameActive) return
-    if (this._inputLocked) return
-    if (card.isFlipped || card.isMatched) return
-
-    // Hide prompt on first click
-    if (this._prompt && this._prompt.alpha > 0) {
-      this.tweens.add({ targets: this._prompt, alpha: 0, duration: 300 })
+    if (wild) {
+      // Gold-yellow corner markers
+      const corners = this.add.graphics()
+      corners.fillStyle(C.HAZARD_YELLOW, 1)
+      const s = 10
+      corners.fillRect(-w / 2, -h / 2, s, s)
+      corners.fillRect(w / 2 - s, -h / 2, s, s)
+      corners.fillRect(-w / 2, h / 2 - s, s, s)
+      corners.fillRect(w / 2 - s, h / 2 - s, s, s)
+      group.add(corners)
     }
 
-    this._flipToFaceUp(card)
+    const fontSize = text.length > 18 ? '11px' : text.length > 12 ? '13px' : '15px'
+    const t = this.add.text(0, 4, text, {
+      fontFamily: FONT_MONO, fontSize, fontStyle: 'bold', color: COLORS.BLACK,
+      align: 'center',
+      wordWrap: { width: w - 18 },
+    }).setOrigin(0.5)
+    group.add(t)
   }
 
-  _flipToFaceUp(card) {
+  // ─── Input / flip ────────────────────────────────────────────────
+
+  _onCardClick(card) {
+    if (!this._gameActive || this._inputLocked) return
+    if (card.isFlipped || card.isMatched) return
+    this._flipUp(card)
+  }
+
+  _flipUp(card) {
     card.isFlipped = true
-    const wasSecondPick = this._firstPick !== null
-    if (wasSecondPick) this._inputLocked = true
+    const isSecond = this._firstPick !== null
+    if (isSecond) this._inputLocked = true
 
     this.tweens.add({
       targets: card.container,
       scaleX: 0,
-      duration: 125,
+      duration: 110,
       ease: 'Quad.easeIn',
       onComplete: () => {
-        card.faceDownGroup.setVisible(false)
-        card.faceUpGroup.setVisible(true)
+        card.faceDown.setVisible(false)
+        card.faceUp.setVisible(true)
         this.tweens.add({
           targets: card.container,
           scaleX: 1,
-          duration: 125,
+          duration: 110,
           ease: 'Quad.easeOut',
           onComplete: () => {
             if (this._firstPick === null) {
               this._firstPick = card
             } else {
-              this._checkMatch(this._firstPick, card)
+              this._resolveMatch(this._firstPick, card)
             }
           },
         })
@@ -544,232 +445,186 @@ export class LatinAmericaScene extends Phaser.Scene {
     })
   }
 
-  _flipToFaceDown(card) {
+  _flipDown(card) {
     this.tweens.add({
       targets: card.container,
       scaleX: 0,
-      duration: 125,
+      duration: 110,
       ease: 'Quad.easeIn',
       onComplete: () => {
-        card.faceDownGroup.setVisible(true)
-        card.faceUpGroup.setVisible(false)
+        card.faceDown.setVisible(true)
+        card.faceUp.setVisible(false)
         card.isFlipped = false
         this.tweens.add({
           targets: card.container,
           scaleX: 1,
-          duration: 125,
+          duration: 110,
           ease: 'Quad.easeOut',
         })
       },
     })
   }
 
-  // ─── Match resolution ───────────────────────────────────────────
-
-  _checkMatch(cardA, cardB) {
+  _resolveMatch(a, b) {
     this._moves++
-    this._movesText.setText(String(this._moves))
+    const mtxt = this._movesTag.list[1]
+    if (mtxt && mtxt.setText) mtxt.setText(String(this._moves).padStart(2, '0'))
 
-    if (cardA.pairId === cardB.pairId) {
-      cardA.isMatched = true
-      cardB.isMatched = true
+    const isMatch = a.text === b.text
+    if (isMatch) {
+      a.isMatched = true
+      b.isMatched = true
       this._pairsFound++
-      this._pairsText.setText(`${this._pairsFound} / 12`)
+      const ptxt = this._pairsTag.list[1]
+      if (ptxt && ptxt.setText) ptxt.setText(`${this._pairsFound}/${LABELS.length}`)
 
-      const pair = PAIRS.find(p => p.id === cardA.pairId)
+      if (a.wild) this._foundWild = true
 
-      this.time.delayedCall(200, () => {
-        this._showMatchEffect(cardA, cardB)
-        this._showInsight(pair.insight)
-        this._showMatchLabel(pair)
+      this.time.delayedCall(180, () => {
+        this._matchEffect(a, b)
+        this._addInsight(a.text, a.insight, a.wild)
+        if (a.wild) this._celebrate()
 
-        if (pair.wild) {
-          this._playCelebration()
-        }
-
-        this.time.delayedCall(500, () => {
+        this.time.delayedCall(400, () => {
           this._firstPick = null
           this._inputLocked = false
-
-          if (this._pairsFound >= 12) {
+          if (this._pairsFound >= LABELS.length) {
             this._gameActive = false
-            this.time.delayedCall(1500, () => this._finish())
+            this.time.delayedCall(1400, () => this._finish())
           }
         })
       })
     } else {
-      this.time.delayedCall(1200, () => {
-        // Red flash
-        const flashA = this.add.rectangle(cardA.container.x, cardA.container.y, CARD_W, CARD_H, C.RED_MARGIN, 0.2)
-        const flashB = this.add.rectangle(cardB.container.x, cardB.container.y, CARD_W, CARD_H, C.RED_MARGIN, 0.2)
-        this.tweens.add({
-          targets: [flashA, flashB],
-          alpha: 0,
-          duration: 300,
-          onComplete: () => { flashA.destroy(); flashB.destroy() },
+      this.time.delayedCall(1000, () => {
+        // Red shake
+        ;[a, b].forEach(card => {
+          this.tweens.add({
+            targets: card.container,
+            x: card.container.x + 4,
+            duration: 60,
+            yoyo: true,
+            repeat: 2,
+          })
         })
-
-        this._flipToFaceDown(cardA)
-        this._flipToFaceDown(cardB)
-
-        this.time.delayedCall(300, () => {
-          this._firstPick = null
-          this._inputLocked = false
+        this.time.delayedCall(400, () => {
+          this._flipDown(a)
+          this._flipDown(b)
+          this.time.delayedCall(260, () => {
+            this._firstPick = null
+            this._inputLocked = false
+          })
         })
       })
     }
   }
 
-  _showMatchEffect(cardA, cardB) {
-    // Pulse scale
-    ;[cardA, cardB].forEach(card => {
+  _matchEffect(a, b) {
+    ;[a, b].forEach(card => {
+      // Pulse
       this.tweens.add({
         targets: card.container,
         scale: 1.08,
-        duration: 150,
+        duration: 140,
         yoyo: true,
         ease: 'Sine.easeInOut',
       })
-
-      // Stamp
-      const stamp = JournalUI.drawPassportStamp(
-        this,
-        card.container.x,
-        card.container.y,
-        'MATCHED',
-        2019,
-        -10 + Math.random() * 20
-      )
-      stamp.setAlpha(0).setScale(1.5)
+      // Sticker
+      const sticker = BrutalUI.drawSticker(this, card.container.x, card.container.y + 18, 'MATCHED', {
+        fill: C.SHOCK_LIME,
+        textColor: COLORS.BLACK,
+        rotation: (-8 + Math.random() * 16) * Math.PI / 180,
+        fontSize: '12px',
+        paddingX: 10, paddingY: 4,
+      })
+      sticker.setScale(0).setAlpha(0)
       this.tweens.add({
-        targets: stamp,
-        alpha: 0.7,
-        scale: 0.6,
-        duration: 300,
+        targets: sticker,
+        scale: 1, alpha: 1,
+        duration: 260,
         ease: 'Back.easeOut',
       })
-
-      // Fade matched cards
+      // Fade card
       this.tweens.add({
         targets: card.container,
-        alpha: 0.65,
+        alpha: 0.7,
         duration: 300,
-        delay: 150,
+        delay: 200,
       })
     })
-
-    // Connection line
-    const line = this.add.line(
-      0, 0,
-      cardA.container.x, cardA.container.y,
-      cardB.container.x, cardB.container.y,
-      C.STAMP_GREEN, 0.3
-    )
-    line.setOrigin(0, 0).setLineWidth(1).setAlpha(0)
-    this.tweens.add({ targets: line, alpha: 0.3, duration: 200 })
   }
 
-  _showInsight(text) {
-    if (this._insightText) {
-      this.tweens.killTweensOf(this._insightText)
-      this._insightText.destroy()
-    }
+  _celebrate() {
+    const { width } = this.cameras.main
 
-    this._insightText = this.add.text(1135, 390, text, {
-      ...TEXT.bodyItalic,
-      fontSize: '10px',
-      color: COLORS.INK_LIGHT,
-      align: 'center',
-      wordWrap: { width: 210 },
-      lineSpacing: 4,
-    }).setOrigin(0.5).setAlpha(0)
-
+    // Big lime flash
+    const flash = this.add.rectangle(width / 2, 360, width, 720, C.SHOCK_LIME, 0.9)
+    flash.setAlpha(0)
     this.tweens.add({
-      targets: this._insightText,
-      alpha: 1,
-      duration: 400,
-      onComplete: () => {
-        this.time.delayedCall(3600, () => {
-          if (this._insightText) {
-            this.tweens.add({ targets: this._insightText, alpha: 0.3, duration: 500 })
-          }
-        })
-      },
+      targets: flash,
+      alpha: 0.8,
+      duration: 100,
+      yoyo: true,
+      onComplete: () => flash.destroy(),
     })
-  }
 
-  _showMatchLabel(pair) {
-    if (this._matchLabel) this._matchLabel.destroy()
-    const challenge = pair.challenge.replace(/\n/g, ' ')
-    const skill = pair.skill.replace(/\n/g, ' ')
-    this._matchLabel = this.add.text(1135, this._matchLabelY,
-      `${challenge} → ${skill}`,
-      {
-        ...TEXT.small,
-        fontSize: '10px',
-        color: COLORS.STAMP_GREEN,
-        align: 'center',
-        wordWrap: { width: 220 },
-      }
-    ).setOrigin(0.5).setAlpha(0)
-
-    this.tweens.add({ targets: this._matchLabel, alpha: 1, duration: 400 })
-  }
-
-  _playCelebration() {
-    // Banner
-    const bannerBg = this.add.rectangle(500, -30, 1000, 60, C.PARCHMENT_DARK, 0.95)
-    bannerBg.setStrokeStyle(1, C.GOLD_LEAF, 0.8)
-    const bannerText = this.add.text(500, -30, '$1,000,000 ARR', {
-      ...TEXT.title,
-      fontSize: '36px',
-      color: COLORS.WAX_RED,
-      fontStyle: 'bold',
+    // Banner drop
+    const banner = this.add.container(width / 2, -60)
+    const bShadow = this.add.graphics()
+    bShadow.fillStyle(C.BLACK, 1)
+    bShadow.fillRect(-340 + 6, -40 + 6, 680, 80)
+    const bBg = this.add.graphics()
+    bBg.fillStyle(C.SHOCK_LIME, 1)
+    bBg.fillRect(-340, -40, 680, 80)
+    bBg.lineStyle(4, C.BLACK, 1)
+    bBg.strokeRect(-340, -40, 680, 80)
+    const bTxt = this.add.text(0, 0, '$1,000,000 ARR — LOCKED IN', {
+      fontFamily: FONT_DISPLAY, fontSize: '30px', color: COLORS.BLACK,
     }).setOrigin(0.5)
+    banner.add([bShadow, bBg, bTxt])
 
     this.tweens.add({
-      targets: [bannerBg, bannerText],
-      y: 80,
-      duration: 400,
+      targets: banner,
+      y: 380,
+      duration: 420,
       ease: 'Back.easeOut',
       onComplete: () => {
-        this.time.delayedCall(1600, () => {
+        this.time.delayedCall(1400, () => {
           this.tweens.add({
-            targets: [bannerBg, bannerText],
-            y: -80,
+            targets: banner,
+            y: -120,
             alpha: 0,
             duration: 400,
             ease: 'Quad.easeIn',
-            onComplete: () => { bannerBg.destroy(); bannerText.destroy() },
+            onComplete: () => banner.destroy(),
           })
         })
       },
     })
 
     // Confetti
-    const colors = [C.STAMP_GREEN, C.WAX_RED, C.LEATHER, C.INK_LIGHT]
-    for (let i = 0; i < 30; i++) {
+    const colors = [C.SHOCK_LIME, C.HAZARD_YELLOW, C.BONE, C.SHOCK_PINK]
+    for (let i = 0; i < 60; i++) {
       const c = this.add.rectangle(
-        200 + Math.random() * 680,
+        100 + Math.random() * (width - 200),
         -10,
-        4, 8,
+        6, 14,
         colors[Math.floor(Math.random() * colors.length)]
       ).setRotation(Math.random() * Math.PI)
 
       this.tweens.add({
         targets: c,
         y: 740,
-        x: c.x + (Math.random() - 0.5) * 200,
-        rotation: c.rotation + Math.random() * 4,
+        x: c.x + (Math.random() - 0.5) * 300,
+        rotation: c.rotation + Math.random() * 6,
         alpha: 0,
-        duration: 1500 + Math.random() * 500,
+        duration: 1600 + Math.random() * 700,
         ease: 'Quad.easeIn',
         onComplete: () => c.destroy(),
       })
     }
   }
 
-  // ─── Finish ─────────────────────────────────────────────────────
+  // ─── Finish ──────────────────────────────────────────────────────
 
   _finish() {
     if (this._ended) return
@@ -779,116 +634,96 @@ export class LatinAmericaScene extends Phaser.Scene {
 
     const elapsedSec = (this.time.now - this._gameStartTime) / 1000
 
-    // Score
     const BASE = 100
     const PENALTY = 3
-    const PERFECT = 12
-    const WILD_BONUS = 15
+    const PERFECT = LABELS.length
     const extra = Math.max(0, this._moves - PERFECT)
     const movePenalty = extra * PENALTY
     const timeBonus = elapsedSec < 60 ? 10 : 0
-    const rawScore = BASE - movePenalty + timeBonus + WILD_BONUS
-    const score = Math.max(10, Math.min(100, Math.round(rawScore)))
+    const wildBonus = this._foundWild ? 15 : 0
+    const raw = BASE - movePenalty + timeBonus + wildBonus
+    const score = Math.max(10, Math.min(100, Math.round(raw)))
 
-    const curSales = this.registry.get(KEYS.STAT_SALES) ?? 0
-    const curEQ = this.registry.get(KEYS.STAT_EQ) ?? 0
-    const curGrit = this.registry.get(KEYS.STAT_GRIT) ?? 0
     const salesGain = Math.round(score / 5)
     const eqGain = Math.round(score / 8)
     const gritGain = Math.round(score / 10)
 
+    const curSales = this.registry.get(KEYS.STAT_SALES) ?? 0
+    const curEQ = this.registry.get(KEYS.STAT_EQ) ?? 0
+    const curGrit = this.registry.get(KEYS.STAT_GRIT) ?? 0
     this.registry.set(KEYS.STAT_SALES, Math.min(100, curSales + salesGain))
     this.registry.set(KEYS.STAT_EQ, Math.min(100, curEQ + eqGain))
     this.registry.set(KEYS.STAT_GRIT, Math.min(100, curGrit + gritGain))
 
     completeLevel(this, KEYS.SCORE_L2, KEYS.COMPLETED_L2, score)
 
-    // Grid fade out
+    // Fade cards
     this._cards.forEach(card => {
-      this.tweens.add({ targets: card.container, alpha: 0, duration: 800 })
+      this.tweens.add({ targets: card.container, alpha: 0, duration: 500 })
     })
 
-    // Overlay
-    this.time.delayedCall(900, () => this._drawCompletion(score, salesGain, eqGain, gritGain))
+    this.time.delayedCall(700, () => this._drawCompletion(score, salesGain, eqGain, gritGain))
   }
 
   _drawCompletion(score, salesGain, eqGain, gritGain) {
     const { width, height } = this.cameras.main
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, C.PARCHMENT, 0.92).setAlpha(0)
-    this.tweens.add({ targets: overlay, alpha: 0.92, duration: 500 })
+
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, C.BLACK, 0.9).setAlpha(0)
+    this.tweens.add({ targets: overlay, alpha: 0.92, duration: 400 })
 
     const elems = []
 
-    elems.push(this.add.text(width / 2, 140, 'MARKET CRACKED', {
-      ...TEXT.title,
-      fontSize: '32px',
-      fontStyle: 'bold',
-    }).setOrigin(0.5))
+    elems.push(BrutalUI.drawBlockType(this, width / 2, 140, 'MARKET CRACKED', {
+      fontSize: '56px',
+      color: COLORS.BONE,
+      shadowColor: COLORS.SHOCK_LIME,
+      shadowOffset: 6,
+    }).container)
 
-    elems.push(this.add.text(width / 2, 210,
-      'From zero to $1M ARR across 11 countries.',
-      {
-        ...TEXT.chapter,
-        fontSize: '18px',
-      }
-    ).setOrigin(0.5))
+    const sub = this.add.text(width / 2, 210, '$0 → $1M ARR · 11 COUNTRIES · 12 MONTHS', {
+      fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.SHOCK_LIME,
+      letterSpacing: 2,
+    }).setOrigin(0.5)
+    elems.push(sub)
 
-    elems.push(this.add.text(width / 2, 260,
-      'Every challenge became a skill.\nEvery setback became a story.',
-      {
-        ...TEXT.body,
-        fontSize: '14px',
-        color: COLORS.INK_LIGHT,
-        align: 'center',
-        lineSpacing: 8,
-      }
-    ).setOrigin(0.5))
+    // Score big number
+    const scoreNum = this.add.text(width / 2, 300, `${score}%`, {
+      fontFamily: FONT_DISPLAY, fontSize: '96px', color: COLORS.BONE,
+    }).setOrigin(0.5)
+    elems.push(scoreNum)
 
-    elems.push(this.add.text(width / 2, 340, `Score: ${score}%`, {
-      ...TEXT.body,
+    const scoreLbl = this.add.text(width / 2, 370, 'SCORE', {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_300,
+      letterSpacing: 3,
+    }).setOrigin(0.5)
+    elems.push(scoreLbl)
+
+    // Stat badges
+    const sales = BrutalUI.drawStatBadge(this, width / 2 - 140, 470, salesGain, '+SALES', { accent: C.SHOCK_LIME })
+    const eq = BrutalUI.drawStatBadge(this, width / 2, 470, eqGain, '+EQ', { accent: C.SHOCK_LIME })
+    const grit = BrutalUI.drawStatBadge(this, width / 2 + 140, 470, gritGain, '+GRIT', { accent: C.SHOCK_LIME })
+    elems.push(sales, eq, grit)
+
+    // Return button
+    BrutalUI.drawButton(this, width / 2, 620, 280, 56, 'RETURN TO INDEX →', () => {
+      this.cameras.main.fadeOut(350, 10, 10, 10)
+      this.time.delayedCall(380, () => this.scene.start('LevelSelectHub'))
+    }, {
+      fill: C.SHOCK_LIME,
+      labelColor: COLORS.BLACK,
       fontSize: '18px',
-      color: COLORS.INK_FADED,
-    }).setOrigin(0.5))
+      shadowOffset: 6,
+    })
 
-    elems.push(this.add.text(width / 2, 380,
-      `+${salesGain} Sales   +${eqGain} EQ   +${gritGain} Grit`,
-      { ...TEXT.stamp, fontSize: '16px' }
-    ).setOrigin(0.5))
-
-    let perfLine = 'The long road. But you got there. That\'s the whole point.'
-    if (this._moves <= 15) perfLine = "Near-perfect recall. You'd make a great sales closer."
-    else if (this._moves <= 22) perfLine = 'Solid memory. You connected the dots efficiently.'
-    else if (this._moves <= 30) perfLine = 'Persistent. You found every match — just like Augustin.'
-
-    elems.push(this.add.text(width / 2, 420, perfLine, {
-      ...TEXT.bodyItalic,
-      fontSize: '12px',
-      color: COLORS.INK_FADED,
-    }).setOrigin(0.5))
-
-    elems.push(this.add.text(width / 2, 500,
-      'Success in Latin America felt hollow.\nSomething was missing. Something harder.\nYou book a flight to the edge of the world...',
-      {
-        ...TEXT.prompt,
-        fontSize: '14px',
-        align: 'center',
-        lineSpacing: 6,
-      }
-    ).setOrigin(0.5))
-
-    elems.push(this.add.text(width / 2, 650, 'PRESS SPACE to return to the hub', {
-      ...TEXT.small,
-      color: COLORS.INK_FADED,
-    }).setOrigin(0.5))
-
-    elems.forEach(e => e.setAlpha(0))
-    this.tweens.add({ targets: elems, alpha: 1, duration: 600, delay: 400 })
+    elems.forEach(e => { if (e.setAlpha) e.setAlpha(0) })
+    elems.forEach(e => {
+      if (e && this.tweens) this.tweens.add({ targets: e, alpha: 1, duration: 500, delay: 300 })
+    })
 
     const returnToHub = () => {
-      this.cameras.main.fadeOut(400, 0, 0, 0)
-      this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
+      this.cameras.main.fadeOut(350, 10, 10, 10)
+      this.time.delayedCall(380, () => this.scene.start('LevelSelectHub'))
     }
     this.input.keyboard.once('keydown-SPACE', returnToHub)
-    this.time.delayedCall(8000, returnToHub)
   }
 }
