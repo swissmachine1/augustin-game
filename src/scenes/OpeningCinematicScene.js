@@ -1,10 +1,9 @@
 import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
-import { COLORS, TEXT, C } from '../config/theme.js'
-import { JournalUI } from '../ui/JournalUI.js'
+import { COLORS, C, FONT_DISPLAY, FONT_MONO } from '../config/theme.js'
+import { BrutalUI } from '../ui/BrutalUI.js'
 
-// Opening cinematic — handwritten journal entries appearing on parchment.
-// Each beat is a line of ink appearing on the page. Personal, intimate.
+// Click-to-advance narrative — one beat at a time, triggered by mouse click anywhere.
 export class OpeningCinematicScene extends Phaser.Scene {
   constructor() {
     super('OpeningCinematicScene')
@@ -12,83 +11,105 @@ export class OpeningCinematicScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.cameras.main
-    this.cameras.main.fadeIn(600, 58, 34, 16)
+    this.cameras.main.fadeIn(400, 10, 10, 10)
+    this.cameras.main.setBackgroundColor(COLORS.BLACK)
 
     const name = this.registry.get(KEYS.PLAYER_NAME) ?? 'friend'
 
-    // Parchment page
-    JournalUI.drawParchment(this, 0, 0, width, height)
-    JournalUI.drawPageNumber(this, 0)
+    // Background grid
+    const g = this.add.graphics()
+    g.lineStyle(1, C.GREY_900, 1)
+    for (let x = 0; x < width; x += 40) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, height); g.strokePath() }
+    for (let y = 0; y < height; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(width, y); g.strokePath() }
 
-    // Beats — each appears as a handwritten line on the page
+    // Top tag
+    BrutalUI.drawSticker(this, 120, 60, 'INTRO', {
+      fill: C.SHOCK_RED, rotation: -3 * Math.PI / 180, fontSize: '12px',
+    })
+
+    this.add.text(width - 40, 60, 'CLICK ANYWHERE TO ADVANCE', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_500,
+      letterSpacing: 1.5,
+    }).setOrigin(1, 0.5)
+
+    // The beats — each shown as a brutalist card, one at a time
     this._beats = [
-      { text: `Dear ${name},`,                                          y: 120, style: 'bodyItalic' },
-      { text: '2014. Shanghai.',                                        y: 170, style: 'heading' },
-      { text: 'I am twenty years old and finishing a law degree',        y: 220, style: 'body' },
-      { text: 'I no longer want.',                                      y: 250, style: 'bodyItalic' },
-      { text: '',                                                       y: 280 },
-      { text: 'What follows are five chapters',                         y: 310, style: 'body' },
-      { text: 'from a decade of expeditions.',                          y: 340, style: 'body' },
-      { text: '',                                                       y: 370 },
-      { text: 'Each one tested a skill',                                y: 400, style: 'body' },
-      { text: 'I had to build from zero.',                              y: 430, style: 'bodyItalic' },
-      { text: '',                                                       y: 460 },
-      { text: `Finish all five, ${name},`,                              y: 510, style: 'body' },
-      { text: 'and you will know why you should hire me.',              y: 540, style: 'bodyItalic' },
+      { kind: 'intro',    title: `DEAR ${name.toUpperCase()},`,           sub: 'LET ME TELL YOU A STORY.' },
+      { kind: 'scene',    title: 'SHANGHAI, 2014.',                       sub: 'I WAS FINISHING A LAW DEGREE I NO LONGER WANTED.' },
+      { kind: 'beat',     title: 'THEN I WENT TO A STARTUP WEEKEND.',     sub: 'AND EVERYTHING CHANGED.' },
+      { kind: 'promise',  title: '5 CHAPTERS.',                           sub: 'EACH ONE TESTED A SKILL I HAD TO BUILD FROM ZERO.' },
+      { kind: 'finale',   title: `FINISH ALL 5, ${name.toUpperCase()}.`,  sub: 'YOU\'LL KNOW WHY YOU SHOULD HIRE ME.' },
     ]
 
+    this._beatContainer = null
     this._currentBeat = 0
-    this._marginX = 140  // text starts after the red margin line
 
-    // Skip prompt
-    this.add.text(width - 40, height - 20, 'SPACE to skip', {
-      ...TEXT.label,
-      fontSize: '8px',
-    }).setOrigin(1, 1)
+    // Skip button top-right
+    BrutalUI.drawButton(this, width - 80, 640, 120, 40, 'SKIP →', () => this._finish(), {
+      fill: C.BLACK, labelColor: COLORS.BONE, fontSize: '12px', shadowOffset: 4,
+    })
 
-    this.input.keyboard.once('keydown-SPACE', () => this._finish())
-    this._playNextBeat()
+    this._showBeat()
+    this.input.keyboard.once('keydown-ESC', () => this._finish())
 
     this.events.once('shutdown', () => {
       this.input.keyboard.removeAllListeners()
-      if (this._beatTimer) this._beatTimer.remove()
+      this.input.removeAllListeners()
     }, this)
   }
 
-  _playNextBeat() {
-    if (this._currentBeat >= this._beats.length) {
-      this.time.delayedCall(1500, () => this._finish())
-      return
-    }
-
+  _showBeat() {
+    if (this._currentBeat >= this._beats.length) { this._finish(); return }
     const beat = this._beats[this._currentBeat]
-    this._currentBeat++
+    const { width, height } = this.cameras.main
 
-    if (beat.text === '') {
-      this._beatTimer = this.time.delayedCall(400, () => this._playNextBeat())
-      return
-    }
+    // Remove previous
+    if (this._beatContainer) this._beatContainer.destroy()
 
-    const style = beat.style ? TEXT[beat.style] : TEXT.body
-    const t = this.add.text(this._marginX, beat.y, beat.text, style).setAlpha(0)
+    const container = this.add.container(width / 2, height / 2)
 
-    this.tweens.add({
-      targets: t,
-      alpha: 1,
-      duration: 500,
-      onComplete: () => {
-        const holdMs = Math.max(800, beat.text.length * 30)
-        this._beatTimer = this.time.delayedCall(holdMs, () => this._playNextBeat())
-      },
+    // Main block title
+    const shadow = this.add.text(5, 5, beat.title, {
+      fontFamily: FONT_DISPLAY, fontSize: '72px', color: COLORS.SHOCK_RED,
+      align: 'center',
+    }).setOrigin(0.5)
+    const main = this.add.text(0, 0, beat.title, {
+      fontFamily: FONT_DISPLAY, fontSize: '72px', color: COLORS.BONE,
+      align: 'center',
+    }).setOrigin(0.5)
+
+    // Subtitle strip — high contrast
+    const subG = this.add.graphics()
+    subG.fillStyle(C.BONE, 1)
+    const subProbe = this.add.text(0, 0, beat.sub, {
+      fontFamily: FONT_MONO, fontSize: '16px', fontStyle: 'bold', color: COLORS.BLACK,
+      align: 'center',
+    }).setOrigin(0.5)
+    const subW = subProbe.width + 40
+    const subH = subProbe.height + 18
+    subProbe.destroy()
+    subG.fillRect(-subW / 2, 60, subW, subH)
+    const sub = this.add.text(0, 60 + subH / 2, beat.sub, {
+      fontFamily: FONT_MONO, fontSize: '16px', fontStyle: 'bold', color: COLORS.BLACK,
+    }).setOrigin(0.5)
+
+    container.add([shadow, main, subG, sub])
+    container.setAlpha(0)
+    this.tweens.add({ targets: container, alpha: 1, duration: 220 })
+
+    this._beatContainer = container
+
+    // Advance on click anywhere
+    this.input.once('pointerdown', () => {
+      this._currentBeat++
+      this._showBeat()
     })
   }
 
   _finish() {
     if (this._finishing) return
     this._finishing = true
-    this.cameras.main.fadeOut(500, 244, 232, 208)  // fade to parchment
-    this.time.delayedCall(520, () => {
-      this.scene.start('LevelSelectHub')
-    })
+    this.cameras.main.fadeOut(400, 10, 10, 10)
+    this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
   }
 }

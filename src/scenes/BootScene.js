@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import WebFont from 'webfontloader'
 import { initRegistry } from '../systems/GameRegistry.js'
-import { COLORS, FONT } from '../config/theme.js'
+import { COLORS, C, FONT_DISPLAY, FONT_MONO } from '../config/theme.js'
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -10,33 +10,50 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     initRegistry(this)
-
     const { width, height } = this.cameras.main
 
-    // Show loading text in fallback font (Lora not loaded yet)
-    const loadingText = this.add.text(width / 2, height / 2, 'Opening journal...', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '18px',
-      color: COLORS.INK_FADED,
-      fontStyle: 'italic',
+    this.cameras.main.setBackgroundColor(COLORS.BLACK)
+
+    // Block-type loading
+    const headline = this.add.text(width / 2, height / 2 - 40, 'THE AUGUSTIN FILES', {
+      fontFamily: 'Arial Black, Impact, sans-serif',
+      fontSize: '52px',
+      color: COLORS.BONE,
     }).setOrigin(0.5)
 
-    // Load Google Font
+    const shock = this.add.text(width / 2 + 4, height / 2 - 36, 'THE AUGUSTIN FILES', {
+      fontFamily: 'Arial Black, Impact, sans-serif',
+      fontSize: '52px',
+      color: COLORS.SHOCK_RED,
+    }).setOrigin(0.5).setDepth(-1)
+
+    const loadingText = this.add.text(width / 2, height / 2 + 30, '> LOADING TYPE…', {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '14px',
+      color: COLORS.BONE,
+    }).setOrigin(0.5)
+
     WebFont.load({
-      google: { families: ['Lora:400,400i,700'] },
+      google: {
+        families: [
+          'Space Mono:400,700,400italic',
+          'Archivo Black',
+          'Caveat:400,600',
+        ],
+      },
       active: () => {
-        loadingText.setText('Journal ready.')
-        this.time.delayedCall(400, () => {
-          this.scene.start('TitleScene')
-        })
+        // Swap to the real fonts now that they're loaded
+        headline.setFontFamily(FONT_DISPLAY)
+        shock.setFontFamily(FONT_DISPLAY)
+        loadingText.setFontFamily(FONT_MONO)
+        loadingText.setText('> READY. PRESS SPACE OR CLICK.')
+        this.time.delayedCall(350, () => this.scene.start('TitleScene'))
       },
       inactive: () => {
-        // Font failed — continue anyway with fallback
-        loadingText.setText('(fonts unavailable — continuing)')
-        this.time.delayedCall(800, () => {
-          this.scene.start('TitleScene')
-        })
+        loadingText.setText('> FALLBACK FONTS — CONTINUING')
+        this.time.delayedCall(600, () => this.scene.start('TitleScene'))
       },
+      timeout: 4000,
     })
 
     this.events.once('shutdown', () => {}, this)
