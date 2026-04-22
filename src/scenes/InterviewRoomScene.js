@@ -1,27 +1,30 @@
 import * as Phaser from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
-import { COLORS, TEXT, C, FONT, FONT_DISPLAY, FONT_HAND } from '../config/theme.js'
-import { JournalUI } from '../ui/JournalUI.js'
+import { COLORS, C, TEXT, FONT_MONO, FONT_DISPLAY, LEVEL_COLORS } from '../config/theme.js'
+import { BrutalUI } from '../ui/BrutalUI.js'
 
-const GRID = { cols: 8, rows: 8, cellSize: 60, originX: 160, originY: 100 }
-const BALL_SPEED = 180
-const CELL_MOVE_MS = (GRID.cellSize / BALL_SPEED) * 1000
+const GRID = { cols: 8, rows: 8, cellSize: 60, originX: 80, originY: 140 }
+const WATCH_CELL_MS = 520    // slow so player can follow
+const VERIFY_CELL_MS = 360   // verify — slow but a bit snappier
+const PLATFORM_PAUSE_MS = 900
 const RECALL_TIME = 45
 
+const ACCENT = LEVEL_COLORS[5] // SHOCK_ACID
+
 const PLATFORMS = [
-  { id: 0, label: 'Law School',      shortLabel: 'Law School',    year: '2014', col: 1, row: 0, angle: '\\', oneLiner: '2014 — International law in Shanghai. Row 4, back left. Mind elsewhere.' },
-  { id: 1, label: 'Startup Weekend', shortLabel: 'Startup Wknd',  year: '2014', col: 5, row: 0, angle: '\\', oneLiner: '48 hours. One pitch. Everything changed.' },
-  { id: 2, label: 'First Sales Job', shortLabel: 'First Sales',   year: '2015', col: 5, row: 2, angle: '/',  oneLiner: 'First tech job. First cold call. First "no." Then the first "yes."' },
-  { id: 3, label: 'LatAm Move',      shortLabel: 'LatAm Move',    year: '2017', col: 2, row: 2, angle: '/',  oneLiner: 'No Spanish. No network. Just a suitcase and a quota.' },
-  { id: 4, label: 'Training KOLs',   shortLabel: 'Training KOLs', year: '2018', col: 2, row: 4, angle: '\\', oneLiner: "You can't hard-sell a surgeon. So I learned to teach." },
-  { id: 5, label: '$1M ARR',         shortLabel: '$1M ARR',       year: '2020', col: 6, row: 4, angle: '\\', oneLiner: '11 countries. 200 doctors. One million in recurring revenue.' },
-  { id: 6, label: 'Greenland',       shortLabel: 'Greenland',     year: '2007', col: 6, row: 6, angle: '/',  oneLiner: "Icebergs, wild dogs, dengue. Some grit you can't learn in an office." },
-  { id: 7, label: 'Agency Launch',   shortLabel: 'Agency Launch', year: '2023', col: 3, row: 6, angle: '/',  oneLiner: 'Went solo. Built systems for clients across 3 continents.' },
-  { id: 8, label: 'AI Tools',        shortLabel: 'AI Tools',      year: '2025', col: 3, row: 7, angle: '\\', oneLiner: 'Clay, n8n, GPT. The GTM stack that makes one person feel like ten.' },
+  { id: 0, label: 'LAW SCHOOL',       year: '2014', col: 1, row: 0, angle: '\\' },
+  { id: 1, label: 'STARTUP WEEKEND',  year: '2014', col: 5, row: 0, angle: '\\' },
+  { id: 2, label: 'FIRST SALES JOB',  year: '2015', col: 5, row: 2, angle: '/'  },
+  { id: 3, label: 'LATIN AMERICA',    year: '2017', col: 2, row: 2, angle: '/'  },
+  { id: 4, label: 'TRAINING DOCTORS', year: '2018', col: 2, row: 4, angle: '\\' },
+  { id: 5, label: '$1M ARR',          year: '2020', col: 6, row: 4, angle: '\\' },
+  { id: 6, label: 'GREENLAND',        year: '2007', col: 6, row: 6, angle: '/'  },
+  { id: 7, label: 'AGENCY LAUNCH',    year: '2023', col: 3, row: 6, angle: '/'  },
+  { id: 8, label: 'CLAY / N8N / AI',  year: '2025', col: 3, row: 7, angle: '\\' },
 ]
 
-const LANDING_ZONE = { col: 6, row: 7, label: 'HIRE ME' }
+const LANDING_ZONE = { col: 6, row: 7 }
 
 function deflect(dir, angle) {
   if (angle === '/') {
@@ -35,6 +38,13 @@ function stepDir(col, row, dir) {
   if (dir === 'UP')    return { col, row: row - 1 }
   if (dir === 'LEFT')  return { col: col - 1, row }
   return { col: col + 1, row }
+}
+
+function dirVec(dir) {
+  if (dir === 'DOWN')  return { x: 0, y: 1 }
+  if (dir === 'UP')    return { x: 0, y: -1 }
+  if (dir === 'LEFT')  return { x: -1, y: 0 }
+  return { x: 1, y: 0 }
 }
 
 export class InterviewRoomScene extends Phaser.Scene {
@@ -54,49 +64,85 @@ export class InterviewRoomScene extends Phaser.Scene {
     this._timerEvent = null
     this._ballTweens = []
 
-    this._ctxHandler = (e) => e.preventDefault()
-    this.game.canvas.addEventListener('contextmenu', this._ctxHandler)
+    this.cameras.main.setBackgroundColor(COLORS.BLACK)
+    this.cameras.main.fadeIn(350, 10, 10, 10)
 
-    this._escKey = this.input.keyboard.addKey('ESC')
-    this._spaceKey = this.input.keyboard.addKey('SPACE')
-    this._rKey = this.input.keyboard.addKey('R')
-
-    this._escHandler = () => this._returnToHub()
-    this._escKey.on('down', this._escHandler)
-
-    JournalUI.drawParchment(this, 0, 0, 1280, 720)
-    JournalUI.drawGrain(this, 0, 0, 1280, 720, 0.06)
-    JournalUI.drawPageNumber(this, 10)
-
-    this.add.text(40, 30, 'CHAPTER 5', { ...TEXT.label, fontSize: '12px' })
-    this.add.text(40, 48, 'Pinball Recall', { ...TEXT.chapter, fontSize: '28px' })
-    this.add.text(40, 82, 'Trace the path. Rebuild from memory.', { ...TEXT.bodyItalic, fontSize: '13px', color: COLORS.INK_LIGHT })
-
-    this._gridGraphics = this.add.graphics()
-    this._drawGrid()
-    this._drawEntryExit()
+    this._drawBackdrop()
+    this._drawHeader()
     this._createBallTexture()
+
+    // Persistent home button
+    BrutalUI.drawHomeButton(this)
 
     this.events.once('shutdown', () => this._cleanup())
 
-    this.time.delayedCall(800, () => this._startPhaseWatch())
+    // Onboarding — click-to-advance intro explaining the 3 phases
+    this._showIntroNarrative()
   }
 
   _cleanup() {
-    if (this._ctxHandler) {
-      this.game.canvas.removeEventListener('contextmenu', this._ctxHandler)
-      this._ctxHandler = null
-    }
     if (this._timerEvent) this._timerEvent.remove(false)
-    if (this._escKey && this._escHandler) this._escKey.off('down', this._escHandler)
-    if (this._spaceKey && this._spaceHandler) this._spaceKey.off('down', this._spaceHandler)
-    if (this._spaceKey && this._spaceReplay) this._spaceKey.off('down', this._spaceReplay)
-    if (this._rKey && this._rHandler) this._rKey.off('down', this._rHandler)
     this._trailDots = []
   }
 
-  _returnToHub() {
-    this.scene.start('LevelSelectHub')
+  _drawBackdrop() {
+    const W = 1280, H = 720
+    const g = this.add.graphics()
+    g.fillStyle(C.BLACK, 1)
+    g.fillRect(0, 0, W, H)
+    // Subtle bone grid blueprint — NOT confused with the playfield grid
+    g.lineStyle(1, C.BONE, 0.04)
+    for (let x = 0; x <= W; x += 80) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.strokePath() }
+    for (let y = 0; y <= H; y += 80) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.strokePath() }
+  }
+
+  _drawHeader() {
+    // Chapter tag, top bar on the right of the home button
+    this.add.text(160, 38, 'CHAPTER 05', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.BONE,
+      letterSpacing: 3,
+    })
+    this.add.text(160, 54, 'PINBALL RECALL', {
+      fontFamily: FONT_DISPLAY, fontSize: '26px', color: COLORS.BONE,
+    })
+    // Accent strip
+    const strip = this.add.graphics()
+    strip.fillStyle(ACCENT.num, 1)
+    strip.fillRect(160, 90, 220, 4)
+  }
+
+  _showIntroNarrative() {
+    this._phase = 'INTRO'
+    const lines = [
+      [
+        'PHASE 1 — WATCH',
+        'YOU WILL WATCH A BALL BOUNCE THROUGH MY CAREER.',
+      ],
+      [
+        'PHASE 2 — RECALL',
+        'THEN PLATFORMS DISAPPEAR.\nPLACE THEM BACK FROM MEMORY.',
+      ],
+      [
+        'PHASE 3 — VERIFY',
+        'THE BETTER YOUR MEMORY, THE HIGHER YOUR SCORE.',
+      ],
+    ]
+
+    const step = (i) => {
+      if (i >= lines.length) {
+        this.time.delayedCall(200, () => this._startPhaseWatch())
+        return
+      }
+      const [title, body] = lines[i]
+      const full = `${title}\n\n${body}`
+      BrutalUI.showNarrative(this, 640, 360, 760, 280, full, () => step(i + 1), {
+        fill: C.BONE,
+        border: C.BLACK,
+        accentColor: ACCENT.num,
+        fontSize: '18px',
+      })
+    }
+    step(0)
   }
 
   _cellCenter(col, row) {
@@ -107,89 +153,111 @@ export class InterviewRoomScene extends Phaser.Scene {
   }
 
   _drawGrid() {
-    const g = this._gridGraphics
     const { cols, rows, cellSize, originX, originY } = GRID
+    const g = this.add.graphics()
+    this._addPhaseObject(g)
 
-    g.fillStyle(C.PARCHMENT_DARK, 0.25)
-    g.fillRect(originX, originY, cols * cellSize, rows * cellSize)
+    // Outer thick bone border
+    g.lineStyle(5, C.BONE, 1)
+    g.strokeRect(originX - 4, originY - 4, cols * cellSize + 8, rows * cellSize + 8)
 
-    g.lineStyle(0.5, C.INK, 0.15)
+    // Grid lines — thick bone
+    g.lineStyle(1.5, C.BONE, 0.55)
     for (let c = 0; c <= cols; c++) {
       const x = originX + c * cellSize
-      g.beginPath()
-      g.moveTo(x, originY)
-      g.lineTo(x, originY + rows * cellSize)
-      g.strokePath()
+      g.beginPath(); g.moveTo(x, originY); g.lineTo(x, originY + rows * cellSize); g.strokePath()
     }
     for (let r = 0; r <= rows; r++) {
       const y = originY + r * cellSize
-      g.beginPath()
-      g.moveTo(originX, y)
-      g.lineTo(originX + cols * cellSize, y)
-      g.strokePath()
+      g.beginPath(); g.moveTo(originX, y); g.lineTo(originX + cols * cellSize, y); g.strokePath()
     }
 
-    g.fillStyle(C.INK, 0.18)
+    // Intersection dots — small bone circles
+    g.fillStyle(C.BONE, 0.8)
     for (let c = 0; c <= cols; c++) {
       for (let r = 0; r <= rows; r++) {
-        g.fillCircle(originX + c * cellSize, originY + r * cellSize, 1.6)
+        g.fillCircle(originX + c * cellSize, originY + r * cellSize, 2.2)
       }
     }
-
-    g.lineStyle(1.5, C.INK, 0.4)
-    g.strokeRect(originX - 2, originY - 2, cols * cellSize + 4, rows * cellSize + 4)
-
-    const corners = [
-      [originX - 10, originY - 10, 1, 1],
-      [originX + cols * cellSize + 10, originY - 10, -1, 1],
-      [originX - 10, originY + rows * cellSize + 10, 1, -1],
-      [originX + cols * cellSize + 10, originY + rows * cellSize + 10, -1, -1],
-    ]
-    g.lineStyle(0.8, C.INK_FADED, 0.5)
-    corners.forEach(([cx, cy, dx, dy]) => {
-      g.beginPath()
-      g.moveTo(cx, cy + 14 * dy)
-      g.lineTo(cx, cy)
-      g.lineTo(cx + 14 * dx, cy)
-      g.strokePath()
-    })
   }
 
   _drawEntryExit() {
     const entry = this._cellCenter(1, 0)
-    const g = this.add.graphics()
-    g.lineStyle(1.2, C.INK, 0.6)
-    g.beginPath()
-    g.moveTo(entry.x - 8, GRID.originY - 18)
-    g.lineTo(entry.x, GRID.originY - 4)
-    g.lineTo(entry.x + 8, GRID.originY - 18)
-    g.strokePath()
-    this.add.text(entry.x, GRID.originY - 30, 'START', { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5)
-
     const exit = this._cellCenter(LANDING_ZONE.col, LANDING_ZONE.row)
-    this._landingSeal = JournalUI.drawWaxSeal(this, exit.x, exit.y + 2, 'H', 18)
-    this.add.text(exit.x, GRID.originY + GRID.rows * GRID.cellSize + 18, 'HIRE ME', { ...TEXT.label, fontSize: '11px', fontStyle: 'bold italic', color: COLORS.WAX_RED }).setOrigin(0.5)
+
+    // START marker at top
+    const startG = this.add.graphics()
+    startG.fillStyle(ACCENT.num, 1)
+    startG.fillTriangle(entry.x - 10, GRID.originY - 26, entry.x + 10, GRID.originY - 26, entry.x, GRID.originY - 6)
+    this._addPhaseObject(startG)
+    const startTxt = this.add.text(entry.x, GRID.originY - 42, 'START', {
+      fontFamily: FONT_DISPLAY, fontSize: '14px', color: COLORS.BONE,
+    }).setOrigin(0.5)
+    this._addPhaseObject(startTxt)
+
+    // HIRE ME zone — big bone rectangle at bottom below exit column
+    const gx = GRID.originX + LANDING_ZONE.col * GRID.cellSize
+    const gy = GRID.originY + GRID.rows * GRID.cellSize + 16
+    const zone = this.add.graphics()
+    zone.fillStyle(C.BLACK, 1)
+    zone.fillRect(gx + 6, gy + 6, 180, 50)
+    zone.fillStyle(C.BONE, 1)
+    zone.fillRect(gx, gy, 180, 50)
+    zone.lineStyle(3, C.BLACK, 1)
+    zone.strokeRect(gx, gy, 180, 50)
+    // Accent slash
+    zone.fillStyle(ACCENT.num, 1)
+    zone.fillRect(gx, gy, 8, 50)
+    this._addPhaseObject(zone)
+
+    const zoneText = this.add.text(gx + 96, gy + 25, 'HIRE ME →', {
+      fontFamily: FONT_DISPLAY, fontSize: '20px', color: COLORS.BLACK,
+    }).setOrigin(0.5)
+    this._addPhaseObject(zoneText)
+
+    // Dotted drop guide from grid bottom to zone
+    const guide = this.add.graphics()
+    guide.lineStyle(2, ACCENT.num, 0.5)
+    for (let yy = GRID.originY + GRID.rows * GRID.cellSize; yy < gy; yy += 6) {
+      guide.beginPath(); guide.moveTo(exit.x, yy); guide.lineTo(exit.x, yy + 3); guide.strokePath()
+    }
+    this._addPhaseObject(guide)
   }
 
   _createBallTexture() {
     if (this.textures.exists('l5ball')) return
     const g = this.add.graphics()
-    g.fillStyle(C.WAX_RED, 1)
-    g.fillCircle(10, 10, 8)
-    g.fillStyle(C.WAX_RED_LIGHT, 1)
-    g.fillCircle(8, 8, 4)
-    g.fillStyle(0xffffff, 0.45)
-    g.fillCircle(7, 7, 1.6)
-    g.generateTexture('l5ball', 20, 20)
+    // Black border
+    g.fillStyle(0x000000, 1)
+    g.fillCircle(14, 14, 13)
+    // Acid green fill
+    g.fillStyle(0x00ff6a, 1)
+    g.fillCircle(14, 14, 10)
+    // Tiny bone highlight
+    g.fillStyle(0xf5f0e6, 0.9)
+    g.fillCircle(10, 10, 2.5)
+    g.generateTexture('l5ball', 28, 28)
     g.destroy()
   }
 
-  _drawPlatform(col, row, angle, color = C.INK, alpha = 0.85, thickness = 2.5) {
+  _drawPlatform(col, row, angle, color = C.BONE, thickness = 5) {
     const x = GRID.originX + col * GRID.cellSize
     const y = GRID.originY + row * GRID.cellSize
-    const pad = 10
+    const pad = 8
     const g = this.add.graphics()
-    g.lineStyle(thickness, color, alpha)
+    // Thick black casing
+    g.lineStyle(thickness + 4, C.BLACK, 1)
+    g.beginPath()
+    if (angle === '/') {
+      g.moveTo(x + pad, y + GRID.cellSize - pad)
+      g.lineTo(x + GRID.cellSize - pad, y + pad)
+    } else {
+      g.moveTo(x + pad, y + pad)
+      g.lineTo(x + GRID.cellSize - pad, y + GRID.cellSize - pad)
+    }
+    g.strokePath()
+    // Main color line
+    g.lineStyle(thickness, color, 1)
     g.beginPath()
     if (angle === '/') {
       g.moveTo(x + pad, y + GRID.cellSize - pad)
@@ -216,63 +284,68 @@ export class InterviewRoomScene extends Phaser.Scene {
 
   _startPhaseWatch() {
     this._phase = 'WATCH'
+    this._drawGrid()
+    this._drawEntryExit()
+
+    // Side panel on the right — shows current career milestone
+    this._drawWatchPanel()
 
     PLATFORMS.forEach(p => {
-      const plat = this._drawPlatform(p.col, p.row, p.angle, C.INK, 0.85)
+      const plat = this._drawPlatform(p.col, p.row, p.angle, C.BONE, 5)
       this._addPhaseObject(plat)
       p._graphic = plat
-      const center = this._cellCenter(p.col, p.row)
-      const label = this.add.text(center.x, center.y + GRID.cellSize / 2 - 2, p.shortLabel, {
-        ...TEXT.label, fontSize: '8px', color: COLORS.INK,
-      }).setOrigin(0.5, 1)
-      this._addPhaseObject(label)
-      p._label = label
     })
 
-    const instr = this.add.text(680, 120, 'Watch the ball trace\nAugustin’s career path.', {
-      ...TEXT.bodyItalic, fontSize: '16px', color: COLORS.INK_LIGHT, wordWrap: { width: 540 },
-    })
-    this._addPhaseObject(instr)
-    const subInstr = this.add.text(680, 170, 'Then rebuild it from memory.', {
-      ...TEXT.body, fontSize: '13px', color: COLORS.INK_FADED,
-    })
-    this._addPhaseObject(subInstr)
-
-    this._narrativeBox = this.add.graphics()
-    this._narrativeBox.fillStyle(C.PARCHMENT_DARK, 0.2)
-    this._narrativeBox.fillRect(680, 210, 560, 160)
-    this._narrativeBox.lineStyle(0.5, C.INK, 0.25)
-    this._narrativeBox.strokeRect(680, 210, 560, 160)
-    this._addPhaseObject(this._narrativeBox)
-
-    this._narrativeYear = this.add.text(700, 225, '', { ...TEXT.hand, fontSize: '28px', color: COLORS.INDIGO })
-    this._narrativeText = this.add.text(700, 270, '', { ...TEXT.bodyItalic, fontSize: '16px', color: COLORS.INK, wordWrap: { width: 520 } })
-    this._narrativeLabel = this.add.text(700, 340, '', { ...TEXT.label, fontSize: '11px', color: COLORS.INK_FADED })
-    this._addPhaseObject(this._narrativeYear)
-    this._addPhaseObject(this._narrativeText)
-    this._addPhaseObject(this._narrativeLabel)
-
-    const skip = this.add.text(1240, 690, 'SPACE to skip  ·  ESC for hub', {
-      ...TEXT.small, fontSize: '10px',
-    }).setOrigin(1, 1)
-    this._addPhaseObject(skip)
-
-    this._spaceHandler = () => this._skipWatch()
-    this._spaceKey.on('down', this._spaceHandler)
-
-    this.time.delayedCall(1200, () => this._runBallWatch())
+    this.time.delayedCall(700, () => this._runBallWatch())
   }
 
-  _skipWatch() {
-    if (this._phase !== 'WATCH') return
-    this._ballTweens.forEach(t => { if (t && t.stop) t.stop() })
-    this._ballTweens = []
-    this._endPhaseWatch()
+  _drawWatchPanel() {
+    const px = 640, py = 140, pw = 560, ph = 420
+    const panel = this.add.graphics()
+    panel.fillStyle(C.BLACK, 1)
+    panel.fillRect(px + 8, py + 8, pw, ph)
+    panel.fillStyle(C.BONE, 1)
+    panel.fillRect(px, py, pw, ph)
+    panel.lineStyle(4, C.BLACK, 1)
+    panel.strokeRect(px, py, pw, ph)
+    panel.fillStyle(ACCENT.num, 1)
+    panel.fillRect(px, py, pw, 10)
+    this._addPhaseObject(panel)
+
+    const hdr = this.add.text(px + 24, py + 30, 'PHASE 1 — WATCH', {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 3,
+    })
+    this._addPhaseObject(hdr)
+
+    const sub = this.add.text(px + 24, py + 54, 'FOLLOW THE BALL.\nMEMORIZE THE PATH.', {
+      fontFamily: FONT_DISPLAY, fontSize: '26px', color: COLORS.BLACK,
+      lineSpacing: 4,
+    })
+    this._addPhaseObject(sub)
+
+    // Step counter + milestone
+    this._watchYear = this.add.text(px + 24, py + 150, '', {
+      fontFamily: FONT_DISPLAY, fontSize: '54px', color: COLORS.BLACK,
+    })
+    this._addPhaseObject(this._watchYear)
+
+    this._watchLabel = this.add.text(px + 24, py + 220, '', {
+      fontFamily: FONT_DISPLAY, fontSize: '28px', color: COLORS.BLACK,
+      wordWrap: { width: pw - 48 },
+    })
+    this._addPhaseObject(this._watchLabel)
+
+    this._watchStep = this.add.text(px + 24, py + ph - 40, '', {
+      fontFamily: FONT_MONO, fontSize: '13px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 2,
+    })
+    this._addPhaseObject(this._watchStep)
   }
 
   _runBallWatch() {
     const start = this._cellCenter(1, 0)
-    this._ball = this.add.image(start.x, GRID.originY - 40, 'l5ball').setDepth(10)
+    this._ball = this.add.image(start.x, GRID.originY - 60, 'l5ball').setDepth(10)
     this._addPhaseObject(this._ball)
 
     const path = this._buildPath()
@@ -283,7 +356,7 @@ export class InterviewRoomScene extends Phaser.Scene {
     const path = []
     let col = 1, row = 0, dir = 'DOWN'
     const first = PLATFORMS.find(p => p.col === col && p.row === row)
-    path.push({ col, row, platform: first, isLanding: false })
+    path.push({ col, row, platform: first, isLanding: false, dirBefore: dir, dirAfter: first ? deflect(dir, first.angle) : dir })
     if (first) dir = deflect(dir, first.angle)
 
     let steps = 0
@@ -294,7 +367,9 @@ export class InterviewRoomScene extends Phaser.Scene {
       if (col < 0 || col >= GRID.cols || row < 0 || row >= GRID.rows) break
       const plat = PLATFORMS.find(p => p.col === col && p.row === row)
       const isLanding = (col === LANDING_ZONE.col && row === LANDING_ZONE.row)
-      path.push({ col, row, platform: plat, isLanding })
+      const dirBefore = dir
+      const dirAfter = plat ? deflect(dir, plat.angle) : dir
+      path.push({ col, row, platform: plat, isLanding, dirBefore, dirAfter })
       if (isLanding) break
       if (plat) dir = deflect(dir, plat.angle)
     }
@@ -309,26 +384,21 @@ export class InterviewRoomScene extends Phaser.Scene {
       if (idx >= path.length) { if (onDone) onDone(); return }
       const node = path[idx]
       const target = this._cellCenter(node.col, node.row)
+      const duration = isWatch ? WATCH_CELL_MS : VERIFY_CELL_MS
       const tween = this.tweens.add({
         targets: this._ball,
         x: target.x,
         y: target.y,
-        duration: CELL_MOVE_MS,
+        duration,
         ease: 'Linear',
         onUpdate: () => {
           if (isWatch) this._dropTrail(this._ball.x, this._ball.y)
         },
         onComplete: () => {
           if (node.platform) {
-            this._onPlatformHit(node.platform, isWatch, () => {
-              idx++
-              stepNext()
-            })
+            this._onPlatformHit(node, isWatch, () => { idx++; stepNext() })
           } else if (node.isLanding) {
-            this._onLandingHit(isWatch, () => {
-              idx++
-              stepNext()
-            })
+            this._onLandingHit(isWatch, () => { idx++; stepNext() })
           } else {
             idx++
             stepNext()
@@ -344,107 +414,129 @@ export class InterviewRoomScene extends Phaser.Scene {
     if (!this._lastTrail) this._lastTrail = { x, y }
     const dx = x - this._lastTrail.x
     const dy = y - this._lastTrail.y
-    if (dx * dx + dy * dy < 225) return
+    if (dx * dx + dy * dy < 180) return
     this._lastTrail = { x, y }
-    const dot = this.add.circle(x, y, 1.5, C.INK_FADED, 0.35).setDepth(5)
+    const dot = this.add.circle(x, y, 2, ACCENT.num, 0.6).setDepth(5)
     this._trailDots.push(dot)
   }
 
-  _onPlatformHit(plat, isWatch, done) {
-    this.cameras.main.shake(80, 0.002)
+  _onPlatformHit(node, isWatch, done) {
+    const plat = node.platform
     const center = this._cellCenter(plat.col, plat.row)
-    this._spawnInkBurst(center.x, center.y)
 
+    // Flash the platform
     if (plat._graphic) {
       this.tweens.add({
-        targets: plat._graphic,
-        alpha: 0.3,
-        duration: 100,
-        yoyo: true,
-        onComplete: () => { if (plat._graphic) plat._graphic.alpha = 0.85 },
-      })
-    }
-    if (plat._label) {
-      this.tweens.add({
-        targets: plat._label,
-        scale: 1.3,
-        duration: 120,
-        yoyo: true,
+        targets: plat._graphic, alpha: 0.25, duration: 120, yoyo: true,
+        onComplete: () => { if (plat._graphic) plat._graphic.alpha = 1 },
       })
     }
 
     if (isWatch) {
-      this._narrativeYear.setText(plat.year)
-      this._narrativeLabel.setText(`Step ${plat.id + 1} of 9 — ${plat.label}`)
-      this._narrativeText.setText(plat.oneLiner)
-      this._narrativeYear.alpha = 0
-      this._narrativeText.alpha = 0
-      this._narrativeLabel.alpha = 0
-      this.tweens.add({ targets: [this._narrativeYear, this._narrativeText, this._narrativeLabel], alpha: 1, duration: 200 })
-      this.time.delayedCall(850, done)
+      // Show sticker label above platform
+      const sticker = BrutalUI.drawSticker(this, center.x, center.y - GRID.cellSize / 2 - 22, plat.label, {
+        fill: ACCENT.num, textColor: COLORS.BLACK, fontSize: '11px',
+        rotation: -4 * Math.PI / 180,
+      })
+      sticker.setDepth(12)
+      this._addPhaseObject(sticker)
+      sticker.setScale(0)
+      this.tweens.add({ targets: sticker, scale: 1, duration: 180, ease: 'Back.easeOut' })
+
+      // Arrow pointing in direction of travel AFTER the bounce
+      const arrow = this._drawArrow(center.x, center.y, node.dirAfter)
+      this._addPhaseObject(arrow)
+
+      // Update side panel
+      if (this._watchYear) this._watchYear.setText(plat.year)
+      if (this._watchLabel) this._watchLabel.setText(plat.label)
+      if (this._watchStep) this._watchStep.setText(`STEP ${plat.id + 1} / 9`)
+
+      this.cameras.main.shake(60, 0.0015)
+      this.time.delayedCall(PLATFORM_PAUSE_MS, done)
     } else {
-      this.time.delayedCall(50, done)
+      this.time.delayedCall(40, done)
     }
+  }
+
+  _drawArrow(cx, cy, dir) {
+    const v = dirVec(dir)
+    const len = 36
+    const g = this.add.graphics().setDepth(11)
+    const ex = cx + v.x * len, ey = cy + v.y * len
+    // Shadow
+    g.lineStyle(9, C.BLACK, 1)
+    g.beginPath(); g.moveTo(cx + v.x * 16, cy + v.y * 16); g.lineTo(ex, ey); g.strokePath()
+    // Fill
+    g.lineStyle(5, ACCENT.num, 1)
+    g.beginPath(); g.moveTo(cx + v.x * 16, cy + v.y * 16); g.lineTo(ex, ey); g.strokePath()
+    // Arrowhead
+    const perpX = -v.y, perpY = v.x
+    g.fillStyle(C.BLACK, 1)
+    g.fillTriangle(
+      ex + v.x * 8, ey + v.y * 8,
+      ex - v.x * 4 + perpX * 7, ey - v.y * 4 + perpY * 7,
+      ex - v.x * 4 - perpX * 7, ey - v.y * 4 - perpY * 7,
+    )
+    g.fillStyle(ACCENT.num, 1)
+    g.fillTriangle(
+      ex + v.x * 5, ey + v.y * 5,
+      ex - v.x * 3 + perpX * 5, ey - v.y * 3 + perpY * 5,
+      ex - v.x * 3 - perpX * 5, ey - v.y * 3 - perpY * 5,
+    )
+    // Fade out after pause
+    this.tweens.add({ targets: g, alpha: 0, duration: 600, delay: PLATFORM_PAUSE_MS - 200 })
+    return g
   }
 
   _onLandingHit(isWatch, done) {
     const center = this._cellCenter(LANDING_ZONE.col, LANDING_ZONE.row)
-    this._spawnInkBurst(center.x, center.y)
-    this.cameras.main.shake(120, 0.003)
+    this.cameras.main.shake(140, 0.004)
 
-    if (this._landingSeal) {
-      this.tweens.add({ targets: this._landingSeal, scale: 1.3, duration: 300, yoyo: true, repeat: 1 })
+    // Burst of acid green
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * Math.PI * 2
+      const speed = 50 + Math.random() * 60
+      const dot = this.add.circle(center.x, center.y, 3 + Math.random() * 2, ACCENT.num, 0.9).setDepth(9)
+      this.tweens.add({
+        targets: dot,
+        x: center.x + Math.cos(a) * speed,
+        y: center.y + Math.sin(a) * speed,
+        alpha: 0,
+        duration: 500 + Math.random() * 300,
+        onComplete: () => dot.destroy(),
+      })
     }
 
     if (isWatch) {
-      this._narrativeYear.setText('2026')
-      this._narrativeLabel.setText('What’s next?')
-      this._narrativeText.setText('Looking for the next challenge. Maybe it’s yours.')
-      this.tweens.add({ targets: [this._narrativeYear, this._narrativeText, this._narrativeLabel], alpha: 1, duration: 200 })
+      if (this._watchYear) this._watchYear.setText('2026')
+      if (this._watchLabel) this._watchLabel.setText('HIRE ME.')
+      if (this._watchStep) this._watchStep.setText('END OF PATH')
       this.time.delayedCall(1600, done)
     } else {
-      this.time.delayedCall(100, done)
-    }
-  }
-
-  _spawnInkBurst(x, y) {
-    const count = 5 + Math.floor(Math.random() * 3)
-    for (let i = 0; i < count; i++) {
-      const a = Math.random() * Math.PI * 2
-      const speed = 25 + Math.random() * 45
-      const dot = this.add.circle(x, y, 1 + Math.random() * 1.5, C.INK, 0.55).setDepth(9)
-      this.tweens.add({
-        targets: dot,
-        x: x + Math.cos(a) * speed,
-        y: y + Math.sin(a) * speed,
-        alpha: 0,
-        duration: 300 + Math.random() * 200,
-        ease: 'Quad.easeOut',
-        onComplete: () => dot.destroy(),
-      })
+      this.time.delayedCall(120, done)
     }
   }
 
   _endPhaseWatch() {
     if (this._phase !== 'WATCH') return
     this._phase = 'TRANSITION'
-    if (this._spaceHandler) {
-      this._spaceKey.off('down', this._spaceHandler)
-      this._spaceHandler = null
-    }
 
     PLATFORMS.forEach(p => {
-      if (p._graphic) this.tweens.add({ targets: p._graphic, alpha: 0, duration: 900 })
-      if (p._label) this.tweens.add({ targets: p._label, alpha: 0, duration: 900 })
+      if (p._graphic) this.tweens.add({ targets: p._graphic, alpha: 0, duration: 700 })
     })
-    this._trailDots.forEach(d => this.tweens.add({ targets: d, alpha: 0, duration: 900, onComplete: () => d.destroy() }))
+    this._trailDots.forEach(d => this.tweens.add({ targets: d, alpha: 0, duration: 700, onComplete: () => d.destroy() }))
     this._trailDots = []
 
-    this.time.delayedCall(1000, () => {
+    this.time.delayedCall(800, () => {
       this._clearPhaseObjects()
-      // Clear any stored ref on PLATFORMS so later uses aren't referencing destroyed objects
-      PLATFORMS.forEach(p => { p._graphic = null; p._label = null })
-      this._startPhaseRecall()
+      PLATFORMS.forEach(p => { p._graphic = null })
+
+      BrutalUI.showNarrative(this, 640, 360, 760, 240,
+        'PHASE 2 — RECALL\n\nDRAG PLATFORMS FROM THE TRAY ONTO THE GRID.\nCLICK A PLACED PLATFORM TO ROTATE ITS ANGLE.\n\nHIT "LOCK IN" WHEN READY.',
+        () => this._startPhaseRecall(),
+        { fill: C.BONE, accentColor: ACCENT.num, fontSize: '16px' },
+      )
     })
   }
 
@@ -454,17 +546,9 @@ export class InterviewRoomScene extends Phaser.Scene {
     this._phase = 'RECALL'
     this._placements = new Map()
 
-    const hdr = this.add.text(680, 100, 'PLACE FROM MEMORY', { ...TEXT.label, fontSize: '12px', fontStyle: 'bold', color: COLORS.INK })
-    this._addPhaseObject(hdr)
-    const hint = this.add.text(680, 118, 'Drag cards to the grid. Double-click or FLIP to rotate.', {
-      ...TEXT.small, fontSize: '11px', color: COLORS.INK_FADED,
-    })
-    this._addPhaseObject(hint)
-
-    this._timerText = this.add.text(1240, 40, '0:45', { ...TEXT.stat, fontSize: '26px', color: COLORS.INK_BLACK }).setOrigin(1, 0)
-    this._addPhaseObject(this._timerText)
-    const timerLbl = this.add.text(1240, 70, 'TIME', { ...TEXT.label, fontSize: '10px' }).setOrigin(1, 0)
-    this._addPhaseObject(timerLbl)
+    this._drawGrid()
+    this._drawEntryExit()
+    this._drawRecallPanel()
 
     this._timeLeft = RECALL_TIME
     this._timerEvent = this.time.addEvent({
@@ -473,39 +557,82 @@ export class InterviewRoomScene extends Phaser.Scene {
       callback: () => this._tickTimer(),
     })
 
+    this._buildTray()
+  }
+
+  _drawRecallPanel() {
+    // Header strip over the grid
+    const hdr = this.add.text(GRID.originX, GRID.originY - 52, 'PHASE 2 — RECALL', {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: ACCENT.hex,
+      letterSpacing: 3,
+    })
+    this._addPhaseObject(hdr)
+
+    const instr = this.add.text(GRID.originX, GRID.originY - 32, 'DRAG FROM TRAY →  CLICK TO ROTATE', {
+      fontFamily: FONT_DISPLAY, fontSize: '18px', color: COLORS.BONE,
+    })
+    this._addPhaseObject(instr)
+
+    // Tray frame on the right
+    const trayX = 640, trayY = 140, trayW = 560, trayH = 480
+    const frame = this.add.graphics()
+    frame.fillStyle(C.BLACK, 1)
+    frame.fillRect(trayX + 6, trayY + 6, trayW, trayH)
+    frame.fillStyle(C.BONE, 1)
+    frame.fillRect(trayX, trayY, trayW, trayH)
+    frame.lineStyle(4, C.BLACK, 1)
+    frame.strokeRect(trayX, trayY, trayW, trayH)
+    frame.fillStyle(ACCENT.num, 1)
+    frame.fillRect(trayX, trayY, trayW, 8)
+    this._addPhaseObject(frame)
+
+    const trayHdr = this.add.text(trayX + 20, trayY + 24, 'TRAY — 9 MILESTONES', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 3,
+    })
+    this._addPhaseObject(trayHdr)
+
+    // Timer
+    this._timerBadge = this.add.graphics()
+    this._timerBadge.fillStyle(C.BLACK, 1)
+    this._timerBadge.fillRect(trayX + trayW - 108, trayY + 18, 90, 36)
+    this._addPhaseObject(this._timerBadge)
+
+    this._timerText = this.add.text(trayX + trayW - 63, trayY + 36, '0:45', {
+      fontFamily: FONT_DISPLAY, fontSize: '20px', color: ACCENT.hex,
+    }).setOrigin(0.5)
+    this._addPhaseObject(this._timerText)
+
+    // Buttons at bottom of tray
+    const btnY = trayY + trayH - 40
+    const reset = BrutalUI.drawButton(this, trayX + 110, btnY, 160, 44, 'RESET', () => this._resetAllPieces(), {
+      fill: C.GREY_700, labelColor: COLORS.BONE, fontSize: '14px',
+    })
+    this._addPhaseObject(reset.container); this._addPhaseObject(reset.hit)
+
+    const lock = BrutalUI.drawButton(this, trayX + 320, btnY, 220, 44, 'LOCK IN ANSWERS', () => this._endPhaseRecall(), {
+      fill: ACCENT.num, labelColor: COLORS.BLACK, fontSize: '14px',
+    })
+    this._addPhaseObject(lock.container); this._addPhaseObject(lock.hit)
+  }
+
+  _buildTray() {
     const shuffled = [...PLATFORMS].sort(() => Math.random() - 0.5)
-    const trayX0 = 680
-    const trayY0 = 150
-    const cardW = 240
-    const cardH = 42
-    const gap = 6
+    const trayX0 = 660, trayY0 = 180
+    const cardW = 240, cardH = 56, gap = 8
+    const cols = 2
 
     this._trayPieces = []
     shuffled.forEach((plat, i) => {
-      const tx = trayX0
-      const ty = trayY0 + i * (cardH + gap)
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const tx = trayX0 + col * (cardW + 16)
+      const ty = trayY0 + row * (cardH + gap)
       const startAngle = Math.random() < 0.5 ? '/' : '\\'
       const piece = this._createTrayPiece(plat, tx, ty, cardW, cardH, startAngle)
       this._trayPieces.push(piece)
       this._addPhaseObject(piece.container)
     })
-
-    const resetBtn = this.add.rectangle(940, 650, 140, 32, C.LEATHER_DARK, 0.9).setStrokeStyle(1, C.INK_LIGHT, 0.6).setInteractive({ useHandCursor: true })
-    this._addPhaseObject(resetBtn)
-    const resetLbl = this.add.text(940, 650, 'RESET ALL', { ...TEXT.label, fontSize: '11px', fontStyle: 'bold', color: COLORS.PARCHMENT }).setOrigin(0.5)
-    this._addPhaseObject(resetLbl)
-    resetBtn.on('pointerdown', () => this._resetAllPieces())
-
-    const submitBtn = this.add.rectangle(1100, 650, 160, 32, C.WAX_RED, 1).setStrokeStyle(1, C.WAX_RED_LIGHT, 0.8).setInteractive({ useHandCursor: true })
-    this._addPhaseObject(submitBtn)
-    const submitLbl = this.add.text(1100, 650, 'LOCK IN ANSWERS', { ...TEXT.label, fontSize: '11px', fontStyle: 'bold', color: COLORS.PARCHMENT_LIGHT }).setOrigin(0.5)
-    this._addPhaseObject(submitLbl)
-    submitBtn.on('pointerdown', () => this._endPhaseRecall())
-    submitBtn.on('pointerover', () => submitBtn.setFillStyle(C.WAX_RED_LIGHT))
-    submitBtn.on('pointerout', () => submitBtn.setFillStyle(C.WAX_RED))
-
-    this._rHandler = () => this._resetAllPieces()
-    this._rKey.on('down', this._rHandler)
   }
 
   _tickTimer() {
@@ -514,34 +641,43 @@ export class InterviewRoomScene extends Phaser.Scene {
     const m = Math.floor(this._timeLeft / 60)
     const s = this._timeLeft % 60
     if (this._timerText) this._timerText.setText(`${m}:${s.toString().padStart(2, '0')}`)
-    if (this._timeLeft <= 10 && this._timerText) {
-      this._timerText.setColor(COLORS.WAX_RED)
-    }
-    if (this._timeLeft <= 0) {
-      this._endPhaseRecall()
-    }
+    if (this._timeLeft <= 10 && this._timerText) this._timerText.setColor(COLORS.SHOCK_RED)
+    if (this._timeLeft <= 0) this._endPhaseRecall()
   }
 
   _createTrayPiece(plat, tx, ty, w, h, startAngle) {
     const container = this.add.container(tx, ty)
-    const bg = this.add.rectangle(0, 0, w, h, C.PARCHMENT_LIGHT, 0.85).setOrigin(0, 0)
-    bg.setStrokeStyle(1, C.INK, 0.45)
-    const label = this.add.text(12, h / 2, plat.shortLabel, { ...TEXT.body, fontSize: '13px' }).setOrigin(0, 0.5)
-    const year = this.add.text(12, h - 4, plat.year, { ...TEXT.label, fontSize: '9px' }).setOrigin(0, 1)
 
-    const angleBox = this.add.rectangle(w - 64, h / 2, 28, 28, C.PARCHMENT_DARK, 0.4).setStrokeStyle(0.5, C.INK, 0.4)
-    const angleText = this.add.text(w - 64, h / 2, startAngle === '/' ? '/' : '\\', {
-      fontFamily: FONT_DISPLAY, fontSize: '22px', color: COLORS.INK, fontStyle: 'bold',
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 1)
+    shadow.fillRect(4, 4, w, h)
+
+    const bg = this.add.rectangle(0, 0, w, h, 0xf5f0e6, 1).setOrigin(0, 0)
+    bg.setStrokeStyle(3, 0x0a0a0a, 1)
+
+    const angleBadge = this.add.graphics()
+    angleBadge.fillStyle(C.BLACK, 1)
+    angleBadge.fillRect(w - 44, 0, 44, h)
+
+    const angleText = this.add.text(w - 22, h / 2, startAngle === '/' ? '/' : '\\', {
+      fontFamily: FONT_DISPLAY, fontSize: '26px', color: ACCENT.hex,
     }).setOrigin(0.5)
 
-    const rotBtn = this.add.rectangle(w - 30, h / 2, 34, 26, C.LEATHER, 1).setStrokeStyle(0.8, C.INK, 0.6).setInteractive({ useHandCursor: true })
-    const rotLbl = this.add.text(w - 30, h / 2, 'FLIP', { ...TEXT.label, fontSize: '9px', fontStyle: 'bold', color: COLORS.PARCHMENT }).setOrigin(0.5)
+    const label = this.add.text(14, h / 2 - 8, plat.label, {
+      fontFamily: FONT_DISPLAY, fontSize: '14px', color: COLORS.BLACK,
+      wordWrap: { width: w - 60 },
+    }).setOrigin(0, 0.5)
 
-    container.add([bg, label, year, angleBox, angleText, rotBtn, rotLbl])
+    const year = this.add.text(14, h - 10, plat.year, {
+      fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 2,
+    }).setOrigin(0, 1)
+
+    container.add([shadow, bg, angleBadge, angleText, label, year])
     container.setSize(w, h)
 
     const piece = {
-      container, bg, label, year, angleText, rotBtn, rotLbl, angleBox,
+      container, bg, shadow, label, year, angleText, angleBadge,
       platform: plat,
       angle: startAngle,
       placed: false,
@@ -553,35 +689,22 @@ export class InterviewRoomScene extends Phaser.Scene {
     const toggleAngle = () => {
       piece.angle = piece.angle === '/' ? '\\' : '/'
       angleText.setText(piece.angle === '/' ? '/' : '\\')
-      this.tweens.add({ targets: angleText, scale: { from: 0.6, to: 1 }, duration: 160 })
+      this.tweens.add({ targets: angleText, scale: { from: 0.5, to: 1 }, duration: 150 })
     }
-
-    rotBtn.on('pointerdown', (pointer) => {
-      toggleAngle()
-    })
 
     bg.setInteractive({ useHandCursor: true, draggable: true })
     this.input.setDraggable(bg)
 
     let lastClick = 0
-    bg.on('pointerdown', (pointer) => {
-      if (pointer.rightButtonDown && pointer.rightButtonDown()) {
-        toggleAngle()
-        return
-      }
+    bg.on('pointerdown', () => {
       const now = this.time.now
-      if (now - lastClick < 350) {
-        toggleAngle()
-      }
+      if (now - lastClick < 350) toggleAngle()
       lastClick = now
     })
 
     bg.on('dragstart', () => {
       container.setDepth(100)
-      if (piece.placed) {
-        this._removePlacement(piece)
-      }
-      bg.setFillStyle(C.PARCHMENT, 0.95)
+      if (piece.placed) this._removePlacement(piece)
     })
 
     bg.on('drag', (pointer) => {
@@ -591,10 +714,8 @@ export class InterviewRoomScene extends Phaser.Scene {
 
     bg.on('dragend', (pointer) => {
       container.setDepth(0)
-      bg.setFillStyle(C.PARCHMENT_LIGHT, 0.85)
       this._clearCellHighlight()
-      const gx = pointer.x
-      const gy = pointer.y
+      const gx = pointer.x, gy = pointer.y
       const col = Math.floor((gx - GRID.originX) / GRID.cellSize)
       const row = Math.floor((gy - GRID.originY) / GRID.cellSize)
       if (col >= 0 && col < GRID.cols && row >= 0 && row < GRID.rows) {
@@ -611,9 +732,7 @@ export class InterviewRoomScene extends Phaser.Scene {
   }
 
   _highlightCell(px, py) {
-    if (!this._cellHL) {
-      this._cellHL = this.add.graphics().setDepth(2)
-    }
+    if (!this._cellHL) this._cellHL = this.add.graphics().setDepth(2)
     this._cellHL.clear()
     const col = Math.floor((px - GRID.originX) / GRID.cellSize)
     const row = Math.floor((py - GRID.originY) / GRID.cellSize)
@@ -621,8 +740,8 @@ export class InterviewRoomScene extends Phaser.Scene {
     const x = GRID.originX + col * GRID.cellSize
     const y = GRID.originY + row * GRID.cellSize
     const occupied = this._placements.has(`${col},${row}`)
-    this._cellHL.fillStyle(occupied ? C.WAX_RED : C.INK_FADED, occupied ? 0.15 : 0.18)
-    this._cellHL.fillRect(x + 1, y + 1, GRID.cellSize - 2, GRID.cellSize - 2)
+    this._cellHL.fillStyle(occupied ? C.SHOCK_RED : ACCENT.num, 0.35)
+    this._cellHL.fillRect(x + 2, y + 2, GRID.cellSize - 4, GRID.cellSize - 4)
   }
 
   _clearCellHighlight() {
@@ -644,15 +763,19 @@ export class InterviewRoomScene extends Phaser.Scene {
       ease: 'Back.easeOut',
     })
 
+    // Compact: shrink card to single cell, show only the angle glyph + tiny label
     piece.bg.setSize(size, size)
-    piece.bg.setFillStyle(C.PARCHMENT_LIGHT, 0.8)
-    piece.bg.setStrokeStyle(1, C.INK, 0.7)
-    piece.label.setPosition(size / 2, size - 6).setOrigin(0.5, 1).setFontSize(7)
+    piece.bg.setFillStyle(0xf5f0e6, 1)
+    piece.bg.setStrokeStyle(3, 0x0a0a0a, 1)
+    piece.shadow.clear()
+    piece.shadow.fillStyle(C.BLACK, 1)
+    piece.shadow.fillRect(3, 3, size, size)
+    piece.angleBadge.clear()
+    piece.angleBadge.fillStyle(ACCENT.num, 1)
+    piece.angleBadge.fillRect(0, 0, size, 14)
+    piece.angleText.setPosition(size / 2, size / 2 + 4).setFontSize(34).setColor(COLORS.BLACK)
+    piece.label.setPosition(size / 2, size - 6).setOrigin(0.5, 1).setFontSize(7).setWordWrapWidth(size - 4)
     piece.year.setVisible(false)
-    piece.angleBox.setVisible(false)
-    piece.angleText.setPosition(size / 2, size / 2 - 3).setFontSize(30)
-    piece.rotBtn.setPosition(size / 2, 8).setSize(size - 6, 12)
-    piece.rotLbl.setPosition(size / 2, 8).setFontSize(7)
   }
 
   _removePlacement(piece) {
@@ -662,14 +785,16 @@ export class InterviewRoomScene extends Phaser.Scene {
     piece.placed = false
     const w = piece.width, h = piece.height
     piece.bg.setSize(w, h)
-    piece.bg.setFillStyle(C.PARCHMENT_LIGHT, 0.85)
-    piece.bg.setStrokeStyle(1, C.INK, 0.45)
-    piece.label.setPosition(12, h / 2).setOrigin(0, 0.5).setFontSize(13)
-    piece.year.setVisible(true).setPosition(12, h - 4)
-    piece.angleBox.setVisible(true).setPosition(w - 64, h / 2)
-    piece.angleText.setPosition(w - 64, h / 2).setFontSize(22)
-    piece.rotBtn.setPosition(w - 30, h / 2).setSize(34, 26)
-    piece.rotLbl.setPosition(w - 30, h / 2).setFontSize(9)
+    piece.bg.setStrokeStyle(3, 0x0a0a0a, 1)
+    piece.shadow.clear()
+    piece.shadow.fillStyle(C.BLACK, 1)
+    piece.shadow.fillRect(4, 4, w, h)
+    piece.angleBadge.clear()
+    piece.angleBadge.fillStyle(C.BLACK, 1)
+    piece.angleBadge.fillRect(w - 44, 0, 44, h)
+    piece.angleText.setPosition(w - 22, h / 2).setFontSize(26).setColor(ACCENT.hex)
+    piece.label.setPosition(14, h / 2 - 8).setOrigin(0, 0.5).setFontSize(14).setWordWrapWidth(w - 60)
+    piece.year.setVisible(true).setPosition(14, h - 10)
   }
 
   _returnPieceHome(piece) {
@@ -694,7 +819,6 @@ export class InterviewRoomScene extends Phaser.Scene {
     if (this._phase !== 'RECALL') return
     this._phase = 'TRANSITION'
     if (this._timerEvent) { this._timerEvent.remove(false); this._timerEvent = null }
-    if (this._rHandler) { this._rKey.off('down', this._rHandler); this._rHandler = null }
 
     this._finalPlacements = new Map()
     this._trayPieces.forEach(p => {
@@ -704,16 +828,25 @@ export class InterviewRoomScene extends Phaser.Scene {
       }
     })
 
+    // Clean: fade away unused tray pieces, keep placed pieces visible
     this._trayPieces.forEach(p => {
       if (!p.placed) {
-        this.tweens.add({ targets: p.container, alpha: 0, duration: 300, onComplete: () => { if (p.container && p.container.destroy) p.container.destroy() } })
+        this.tweens.add({
+          targets: p.container, alpha: 0, duration: 300,
+          onComplete: () => { if (p.container && p.container.destroy) p.container.destroy() },
+        })
       }
     })
 
-    this._clearPhaseObjects()
     if (this._cellHL) { this._cellHL.destroy(); this._cellHL = null }
 
-    this.time.delayedCall(500, () => this._startPhaseVerify())
+    this.time.delayedCall(600, () => {
+      BrutalUI.showNarrative(this, 640, 360, 760, 220,
+        'PHASE 3 — VERIFY\n\nBALL DROPS AGAIN.\nEACH PLATFORM GETS STAMPED:\nCORRECT · CLOSE · WRONG.',
+        () => this._startPhaseVerify(),
+        { fill: C.BONE, accentColor: ACCENT.num, fontSize: '16px' },
+      )
+    })
   }
 
   // =================== PHASE 3: VERIFY ===================
@@ -722,30 +855,88 @@ export class InterviewRoomScene extends Phaser.Scene {
     this._phase = 'VERIFY'
     this._score = 0
 
-    const hdr = this.add.text(680, 100, 'VERIFICATION', { ...TEXT.label, fontSize: '12px', fontStyle: 'bold', color: COLORS.INK })
-    this._addPhaseObject(hdr)
-    this._verifyLine = this.add.text(680, 118, 'Let’s see how you did.', { ...TEXT.bodyItalic, fontSize: '14px', color: COLORS.INK })
-    this._addPhaseObject(this._verifyLine)
+    // Clear non-grid phase leftovers but KEEP placed pieces (in _finalPlacements)
+    // We rebuild the grid & panel, then evaluate
+    const placedContainers = []
+    this._trayPieces.forEach(p => { if (p.placed) placedContainers.push(p) })
 
-    this._scoreDisplay = this.add.text(1240, 40, '0', { ...TEXT.stat, fontSize: '32px', color: COLORS.INK_BLACK }).setOrigin(1, 0)
-    this._addPhaseObject(this._scoreDisplay)
-    const slbl = this.add.text(1240, 78, 'SCORE', { ...TEXT.label, fontSize: '10px' }).setOrigin(1, 0)
-    this._addPhaseObject(slbl)
+    // Drop the old phase objects (grid + panel were added previously)
+    this._clearPhaseObjects()
 
-    const path = this._buildPath()
+    this._drawGrid()
+    this._drawEntryExit()
+    this._drawVerifyPanel()
+
+    // Draw the CORRECT answer lightly underneath (the "real" path) so CORRECT stamps feel earned
+    // Actually we draw on evaluation, not preemptively.
+
     const start = this._cellCenter(1, 0)
-    this._ball = this.add.image(start.x, GRID.originY - 40, 'l5ball').setDepth(10)
+    this._ball = this.add.image(start.x, GRID.originY - 60, 'l5ball').setDepth(10)
     this._addPhaseObject(this._ball)
 
+    // Re-add placed piece containers to phase cleanup so they get wiped at end
+    placedContainers.forEach(p => this._addPhaseObject(p.container))
+
+    const path = this._buildPath()
     this._verifyIdx = 0
     this._verifyPath = path
+    this._verifyEvaluated = new Set()
     this._verifyStep()
+  }
+
+  _drawVerifyPanel() {
+    const px = 640, py = 140, pw = 560, ph = 480
+    const panel = this.add.graphics()
+    panel.fillStyle(C.BLACK, 1)
+    panel.fillRect(px + 8, py + 8, pw, ph)
+    panel.fillStyle(C.BONE, 1)
+    panel.fillRect(px, py, pw, ph)
+    panel.lineStyle(4, C.BLACK, 1)
+    panel.strokeRect(px, py, pw, ph)
+    panel.fillStyle(ACCENT.num, 1)
+    panel.fillRect(px, py, pw, 10)
+    this._addPhaseObject(panel)
+
+    const hdr = this.add.text(px + 24, py + 30, 'PHASE 3 — VERIFY', {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 3,
+    })
+    this._addPhaseObject(hdr)
+
+    this._verifyTitle = this.add.text(px + 24, py + 54, 'EVALUATING...', {
+      fontFamily: FONT_DISPLAY, fontSize: '32px', color: COLORS.BLACK,
+    })
+    this._addPhaseObject(this._verifyTitle)
+
+    // Score
+    const scoreLbl = this.add.text(px + 24, py + 140, 'SCORE', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 3,
+    })
+    this._addPhaseObject(scoreLbl)
+
+    this._scoreDisplay = this.add.text(px + 24, py + 160, '0', {
+      fontFamily: FONT_DISPLAY, fontSize: '88px', color: COLORS.BLACK,
+    })
+    this._addPhaseObject(this._scoreDisplay)
+
+    this._verifyLine = this.add.text(px + 24, py + 280, '', {
+      fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.BLACK,
+      wordWrap: { width: pw - 48 },
+    })
+    this._addPhaseObject(this._verifyLine)
   }
 
   _verifyStep() {
     if (this._phase !== 'VERIFY') return
     if (this._verifyIdx >= this._verifyPath.length) {
-      this._finishVerify()
+      // After the ball has traced its trajectory, also evaluate any platforms the ball never reached
+      PLATFORMS.forEach(p => {
+        if (!this._verifyEvaluated.has(p.id)) {
+          this._evaluatePlatform(p, () => {}, true)
+        }
+      })
+      this.time.delayedCall(800, () => this._finishVerify())
       return
     }
     const node = this._verifyPath[this._verifyIdx]
@@ -754,19 +945,13 @@ export class InterviewRoomScene extends Phaser.Scene {
       targets: this._ball,
       x: target.x,
       y: target.y,
-      duration: CELL_MOVE_MS * 0.6,
+      duration: VERIFY_CELL_MS,
       ease: 'Linear',
       onComplete: () => {
         if (node.platform) {
-          this._evaluatePlatform(node.platform, () => {
-            this._verifyIdx++
-            this._verifyStep()
-          })
+          this._evaluatePlatform(node.platform, () => { this._verifyIdx++; this._verifyStep() }, false)
         } else if (node.isLanding) {
-          this._onLandingHit(false, () => {
-            this._verifyIdx++
-            this._verifyStep()
-          })
+          this._onLandingHit(false, () => { this._verifyIdx++; this._verifyStep() })
         } else {
           this._verifyIdx++
           this._verifyStep()
@@ -775,7 +960,10 @@ export class InterviewRoomScene extends Phaser.Scene {
     })
   }
 
-  _evaluatePlatform(plat, done) {
+  _evaluatePlatform(plat, done, silent) {
+    if (this._verifyEvaluated.has(plat.id)) { if (done) done(); return }
+    this._verifyEvaluated.add(plat.id)
+
     const center = this._cellCenter(plat.col, plat.row)
     const placement = this._finalPlacements.get(plat.id)
 
@@ -790,89 +978,48 @@ export class InterviewRoomScene extends Phaser.Scene {
 
     let gained = 0
     if (status === 'CORRECT') gained = 11
-    else if (status === 'PARTIAL') gained = 3
+    else if (status === 'PARTIAL') gained = 4
 
     this._score += gained
-    this._scoreDisplay.setText(`${this._score}`)
+    if (this._scoreDisplay) this._scoreDisplay.setText(`${this._score}`)
 
-    this._spawnInkBurst(center.x, center.y)
-    this.cameras.main.shake(60, 0.002)
-
+    // Stamp + feedback
+    let stampLabel, stampFill, lineText, lineColor
     if (status === 'CORRECT') {
-      if (placement && placement.piece) {
-        placement.piece.bg.setStrokeStyle(2, C.STAMP_GREEN, 1)
-        placement.piece.angleText.setColor(COLORS.STAMP_GREEN)
-        placement.piece.label.setColor(COLORS.STAMP_GREEN)
-      }
-      this._drawCheckmark(center.x + 22, center.y - 22, C.STAMP_GREEN)
-      this._showFeedbackLine(plat, '+11', COLORS.STAMP_GREEN)
+      stampLabel = 'CORRECT'; stampFill = ACCENT.num; lineText = `${plat.label} — +11`; lineColor = ACCENT.hex
     } else if (status === 'PARTIAL') {
-      if (placement && placement.piece) {
-        placement.piece.bg.setStrokeStyle(2, C.GOLD_LEAF, 1)
-        placement.piece.angleText.setColor(COLORS.RED_MARGIN)
-      }
-      const ghost = this._drawPlatform(plat.col, plat.row, plat.angle, C.STAMP_GREEN, 0.35, 2)
-      this._addPhaseObject(ghost)
-      this._drawCheckmark(center.x + 22, center.y - 22, C.GOLD_LEAF, true)
-      this._showFeedbackLine(plat, '+3 (angle off)', COLORS.GOLD_LEAF)
+      stampLabel = 'CLOSE'; stampFill = C.HAZARD_YELLOW; lineText = `${plat.label} — +4 ANGLE OFF`; lineColor = COLORS.HAZARD_YELLOW
     } else if (status === 'WRONG_POS') {
-      if (placement && placement.piece) {
-        placement.piece.bg.setStrokeStyle(2, C.RED_MARGIN, 1)
-        placement.piece.angleText.setColor(COLORS.RED_MARGIN)
-        placement.piece.label.setColor(COLORS.RED_MARGIN)
-      }
-      const ghost = this._drawPlatform(plat.col, plat.row, plat.angle, C.STAMP_GREEN, 0.35, 2)
-      this._addPhaseObject(ghost)
-      const lbl = this.add.text(center.x, center.y + GRID.cellSize / 2 - 2, plat.shortLabel, {
-        ...TEXT.label, fontSize: '8px', color: COLORS.STAMP_GREEN,
-      }).setOrigin(0.5, 1)
-      this._addPhaseObject(lbl)
-      this._drawXmark(center.x + 22, center.y - 22, C.RED_MARGIN)
-      this._showFeedbackLine(plat, '+0 (wrong spot)', COLORS.RED_MARGIN)
+      stampLabel = 'WRONG'; stampFill = C.SHOCK_RED; lineText = `${plat.label} — WRONG SPOT`; lineColor = COLORS.SHOCK_RED
     } else {
-      const ghost = this._drawPlatform(plat.col, plat.row, plat.angle, C.STAMP_GREEN, 0.3, 2)
+      stampLabel = 'MISSED'; stampFill = C.GREY_500; lineText = `${plat.label} — MISSED`; lineColor = COLORS.GREY_500
+    }
+
+    // Draw the real platform as a ghost at its true location
+    if (status !== 'CORRECT') {
+      const ghost = this._drawPlatform(plat.col, plat.row, plat.angle, ACCENT.num, 4)
+      ghost.setAlpha(0.55)
       this._addPhaseObject(ghost)
-      const lbl = this.add.text(center.x, center.y + GRID.cellSize / 2 - 2, plat.shortLabel, {
-        ...TEXT.label, fontSize: '8px', color: COLORS.STAMP_GREEN,
-      }).setOrigin(0.5, 1)
-      this._addPhaseObject(lbl)
-      this._showFeedbackLine(plat, '+0 (missed)', COLORS.INK_FADED)
+    } else {
+      const real = this._drawPlatform(plat.col, plat.row, plat.angle, ACCENT.num, 5)
+      this._addPhaseObject(real)
     }
 
-    this.time.delayedCall(550, done)
-  }
+    const sticker = BrutalUI.drawSticker(this, center.x, center.y - GRID.cellSize / 2 - 18, stampLabel, {
+      fill: stampFill, textColor: COLORS.BLACK, fontSize: '11px',
+      rotation: (Math.random() * 16 - 8) * Math.PI / 180,
+    })
+    sticker.setDepth(15).setScale(0)
+    this._addPhaseObject(sticker)
+    this.tweens.add({ targets: sticker, scale: 1, duration: 180, ease: 'Back.easeOut' })
 
-  _showFeedbackLine(plat, delta, color) {
-    if (this._verifyLine) {
-      this._verifyLine.setText(`${plat.label} — ${delta}`)
-      this._verifyLine.setColor(color)
+    if (!silent && this._verifyLine) {
+      this._verifyLine.setText(lineText)
+      this._verifyLine.setColor(lineColor)
     }
-  }
-
-  _drawCheckmark(x, y, color, partial = false) {
-    const g = this.add.graphics().setDepth(12)
-    g.lineStyle(2.5, color, 1)
-    g.beginPath()
-    g.moveTo(x - 6, y)
-    g.lineTo(x - 2, y + 5)
-    g.lineTo(x + 7, y - 6)
-    g.strokePath()
-    this._addPhaseObject(g)
-    if (partial) g.alpha = 0.7
-    this.tweens.add({ targets: g, scale: { from: 1.8, to: 1 }, alpha: { from: 0, to: 1 }, duration: 200 })
-  }
-
-  _drawXmark(x, y, color) {
-    const g = this.add.graphics().setDepth(12)
-    g.lineStyle(2.5, color, 1)
-    g.beginPath()
-    g.moveTo(x - 6, y - 6)
-    g.lineTo(x + 6, y + 6)
-    g.moveTo(x + 6, y - 6)
-    g.lineTo(x - 6, y + 6)
-    g.strokePath()
-    this._addPhaseObject(g)
-    this.tweens.add({ targets: g, scale: { from: 1.8, to: 1 }, alpha: { from: 0, to: 1 }, duration: 200 })
+    if (!silent) this.cameras.main.shake(50, 0.0015)
+    if (!silent) this.time.delayedCall(420, done)
+    else if (done) done()
   }
 
   _finishVerify() {
@@ -884,225 +1031,278 @@ export class InterviewRoomScene extends Phaser.Scene {
       this._score += 1
       if (this._scoreDisplay) this._scoreDisplay.setText(`${this._score}`)
     }
+    const finalScore = Math.min(100, this._score)
+    completeLevel(this, KEYS.SCORE_L5, KEYS.COMPLETED_L5, finalScore)
+    this._score = finalScore
 
-    completeLevel(this, KEYS.SCORE_L5, KEYS.COMPLETED_L5, this._score)
-
-    this.time.delayedCall(1500, () => this._showCompletionScreen(allCorrect))
+    this.time.delayedCall(1200, () => this._showCompletionScreen(allCorrect))
   }
 
-  // =================== COMPLETION SCREEN ===================
+  // =================== FINALE: CTA SCREEN ===================
 
   _showCompletionScreen(perfect) {
     this._phase = 'COMPLETE'
-
-    // Fade out everything then redraw
     const cam = this.cameras.main
-    cam.fadeOut(600, 244, 232, 208)
+    cam.fadeOut(500, 10, 10, 10)
     cam.once('camerafadeoutcomplete', () => {
-      // Wipe the scene
-      this.children.list.slice().forEach(o => {
-        if (o && o.destroy) o.destroy()
-      })
-      cam.fadeIn(400, 244, 232, 208)
-      this._drawCompletion(perfect)
+      this.children.list.slice().forEach(o => { if (o && o.destroy) o.destroy() })
+      cam.fadeIn(500, 10, 10, 10)
+      this._drawCTA(perfect)
     })
   }
 
-  _drawCompletion(perfect) {
-    JournalUI.drawParchment(this, 0, 0, 1280, 720)
-    JournalUI.drawGrain(this, 0, 0, 1280, 720, 0.08)
-    JournalUI.drawPageNumber(this, 10)
+  _drawCTA(perfect) {
+    const W = 1280, H = 720
+    this._drawBackdrop()
 
-    this.add.text(640, 50, 'CAREER COMPLETE', { ...TEXT.label, fontSize: '13px', fontStyle: 'bold', color: COLORS.INK_LIGHT }).setOrigin(0.5)
-    this.add.text(640, 82, 'The Augustin Files', { ...TEXT.title, fontSize: '40px' }).setOrigin(0.5)
+    BrutalUI.drawHomeButton(this)
 
-    this._drawCareerMap(perfect)
+    // Big header "CAREER UNLOCKED"
+    const header = BrutalUI.drawBlockType(this, W / 2, 96, 'CAREER UNLOCKED', {
+      fontSize: '64px', color: COLORS.BONE, shadowColor: ACCENT.hex, shadowOffset: 6,
+    })
 
+    // Personalized line
+    const name = (this._playerName && this._playerName !== 'friend') ? this._playerName.toUpperCase() : 'YOU'
+    this.add.text(W / 2, 146, `${name}, YOU NOW KNOW MY STORY.`, {
+      fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.BONE,
+      letterSpacing: 3,
+    }).setOrigin(0.5)
+
+    // Career timeline
+    this._drawCareerTimeline(W)
+
+    // Score + rating badge
+    this._drawScoreBadge(W, perfect)
+
+    // Stat bars
+    this._drawStatBars(W)
+
+    // CTAs
+    this._drawCTAButtons(W)
+
+    // Replay link
+    const replay = this.add.text(W / 2, H - 24, '↻ REPLAY', {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_300,
+      letterSpacing: 3,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    replay.on('pointerover', () => replay.setColor(ACCENT.hex))
+    replay.on('pointerout', () => replay.setColor(COLORS.GREY_300))
+    replay.on('pointerdown', () => this.scene.restart())
+  }
+
+  _drawCareerTimeline(W) {
+    const nodes = [
+      { label: 'LAW SCHOOL',       year: '2014' },
+      { label: 'STARTUP WKND',     year: '2014' },
+      { label: 'FIRST SALES',      year: '2015' },
+      { label: 'LATIN AMERICA',    year: '2017' },
+      { label: 'TRAINING DOCS',    year: '2018' },
+      { label: '$1M ARR',          year: '2020' },
+      { label: 'GREENLAND',        year: '2007' },
+      { label: 'AGENCY LAUNCH',    year: '2023' },
+      { label: 'CLAY/N8N/AI',      year: '2025' },
+    ]
+    const y = 204
+    const pad = 80
+    const step = (W - pad * 2) / (nodes.length - 1)
+
+    // Connector line (thick bone)
+    const g = this.add.graphics()
+    g.lineStyle(4, C.BONE, 1)
+    g.beginPath(); g.moveTo(pad, y); g.lineTo(W - pad, y); g.strokePath()
+    // Accent overlay
+    g.lineStyle(2, ACCENT.num, 1)
+    g.beginPath(); g.moveTo(pad, y); g.lineTo(W - pad, y); g.strokePath()
+
+    nodes.forEach((n, i) => {
+      const x = pad + step * i
+      const delay = 60 * i
+      const node = this.add.graphics()
+      node.fillStyle(C.BLACK, 1)
+      node.fillCircle(x + 2, y + 2, 8)
+      node.fillStyle(ACCENT.num, 1)
+      node.fillCircle(x, y, 8)
+      node.lineStyle(2, C.BLACK, 1)
+      node.strokeCircle(x, y, 8)
+      node.setAlpha(0)
+      this.tweens.add({ targets: node, alpha: 1, duration: 200, delay })
+
+      const year = this.add.text(x, y - 22, n.year, {
+        fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold', color: COLORS.GREY_300,
+        letterSpacing: 2,
+      }).setOrigin(0.5).setAlpha(0)
+      this.tweens.add({ targets: year, alpha: 1, duration: 200, delay })
+
+      const label = this.add.text(x, y + 18, n.label, {
+        fontFamily: FONT_MONO, fontSize: '9px', fontStyle: 'bold', color: COLORS.BONE,
+        letterSpacing: 2, wordWrap: { width: step - 8 }, align: 'center',
+      }).setOrigin(0.5, 0).setAlpha(0)
+      this.tweens.add({ targets: label, alpha: 1, duration: 200, delay })
+    })
+
+    // Final HIRE ME marker
+    const xEnd = W - pad
+    const flag = this.add.text(xEnd + 36, y, '→ HIRE ME', {
+      fontFamily: FONT_DISPLAY, fontSize: '16px', color: ACCENT.hex,
+    }).setOrigin(0, 0.5).setAlpha(0)
+    this.tweens.add({ targets: flag, alpha: 1, duration: 300, delay: 60 * nodes.length + 100 })
+  }
+
+  _drawScoreBadge(W, perfect) {
     const score = this._score
     const rating = this._getRating(score)
 
-    this.add.text(640, 320, 'CAREER RECALL', { ...TEXT.label, fontSize: '11px', fontStyle: 'bold' }).setOrigin(0.5)
-    const scoreText = this.add.text(640, 352, '0%', { ...TEXT.title, fontSize: '52px', color: perfect ? COLORS.GOLD_LEAF : COLORS.INK_BLACK }).setOrigin(0.5)
+    const bx = W / 2, by = 320
+    const bw = 540, bh = 110
+
+    // Shadow
+    const sh = this.add.graphics()
+    sh.fillStyle(C.BLACK, 1)
+    sh.fillRect(bx - bw / 2 + 8, by - bh / 2 + 8, bw, bh)
+
+    // Body
+    const body = this.add.graphics()
+    body.fillStyle(C.BONE, 1)
+    body.fillRect(bx - bw / 2, by - bh / 2, bw, bh)
+    body.lineStyle(4, C.BLACK, 1)
+    body.strokeRect(bx - bw / 2, by - bh / 2, bw, bh)
+    body.fillStyle(ACCENT.num, 1)
+    body.fillRect(bx - bw / 2, by - bh / 2, 14, bh)
+
+    // Score value
+    const val = this.add.text(bx - 130, by, '0', {
+      fontFamily: FONT_DISPLAY, fontSize: '72px', color: COLORS.BLACK,
+    }).setOrigin(0.5)
     this.tweens.addCounter({
-      from: 0, to: score,
-      duration: 1200,
-      ease: 'Cubic.easeOut',
-      onUpdate: (t) => scoreText.setText(`${Math.floor(t.getValue())}%`),
+      from: 0, to: score, duration: 1100, ease: 'Cubic.easeOut',
+      onUpdate: (t) => val.setText(`${Math.floor(t.getValue())}`),
     })
-
-    this.add.text(640, 392, rating.label, { ...TEXT.label, fontSize: '12px', fontStyle: 'bold', color: COLORS.INK }).setOrigin(0.5)
-    this.add.text(640, 412, rating.msg, { ...TEXT.bodyItalic, fontSize: '14px', color: COLORS.INK_LIGHT }).setOrigin(0.5)
-
-    this._drawStatBars()
-
-    const name = this._playerName && this._playerName !== 'friend' ? this._playerName : 'friend'
-    const line1 = this.add.text(640, 540, `Thanks for playing, ${name}.`, { ...TEXT.heading, fontSize: '20px' }).setOrigin(0.5).setAlpha(0)
-    const line2 = this.add.text(640, 568, 'You just lived 15 years of career pivots in 15 minutes.', { ...TEXT.bodyItalic, fontSize: '14px', color: COLORS.INK_LIGHT }).setOrigin(0.5).setAlpha(0)
-    const line3 = this.add.text(640, 588, 'If this story resonates, let’s talk.', { ...TEXT.bodyItalic, fontSize: '14px', color: COLORS.INK }).setOrigin(0.5).setAlpha(0)
-
-    this.tweens.add({ targets: line1, alpha: 1, duration: 400, delay: 400 })
-    this.tweens.add({ targets: line2, alpha: 1, duration: 400, delay: 700 })
-    this.tweens.add({ targets: line3, alpha: 1, duration: 400, delay: 1000 })
-
-    this._drawCTAButton(250, 645, 'BOOK A CALL', 'calendly.com/augustin', 'https://calendly.com/augustin', 1300)
-    this._drawCTAButton(640, 645, 'LINKEDIN', '/in/augustin-romaneschi', 'https://linkedin.com/in/augustin-romaneschi', 1500)
-    this._drawCTAButton(1030, 645, 'DOWNLOAD CV', 'augustin-romaneschi.pdf', '/cv.pdf', 1700)
-
-    JournalUI.drawWaxSeal(this, 1200, 690, 'A', perfect ? 26 : 20)
-
-    this.add.text(640, 710, 'SPACE to replay  ·  ESC to return to the hub', {
-      ...TEXT.small, fontSize: '10px', color: COLORS.INK_FADED,
+    this.add.text(bx - 130, by + 40, '/ 100', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 2,
     }).setOrigin(0.5)
 
-    if (perfect) this._drawPerfectStamp()
+    // Rating label
+    this.add.text(bx + 80, by - 22, rating.label, {
+      fontFamily: FONT_DISPLAY, fontSize: '42px', color: COLORS.BLACK,
+    }).setOrigin(0.5)
+    this.add.text(bx + 80, by + 18, rating.msg, {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_700,
+      letterSpacing: 2, wordWrap: { width: 280 }, align: 'center',
+    }).setOrigin(0.5)
 
-    this._spaceReplay = () => this.scene.restart()
-    this._spaceKey.on('down', this._spaceReplay)
+    if (perfect) {
+      const stamp = BrutalUI.drawSticker(this, bx + bw / 2 - 30, by - bh / 2 + 14, 'PERFECT', {
+        fill: ACCENT.num, textColor: COLORS.BLACK, fontSize: '12px',
+        rotation: 10 * Math.PI / 180,
+      })
+      stamp.setDepth(20).setScale(0)
+      this.tweens.add({ targets: stamp, scale: 1, duration: 400, delay: 800, ease: 'Back.easeOut' })
+    }
   }
 
-  _drawCareerMap(perfect) {
-    const nodes = [
-      { label: 'Law School',    year: '2014', x: 120 },
-      { label: 'Startup Wknd',  year: '2014', x: 250 },
-      { label: 'First Sales',   year: '2015', x: 370 },
-      { label: 'LatAm Move',    year: '2017', x: 500 },
-      { label: 'Training KOLs', year: '2018', x: 630 },
-      { label: '$1M ARR',       year: '2020', x: 760 },
-      { label: 'Greenland',     year: '2007', x: 880 },
-      { label: 'Agency Launch', year: '2023', x: 1010 },
-      { label: 'AI Tools',      year: '2025', x: 1130 },
-    ]
-    const lineColor = perfect ? C.GOLD_LEAF : C.INK
-    const lineY = 210
-
-    const lineG = this.add.graphics()
-    lineG.lineStyle(1.8, lineColor, 0.75)
-
-    nodes.forEach((n, i) => {
-      if (i === 0) return
-      this.time.delayedCall(180 * i + 200, () => {
-        lineG.beginPath()
-        lineG.moveTo(nodes[i - 1].x, lineY)
-        lineG.lineTo(n.x, lineY)
-        lineG.strokePath()
-      })
-    })
-
-    nodes.forEach((n, i) => {
-      const delay = 180 * i + 200
-      this.time.delayedCall(delay, () => {
-        const outer = this.add.circle(n.x, lineY, 7, C.PARCHMENT_LIGHT).setStrokeStyle(1.5, lineColor, 1)
-        this.add.circle(n.x, lineY, 3, lineColor)
-        outer.setScale(0)
-        this.tweens.add({ targets: outer, scale: 1, duration: 200, ease: 'Back.easeOut' })
-        this.add.text(n.x, lineY - 18, n.year, { ...TEXT.label, fontSize: '9px', color: COLORS.INK_FADED }).setOrigin(0.5)
-        this.add.text(n.x, lineY + 20, n.label, { ...TEXT.label, fontSize: '9px', color: COLORS.INK }).setOrigin(0.5, 0)
-      })
-    })
-
-    this.time.delayedCall(180 * nodes.length + 250, () => {
-      const starX = 1210
-      lineG.beginPath()
-      lineG.moveTo(nodes[nodes.length - 1].x, lineY)
-      lineG.lineTo(starX, lineY)
-      lineG.strokePath()
-      this.add.text(starX, lineY, '★', { fontFamily: FONT_DISPLAY, fontSize: '22px', color: COLORS.WAX_RED }).setOrigin(0.5)
-      this.add.text(starX, lineY + 20, 'HIRE ME', { ...TEXT.label, fontSize: '9px', fontStyle: 'bold', color: COLORS.WAX_RED }).setOrigin(0.5, 0)
-    })
-  }
-
-  _drawStatBars() {
+  _drawStatBars(W) {
     const stats = [
-      { label: 'Curiosity',    key: KEYS.STAT_CURIOSITY },
-      { label: 'Sales',        key: KEYS.STAT_SALES },
+      { label: 'CURIOSITY',    key: KEYS.STAT_CURIOSITY },
+      { label: 'SALES',        key: KEYS.STAT_SALES },
       { label: 'EQ',           key: KEYS.STAT_EQ },
-      { label: 'Grit',         key: KEYS.STAT_GRIT },
-      { label: 'Independence', key: KEYS.STAT_INDEPENDENCE },
-      { label: 'Tech',         key: KEYS.STAT_TECH },
+      { label: 'GRIT',         key: KEYS.STAT_GRIT },
+      { label: 'INDEPENDENCE', key: KEYS.STAT_INDEPENDENCE },
+      { label: 'TECH',         key: KEYS.STAT_TECH },
     ]
-    const startX = 300
-    const startY = 455
-    const colW = 340
-    const rowH = 28
+    const startY = 420
+    const rowH = 30
+    const colW = 480
+    const gapX = 40
+    const totalW = colW * 2 + gapX
+    const startX = (W - totalW) / 2
+
     stats.forEach((s, i) => {
       const col = i % 2
       const row = Math.floor(i / 2)
-      const x = startX + col * colW
+      const x = startX + col * (colW + gapX)
       const y = startY + row * rowH
       const raw = this.registry.get(s.key) ?? 0
       const val = Math.max(0, Math.min(100, raw))
 
-      this.add.text(x, y, s.label, { ...TEXT.body, fontSize: '11px', color: COLORS.INK }).setOrigin(0, 0.5)
-      const barX = x + 100
-      const barW = 160
-      const barH = 10
-      this.add.rectangle(barX, y, barW, barH, C.PARCHMENT_DARK, 0.8).setOrigin(0, 0.5).setStrokeStyle(0.5, C.INK, 0.3)
-      const fill = this.add.rectangle(barX, y, 0, barH, C.STAMP_GREEN, 0.85).setOrigin(0, 0.5)
-      const valTxt = this.add.text(barX + barW + 8, y, '0', { ...TEXT.label, fontSize: '11px', fontStyle: 'bold', color: COLORS.INK }).setOrigin(0, 0.5)
+      this.add.text(x, y, s.label, {
+        fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.BONE,
+        letterSpacing: 3,
+      }).setOrigin(0, 0.5)
 
+      const barX = x + 140
+      const barW = colW - 180
+      const barH = 14
+
+      // Bone track
+      const track = this.add.graphics()
+      track.lineStyle(2, C.BONE, 1)
+      track.strokeRect(barX, y - barH / 2, barW, barH)
+      // Inner bone (translucent)
+      track.fillStyle(C.BONE, 0.08)
+      track.fillRect(barX + 1, y - barH / 2 + 1, barW - 2, barH - 2)
+
+      // Acid fill
+      const fillG = this.add.graphics()
+      const targetW = Math.max(0, (val / 100) * (barW - 4))
+      fillG.fillStyle(ACCENT.num, 1)
+      fillG.fillRect(barX + 2, y - barH / 2 + 2, 0, barH - 4)
+
+      const valTxt = this.add.text(barX + barW + 10, y, '0', {
+        fontFamily: FONT_DISPLAY, fontSize: '18px', color: COLORS.BONE,
+      }).setOrigin(0, 0.5)
+
+      const state = { w: 0 }
       this.tweens.add({
-        targets: fill,
-        width: (val / 100) * barW,
-        duration: 800,
-        delay: 100 * i,
-        ease: 'Cubic.easeOut',
+        targets: state, w: targetW, duration: 900, delay: 200 + 90 * i, ease: 'Cubic.easeOut',
+        onUpdate: () => {
+          fillG.clear()
+          fillG.fillStyle(ACCENT.num, 1)
+          fillG.fillRect(barX + 2, y - barH / 2 + 2, state.w, barH - 4)
+        },
       })
       this.tweens.addCounter({
-        from: 0, to: val,
-        duration: 800,
-        delay: 100 * i,
+        from: 0, to: val, duration: 900, delay: 200 + 90 * i,
         onUpdate: (t) => valTxt.setText(`${Math.floor(t.getValue())}`),
       })
     })
   }
 
-  _drawCTAButton(x, y, label, subtitle, url, delay = 0) {
-    const w = 260, h = 56
-    const bg = this.add.rectangle(x, y, w, h, C.LEATHER_DARK, 1).setStrokeStyle(1.5, C.INK_LIGHT, 0.55).setInteractive({ useHandCursor: true })
-    const mainLabel = this.add.text(x, y - 10, label, {
-      fontFamily: FONT, fontSize: '15px', color: COLORS.PARCHMENT_LIGHT, fontStyle: 'bold',
-    }).setOrigin(0.5)
-    const sub = this.add.text(x, y + 12, subtitle, {
-      fontFamily: FONT, fontSize: '10px', color: COLORS.INK_FADED, fontStyle: 'italic',
-    }).setOrigin(0.5)
+  _drawCTAButtons(W) {
+    const y = 608
+    const btnW = 280, btnH = 68
+    const gap = 32
+    const total = btnW * 3 + gap * 2
+    const startX = (W - total) / 2 + btnW / 2
 
-    bg.setAlpha(0); mainLabel.setAlpha(0); sub.setAlpha(0)
-    this.tweens.add({ targets: [bg, mainLabel, sub], alpha: 1, duration: 400, delay })
+    // BOOK A CALL — acid fill, black text (primary)
+    const a = BrutalUI.drawButton(this, startX, y, btnW, btnH, 'BOOK A CALL', () => {
+      window.open('https://calendly.com/augustin', '_blank', 'noopener,noreferrer')
+    }, {
+      fill: ACCENT.num, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
+    })
 
-    bg.on('pointerover', () => {
-      bg.setFillStyle(C.LEATHER)
-      bg.setStrokeStyle(2, C.WAX_RED, 0.9)
-      this.tweens.add({ targets: [bg, mainLabel, sub], scaleX: 1.04, scaleY: 1.04, duration: 120 })
+    // LINKEDIN — bone fill, black text
+    BrutalUI.drawButton(this, startX + btnW + gap, y, btnW, btnH, 'LINKEDIN', () => {
+      window.open('https://linkedin.com/in/augustin-romaneschi', '_blank', 'noopener,noreferrer')
+    }, {
+      fill: C.BONE, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
     })
-    bg.on('pointerout', () => {
-      bg.setFillStyle(C.LEATHER_DARK)
-      bg.setStrokeStyle(1.5, C.INK_LIGHT, 0.55)
-      this.tweens.add({ targets: [bg, mainLabel, sub], scaleX: 1, scaleY: 1, duration: 120 })
-    })
-    bg.on('pointerdown', () => {
-      if (url) window.open(url, '_blank', 'noopener,noreferrer')
-    })
-  }
 
-  _drawPerfectStamp() {
-    const x = 1060, y = 210
-    const container = this.add.container(x, y)
-    const bg = this.add.rectangle(0, 0, 180, 54, C.PARCHMENT, 0).setStrokeStyle(2.5, C.STAMP_GREEN, 0.85)
-    const inner = this.add.rectangle(0, 0, 170, 44, C.PARCHMENT, 0).setStrokeStyle(0.8, C.STAMP_GREEN, 0.7)
-    const t1 = this.add.text(0, -8, 'PERFECT RECALL', { fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: COLORS.STAMP_GREEN }).setOrigin(0.5)
-    const t2 = this.add.text(0, 12, '2026', { fontFamily: FONT, fontSize: '10px', color: COLORS.STAMP_GREEN, fontStyle: 'italic' }).setOrigin(0.5)
-    container.add([bg, inner, t1, t2])
-    container.setRotation(Phaser.Math.DegToRad(-14))
-    container.setScale(0)
-    this.tweens.add({ targets: container, scale: 1, duration: 400, delay: 1200, ease: 'Back.easeOut' })
+    // CV — black fill, bone text with acid border accent
+    BrutalUI.drawButton(this, startX + (btnW + gap) * 2, y, btnW, btnH, 'CV (PDF)', () => {
+      window.open('/cv.pdf', '_blank', 'noopener,noreferrer')
+    }, {
+      fill: C.BLACK, labelColor: COLORS.BONE, fontSize: '20px', shadowOffset: 8,
+    })
   }
 
   _getRating(score) {
-    if (score >= 100) return { label: 'PERFECT', msg: 'Flawless recall. You know this career better than most.' }
-    if (score >= 80)  return { label: 'EXCELLENT', msg: 'Impressive. You followed the journey closely.' }
-    if (score >= 60)  return { label: 'GOOD', msg: 'You caught the key pivots. The story stuck.' }
-    if (score >= 40)  return { label: 'FAIR', msg: 'Some steps got shuffled. The career’s more winding than it looks.' }
-    if (score >= 20)  return { label: 'ROUGH', msg: 'A few pieces clicked. Maybe worth a second read.' }
-    return { label: 'MISSED', msg: 'The path’s still a mystery. Replay to see it again.' }
+    if (score >= 95) return { label: 'PERFECT', msg: 'FLAWLESS. YOU ABSORBED IT ALL.' }
+    if (score >= 75) return { label: 'STRONG',  msg: 'YOU CAUGHT THE ARC. CLEAR SIGNAL.' }
+    if (score >= 50) return { label: 'SOLID',   msg: 'THE STORY STUCK. MOST OF IT.' }
+    if (score >= 25) return { label: 'OK',      msg: 'SOME PIECES LANDED. WORTH A REPLAY.' }
+    return { label: 'REPLAY',  msg: 'THE PATH IS STILL FUZZY.' }
   }
 }
