@@ -37,19 +37,19 @@ export class TitleScene extends Phaser.Scene {
     // HERO TITLE — massive block type, shocking red offset shadow
     const titleGroup = this.add.container(width / 2, 280)
     const shadowT = this.add.text(6, 6, 'THE AUGUSTIN', {
-      fontFamily: FONT_DISPLAY, fontSize: '120px', color: COLORS.SHOCK_RED,
+      fontFamily: FONT_DISPLAY, fontSize: '108px', color: COLORS.SHOCK_RED,
     }).setOrigin(0.5)
     const mainT = this.add.text(0, 0, 'THE AUGUSTIN', {
-      fontFamily: FONT_DISPLAY, fontSize: '120px', color: COLORS.BONE,
+      fontFamily: FONT_DISPLAY, fontSize: '108px', color: COLORS.BONE,
     }).setOrigin(0.5)
     titleGroup.add([shadowT, mainT])
 
     const filesGroup = this.add.container(width / 2, 380)
     const shadowF = this.add.text(6, 6, 'FILES', {
-      fontFamily: FONT_DISPLAY, fontSize: '120px', color: COLORS.SHOCK_RED,
+      fontFamily: FONT_DISPLAY, fontSize: '108px', color: COLORS.SHOCK_RED,
     }).setOrigin(0.5)
     const mainF = this.add.text(0, 0, 'FILES', {
-      fontFamily: FONT_DISPLAY, fontSize: '120px', color: COLORS.BONE,
+      fontFamily: FONT_DISPLAY, fontSize: '108px', color: COLORS.BONE,
     }).setOrigin(0.5)
     filesGroup.add([shadowF, mainF])
 

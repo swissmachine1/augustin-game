@@ -34,11 +34,12 @@ export class OpeningCinematicScene extends Phaser.Scene {
 
     // The beats — each shown as a brutalist card, one at a time
     this._beats = [
-      { kind: 'intro',    title: `DEAR ${name.toUpperCase()},`,           sub: 'LET ME TELL YOU A STORY.' },
-      { kind: 'scene',    title: 'SHANGHAI, 2014.',                       sub: 'I WAS FINISHING A LAW DEGREE I NO LONGER WANTED.' },
-      { kind: 'beat',     title: 'THEN I WENT TO A STARTUP WEEKEND.',     sub: 'AND EVERYTHING CHANGED.' },
-      { kind: 'promise',  title: '5 CHAPTERS.',                           sub: 'EACH ONE TESTED A SKILL I HAD TO BUILD FROM ZERO.' },
-      { kind: 'finale',   title: `FINISH ALL 5, ${name.toUpperCase()}.`,  sub: 'YOU\'LL KNOW WHY YOU SHOULD HIRE ME.' },
+      { kind: 'intro',    title: `DEAR ${name.toUpperCase()},`,                  sub: 'LET ME TELL YOU A STORY.' },
+      { kind: 'scene',    title: 'SHANGHAI, 2014.',                              sub: 'STUDYING LAW AT EAST CHINA UNIVERSITY OF POLITICAL SCIENCE AND LAW.' },
+      { kind: 'beat',     title: 'I WENT TO A STARTUP WEEKEND.',                 sub: 'I HAD AN AHA MOMENT.' },
+      { kind: 'reveal',   title: 'I DISCOVERED SOMETHING I PREFERRED.',          sub: 'TECH AND STARTUPS — BUILT FOR CHALLENGE AND ADVENTURE.' },
+      { kind: 'promise',  title: '5 CHAPTERS.',                                  sub: 'EACH ONE TESTED A SKILL I HAD TO BUILD FROM ZERO.' },
+      { kind: 'finale',   title: `FINISH ALL 5, ${name.toUpperCase()}.`,         sub: 'YOU\'LL KNOW WHY YOU SHOULD HIRE ME.' },
     ]
 
     this._beatContainer = null
@@ -68,32 +69,44 @@ export class OpeningCinematicScene extends Phaser.Scene {
 
     const container = this.add.container(width / 2, height / 2)
 
-    // Main block title
+    // Auto-fit title font size to 90% of canvas width
+    const maxWidth = width * 0.88
+    let titleFontSize = 72
+    let probe = this.add.text(0, 0, beat.title, {
+      fontFamily: FONT_DISPLAY, fontSize: `${titleFontSize}px`,
+    })
+    while (probe.width > maxWidth && titleFontSize > 32) {
+      titleFontSize -= 4
+      probe.setFontSize(`${titleFontSize}px`)
+    }
+    probe.destroy()
+
+    // Main block title with offset shadow
     const shadow = this.add.text(5, 5, beat.title, {
-      fontFamily: FONT_DISPLAY, fontSize: '72px', color: COLORS.SHOCK_RED,
+      fontFamily: FONT_DISPLAY, fontSize: `${titleFontSize}px`, color: COLORS.SHOCK_RED,
       align: 'center',
     }).setOrigin(0.5)
     const main = this.add.text(0, 0, beat.title, {
-      fontFamily: FONT_DISPLAY, fontSize: '72px', color: COLORS.BONE,
+      fontFamily: FONT_DISPLAY, fontSize: `${titleFontSize}px`, color: COLORS.BONE,
       align: 'center',
     }).setOrigin(0.5)
 
-    // Subtitle strip — high contrast
+    // Subtitle — auto-fit and wrap
+    let subFontSize = 16
+    const subMaxW = Math.min(width - 80, 1100)
+    const sub = this.add.text(0, titleFontSize / 2 + 30, beat.sub, {
+      fontFamily: FONT_MONO, fontSize: `${subFontSize}px`, fontStyle: 'bold', color: COLORS.BLACK,
+      align: 'center',
+      wordWrap: { width: subMaxW - 40 },
+    }).setOrigin(0.5, 0)
+
+    // Strip behind subtitle
     const subG = this.add.graphics()
     subG.fillStyle(C.BONE, 1)
-    const subProbe = this.add.text(0, 0, beat.sub, {
-      fontFamily: FONT_MONO, fontSize: '16px', fontStyle: 'bold', color: COLORS.BLACK,
-      align: 'center',
-    }).setOrigin(0.5)
-    const subW = subProbe.width + 40
-    const subH = subProbe.height + 18
-    subProbe.destroy()
-    subG.fillRect(-subW / 2, 60, subW, subH)
-    const sub = this.add.text(0, 60 + subH / 2, beat.sub, {
-      fontFamily: FONT_MONO, fontSize: '16px', fontStyle: 'bold', color: COLORS.BLACK,
-    }).setOrigin(0.5)
-
+    subG.fillRect(-(sub.width + 40) / 2, sub.y - 8, sub.width + 40, sub.height + 16)
     container.add([shadow, main, subG, sub])
+    sub.setDepth(1)
+
     container.setAlpha(0)
     this.tweens.add({ targets: container, alpha: 1, duration: 220 })
 
