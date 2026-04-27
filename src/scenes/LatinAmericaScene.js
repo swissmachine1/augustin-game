@@ -199,9 +199,9 @@ export class LatinAmericaScene extends Phaser.Scene {
 
   _drawInsightsPanel(width, height) {
     const x = 900
-    const y = 170
+    const y = 160
     const w = 360
-    const h = 530
+    const h = 546
 
     const shadow = this.add.graphics()
     shadow.fillStyle(C.BLACK, 1)
@@ -232,41 +232,53 @@ export class LatinAmericaScene extends Phaser.Scene {
   }
 
   _addInsight(label, text, wild) {
-    const { x, y, w } = this._insightsPanel
-    const entryH = 32
+    const { x, y, w, h } = this._insightsPanel
     const pad = 8
-    const gap = 4
-    const idx = this._insightEntries.length
-    const ex = x + pad
-    const ey = y + pad + idx * (entryH + gap)
+    const gap = 3
+    const cardW = w - pad * 2
 
-    if (ey + entryH > y + this._insightsPanel.h - 8) return // overflow guard
+    // Measure required height by probing the wrapped insight text
+    const probe = this.add.text(0, 0, text, {
+      fontFamily: FONT_MONO, fontSize: '8px', color: COLORS.GREY_700,
+      wordWrap: { width: cardW - 18 },
+    })
+    const insightH = probe.height
+    probe.destroy()
+    const entryH = Math.max(28, 4 + 10 + insightH + 3) // top pad + label line + insight + bottom pad
+
+    // Compute ey based on running offset (entries are variable height)
+    if (this._insightsCursorY === undefined) this._insightsCursorY = y + pad
+    const ex = x + pad
+    const ey = this._insightsCursorY
+
+    if (ey + entryH > y + h - pad) return // overflow guard
 
     const entry = this.add.container(0, 0)
 
     const shadow = this.add.graphics()
     shadow.fillStyle(C.BLACK, 1)
-    shadow.fillRect(ex + 3, ey + 3, w - pad * 2, entryH)
+    shadow.fillRect(ex + 3, ey + 3, cardW, entryH)
 
     const card = this.add.graphics()
     card.fillStyle(wild ? C.HAZARD_YELLOW : C.BONE, 1)
-    card.fillRect(ex, ey, w - pad * 2, entryH)
+    card.fillRect(ex, ey, cardW, entryH)
     card.lineStyle(2, C.BLACK, 1)
-    card.strokeRect(ex, ey, w - pad * 2, entryH)
+    card.strokeRect(ex, ey, cardW, entryH)
 
     // left stripe
     const stripe = this.add.graphics()
     stripe.fillStyle(wild ? C.BLACK : C.SHOCK_LIME, 1)
     stripe.fillRect(ex, ey, 6, entryH)
 
-    const labelTxt = this.add.text(ex + 14, ey + 4, label, {
-      fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold', color: COLORS.BLACK,
+    const labelTxt = this.add.text(ex + 12, ey + 3, label, {
+      fontFamily: FONT_MONO, fontSize: '9px', fontStyle: 'bold', color: COLORS.BLACK,
       letterSpacing: 1,
+      wordWrap: { width: cardW - 18 },
     })
 
-    const insightTxt = this.add.text(ex + 14, ey + 18, text, {
+    const insightTxt = this.add.text(ex + 12, ey + 14, text, {
       fontFamily: FONT_MONO, fontSize: '8px', color: COLORS.GREY_700,
-      wordWrap: { width: w - pad * 2 - 20 },
+      wordWrap: { width: cardW - 18 },
     })
 
     entry.add([shadow, card, stripe, labelTxt, insightTxt])
@@ -274,6 +286,7 @@ export class LatinAmericaScene extends Phaser.Scene {
     this.tweens.add({ targets: entry, alpha: 1, duration: 260 })
 
     this._insightEntries.push(entry)
+    this._insightsCursorY = ey + entryH + gap
   }
 
   // ─── Deck & cards ────────────────────────────────────────────────
