@@ -28,64 +28,66 @@ const TOWER_SPOTS = [
 ]
 
 // ── Tower definitions: 12 towers, ink-only gating ──
+// `label` is the full software name shown on the tower and panel.
+// `panelLabel` is the panel-fitted abbreviation when name is too long.
 const TOWER_DEFS = {
   googleSheets: {
-    key: 'googleSheets', tier: 1, label: 'SHEETS',  abbr: 'GS', cost: 15,
+    key: 'googleSheets', tier: 1, label: 'GOOGLE SHEETS', panelLabel: 'SHEETS', cost: 15,
     damage: 8,  fireRate: 1000, range: 110, shortcut: '1',
     proj: { kind: 'dot',      color: C.BLACK,        size: 5 },
   },
   mailchimp: {
-    key: 'mailchimp', tier: 1, label: 'MAILCHIMP', abbr: 'MC', cost: 25,
+    key: 'mailchimp', tier: 1, label: 'MAILCHIMP', panelLabel: 'MAILCHIMP', cost: 25,
     damage: 10, fireRate: 667,  range: 120, shortcut: '2',
     proj: { kind: 'envelope', color: C.HAZARD_YELLOW, size: 10 },
   },
   linkedIn: {
-    key: 'linkedIn', tier: 1, label: 'LINKEDIN',  abbr: 'IN', cost: 30,
+    key: 'linkedIn', tier: 1, label: 'LINKEDIN',  panelLabel: 'LINKEDIN', cost: 30,
     damage: 12, fireRate: 833,  range: 130, shortcut: '3',
     proj: { kind: 'square',   color: C.SHOCK_BLUE,   size: 9 },
   },
   hubSpot: {
-    key: 'hubSpot', tier: 2, label: 'HUBSPOT',   abbr: 'HS', cost: 55,
+    key: 'hubSpot', tier: 2, label: 'HUBSPOT',   panelLabel: 'HUBSPOT', cost: 55,
     damage: 14, fireRate: 1250, range: 130, shortcut: '4', aoe: 50,
     proj: { kind: 'pulse',    color: C.SHOCK_PINK,   size: 12 },
   },
   apollo: {
-    key: 'apollo', tier: 2, label: 'APOLLO',    abbr: 'AP', cost: 60,
+    key: 'apollo', tier: 2, label: 'APOLLO',    panelLabel: 'APOLLO', cost: 60,
     damage: 8,  fireRate: 1000, range: 160, shortcut: '5', burst: 3,
     proj: { kind: 'dart',     color: C.WHITE,        size: 8 },
   },
   instantly: {
-    key: 'instantly', tier: 2, label: 'INSTANTLY', abbr: 'IY', cost: 70,
+    key: 'instantly', tier: 2, label: 'INSTANTLY', panelLabel: 'INSTANTLY', cost: 70,
     damage: 5,  fireRate: 333,  range: 130, shortcut: '6',
     proj: { kind: 'dot',      color: C.SHOCK_RED,    size: 4 },
   },
   lemlist: {
-    key: 'lemlist', tier: 2, label: 'LEMLIST',   abbr: 'LL', cost: 75,
+    key: 'lemlist', tier: 2, label: 'LEMLIST',   panelLabel: 'LEMLIST', cost: 75,
     damage: 12, fireRate: 833,  range: 140, shortcut: '7', aoe: 55,
     proj: { kind: 'envelope', color: C.SHOCK_PINK,   size: 11 },
   },
   salesNav: {
-    key: 'salesNav', tier: 2, label: 'SALES NAV', abbr: 'SN', cost: 90,
+    key: 'salesNav', tier: 2, label: 'SALES NAV', panelLabel: 'SALES NAV', cost: 90,
     damage: 25, fireRate: 1000, range: 240, shortcut: '8',
     proj: { kind: 'trail',    color: C.WHITE,        size: 6 },
   },
   clay: {
-    key: 'clay', tier: 3, label: 'CLAY',      abbr: 'CL', cost: 130,
+    key: 'clay', tier: 3, label: 'CLAY',      panelLabel: 'CLAY', cost: 130,
     damage: 28, fireRate: 2000, range: 160, shortcut: '9', aoe: 90, explosive: true,
     proj: { kind: 'shell',    color: C.HAZARD_YELLOW, size: 13 },
   },
   n8n: {
-    key: 'n8n', tier: 3, label: 'N8N',       abbr: 'N8', cost: 120,
+    key: 'n8n', tier: 3, label: 'N8N',       panelLabel: 'N8N', cost: 120,
     damage: 14, fireRate: 1000, range: 150, shortcut: '0', chain: 2,
     proj: { kind: 'bolt',     color: C.SHOCK_BLUE,   size: 6 },
   },
   claudeCode: {
-    key: 'claudeCode', tier: 3, label: 'CLAUDE CODE', abbr: 'CC', cost: 150,
+    key: 'claudeCode', tier: 3, label: 'CLAUDE CODE', panelLabel: 'CLAUDE', cost: 150,
     damage: 22, fireRate: 900,  range: 170, shortcut: 'Q', adaptive: true,
     proj: { kind: 'plasma',   color: C.BONE,         size: 10 },
   },
   zapier: {
-    key: 'zapier', tier: 3, label: 'ZAPIER',    abbr: 'ZP', cost: 100,
+    key: 'zapier', tier: 3, label: 'ZAPIER',    panelLabel: 'ZAPIER', cost: 100,
     damage: 0,  fireRate: 99999, range: 0, shortcut: 'W', support: { auraRange: 130, rangeMul: 1.25, damageMul: 1.3 },
     proj: { kind: 'none', color: C.SHOCK_BLUE, size: 0 },
   },
@@ -97,22 +99,20 @@ const TOWER_ORDER = [
   'clay','n8n','claudeCode','zapier',
 ]
 
-// ── 8 named waves (business challenges) ──
+// ── 6 named waves (business challenges) — rebalanced for shorter run ──
 const WAVES = [
-  { name: 'LEADS DRIED UP',        count: 10, hp: 30,  speed: 60,  reward: 5,  type: 'bad-leads',     color: C.GREY_500 },
-  { name: 'DOMAIN BLACKLISTED',    count: 12, hp: 45,  speed: 70,  reward: 6,  type: 'blacklist',     color: C.SHOCK_RED },
-  { name: 'CHURN HIKES',           count: 14, hp: 60,  speed: 75,  reward: 7,  type: 'churn',         color: C.SHOCK_PINK },
-  { name: 'DECISION-MAKER GHOSTED',count: 14, hp: 90,  speed: 85,  reward: 8,  type: 'ghost',         color: C.BONE_WARM },
-  { name: 'CAC EXPLODES',          count: 16, hp: 120, speed: 90,  reward: 9,  type: 'cac',           color: C.HAZARD_YELLOW },
-  { name: 'CAMPAIGN FATIGUE',      count: 18, hp: 150, speed: 95,  reward: 10, type: 'fatigue',       color: C.DEEP_PURPLE },
-  { name: 'COMPETITOR UNDERCUT',   count: 8,  hp: 420, speed: 65,  reward: 25, type: 'boss',          color: C.SHOCK_BLUE, boss: true },
-  { name: 'NEW MARKET ENTRY',      count: 22, hp: 220, speed: 100, reward: 14, type: 'market',        color: C.SHOCK_LIME },
+  { name: 'LEADS DRIED UP',         count: 10, hp: 30,  speed: 60,  reward: 6,  type: 'bad-leads', color: C.GREY_500 },
+  { name: 'DOMAIN BLACKLISTED',     count: 12, hp: 55,  speed: 72,  reward: 7,  type: 'blacklist', color: C.SHOCK_RED },
+  { name: 'DECISION-MAKER GHOSTED', count: 14, hp: 95,  speed: 85,  reward: 9,  type: 'ghost',     color: C.BONE_WARM },
+  { name: 'CAC EXPLODES',           count: 16, hp: 140, speed: 92,  reward: 11, type: 'cac',       color: C.HAZARD_YELLOW },
+  { name: 'CAMPAIGN FATIGUE',       count: 18, hp: 180, speed: 98,  reward: 13, type: 'fatigue',   color: C.DEEP_PURPLE },
+  { name: 'COMPETITOR UNDERCUT',    count: 8,  hp: 460, speed: 65,  reward: 28, type: 'boss',      color: C.SHOCK_BLUE, boss: true },
 ]
 
 const ENEMY_LABELS = {
   'bad-leads':'BAD LEADS','blacklist':'BLACKLIST','churn':'CHURN',
   'ghost':'GHOSTED','cac':'CAC SPIKE','fatigue':'FATIGUE',
-  'boss':'MEGA COMPETITOR','market':'NEW MARKET',
+  'boss':'COMPETITOR','market':'NEW MARKET',
 }
 
 export class AgencyFactoryScene extends Phaser.Scene {
@@ -153,6 +153,9 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     // Tower selection panel
     this._drawTowerPanel(width, height)
+
+    // Range indicator (created lazily in _selectTower)
+    this.rangeIndicator = null
 
     // Inputs
     this._setupInput()
@@ -241,27 +244,27 @@ export class AgencyFactoryScene extends Phaser.Scene {
     barG.fillStyle(C.SHOCK_BLUE, 1)
     barG.fillRect(0, 62, width, 4)
 
-    // INK counter (center-left)
-    this.inkText = this.add.text(160, 33, 'INK: 120', {
-      fontFamily: FONT_DISPLAY, fontSize: '26px', color: COLORS.BLACK,
+    // INK counter (left, but past the home button which sits ~24..134)
+    this.inkText = this.add.text(150, 33, 'INK: 120', {
+      fontFamily: FONT_DISPLAY, fontSize: '22px', color: COLORS.BLACK,
     }).setOrigin(0, 0.5)
 
     // Wave tag (center)
-    this.waveTag = this.add.text(width / 2, 33, 'WAVE 1/8', {
-      fontFamily: FONT_DISPLAY, fontSize: '24px', color: COLORS.BLACK,
+    this.waveTag = this.add.text(width / 2, 33, `WAVE 1/${WAVES.length}`, {
+      fontFamily: FONT_DISPLAY, fontSize: '22px', color: COLORS.BLACK,
     }).setOrigin(0.5)
 
-    // Lives hearts (center-right)
-    this.livesContainer = this.add.container(width - 360, 33)
+    // Lives hearts (right of center). Anchor wider so we have room for kills/score on the right.
+    this.livesContainer = this.add.container(width - 380, 33)
     this._redrawLives()
 
-    // Kills + Score (right)
-    this.killsText = this.add.text(width - 200, 22, 'KILLS 0', {
-      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_700,
-    }).setOrigin(0, 0.5)
-    this.scoreText = this.add.text(width - 200, 44, 'SCORE 0', {
-      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.BLACK,
-    }).setOrigin(0, 0.5)
+    // Kills + Score (right) — compact, 2 lines
+    this.killsText = this.add.text(width - 20, 22, 'KILLS 0', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_700,
+    }).setOrigin(1, 0.5)
+    this.scoreText = this.add.text(width - 20, 44, 'SCORE 0', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.BLACK,
+    }).setOrigin(1, 0.5)
   }
 
   _redrawLives() {
@@ -269,15 +272,15 @@ export class AgencyFactoryScene extends Phaser.Scene {
     const shown = Math.min(this.lives, 10)
     for (let i = 0; i < shown; i++) {
       const g = this.add.graphics()
-      const cx = i * 18
+      const cx = i * 16
       g.fillStyle(C.SHOCK_BLUE, 1)
-      g.fillCircle(cx - 4, -2, 5)
-      g.fillCircle(cx + 4, -2, 5)
-      g.fillTriangle(cx - 9, 0, cx + 9, 0, cx, 10)
+      g.fillCircle(cx - 3, -2, 4)
+      g.fillCircle(cx + 3, -2, 4)
+      g.fillTriangle(cx - 7, 0, cx + 7, 0, cx, 8)
       this.livesContainer.add(g)
     }
     if (this.lives > 10) {
-      const t = this.add.text(shown * 18 + 6, 0, `+${this.lives - 10}`, {
+      const t = this.add.text(shown * 16 + 6, 0, `+${this.lives - 10}`, {
         fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.BLACK,
       }).setOrigin(0, 0.5)
       this.livesContainer.add(t)
@@ -293,7 +296,10 @@ export class AgencyFactoryScene extends Phaser.Scene {
     panelG.fillStyle(C.SHOCK_BLUE, 1)
     panelG.fillRect(0, panelY - 10, width, 3)
 
-    const slotW = 96
+    // 12 slots fitting in 1280: 12 * 100 = 1200, 40px margins
+    const slotW = 100
+    const slotInner = 92  // visual box width
+    const slotH = 70
     const totalW = slotW * TOWER_ORDER.length
     const startX = (width - totalW) / 2 + slotW / 2
 
@@ -308,43 +314,51 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
       const shadow = this.add.graphics()
       shadow.fillStyle(C.BLACK, 1)
-      shadow.fillRect(-38 + 3, -32 + 3, 76, 64)
+      shadow.fillRect(-slotInner / 2 + 3, -slotH / 2 + 3, slotInner, slotH)
 
       const bg = this.add.graphics()
       const fill = def.tier === 1 ? C.GREY_500 : def.tier === 2 ? C.SHOCK_BLUE : C.BONE
       bg.fillStyle(fill, 1)
-      bg.fillRect(-38, -32, 76, 64)
+      bg.fillRect(-slotInner / 2, -slotH / 2, slotInner, slotH)
       bg.lineStyle(3, def.tier === 3 ? C.SHOCK_BLUE : C.BLACK, 1)
-      bg.strokeRect(-38, -32, 76, 64)
+      bg.strokeRect(-slotInner / 2, -slotH / 2, slotInner, slotH)
 
-      const abbrColor = def.tier === 3 ? COLORS.BLACK : (def.tier === 2 ? COLORS.BONE : COLORS.BONE)
-      const abbr = this.add.text(0, -14, def.abbr, {
-        fontFamily: FONT_DISPLAY, fontSize: '20px', color: abbrColor,
+      const labelColor = def.tier === 3 ? COLORS.BLACK : COLORS.BONE
+
+      // Auto-shrink label to fit slot width
+      const maxNameW = slotInner - 8
+      let nameSize = 11
+      const nameTxt = this.add.text(0, -20, def.panelLabel, {
+        fontFamily: FONT_MONO, fontSize: `${nameSize}px`, fontStyle: 'bold', color: labelColor,
+      }).setOrigin(0.5)
+      while (nameTxt.width > maxNameW && nameSize > 8) {
+        nameSize -= 1
+        nameTxt.setFontSize(nameSize)
+      }
+
+      const cost = this.add.text(0, 2, `$${def.cost}`, {
+        fontFamily: FONT_DISPLAY, fontSize: '18px', color: labelColor,
       }).setOrigin(0.5)
 
-      const cost = this.add.text(0, 8, `$${def.cost}`, {
-        fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: abbrColor,
+      const key2 = this.add.text(0, 24, `[${def.shortcut}]`, {
+        fontFamily: FONT_MONO, fontSize: '9px', color: labelColor,
       }).setOrigin(0.5)
 
-      const key2 = this.add.text(0, 22, `[${def.shortcut}]`, {
-        fontFamily: FONT_MONO, fontSize: '9px', color: abbrColor,
-      }).setOrigin(0.5)
-
-      slot.add([shadow, bg, abbr, cost, key2])
+      slot.add([shadow, bg, nameTxt, cost, key2])
 
       const dim = this.add.graphics()
       dim.fillStyle(C.BLACK, 0.55)
-      dim.fillRect(-38, -32, 76, 64)
+      dim.fillRect(-slotInner / 2, -slotH / 2, slotInner, slotH)
       dim.setVisible(false)
       slot.add(dim)
 
       const sel = this.add.graphics()
       sel.lineStyle(4, C.SHOCK_BLUE, 1)
-      sel.strokeRect(-40, -34, 80, 68)
+      sel.strokeRect(-slotInner / 2 - 2, -slotH / 2 - 2, slotInner + 4, slotH + 4)
       sel.setVisible(false)
       slot.add(sel)
 
-      const hit = this.add.rectangle(x, y, 80, 68, 0x000000, 0).setInteractive({ useHandCursor: true })
+      const hit = this.add.rectangle(x, y, slotInner, slotH, 0x000000, 0).setInteractive({ useHandCursor: true })
       hit.on('pointerdown', () => this._selectTower(key))
 
       this.panelSlots[key] = { slot, dim, sel, cost }
@@ -368,11 +382,45 @@ export class AgencyFactoryScene extends Phaser.Scene {
     if (this.ink < def.cost) return
     this.selectedKey = key
     Object.entries(this.panelSlots).forEach(([k, s]) => s.sel.setVisible(k === key))
+    this._showRangeIndicator(def)
   }
 
   _clearSelection() {
     this.selectedKey = null
     Object.values(this.panelSlots).forEach(s => s.sel.setVisible(false))
+    this._hideRangeIndicator()
+  }
+
+  // ── Range indicator (follows cursor while selecting) ──
+  _showRangeIndicator(def) {
+    this._hideRangeIndicator()
+    const isSupport = !!def.support
+    const radius = isSupport ? def.support.auraRange : def.range
+    if (!radius || radius <= 0) return
+
+    const outlineColor = isSupport ? C.HAZARD_YELLOW : C.BONE
+    const fillColor = isSupport ? C.HAZARD_YELLOW : C.SHOCK_BLUE
+
+    const g = this.add.graphics()
+    g.fillStyle(fillColor, 0.15)
+    g.fillCircle(0, 0, radius)
+    g.lineStyle(4, outlineColor, 1)
+    g.strokeCircle(0, 0, radius)
+    g.lineStyle(2, C.BLACK, 0.6)
+    g.strokeCircle(0, 0, radius)
+    g.setDepth(50)
+
+    // Position at current pointer
+    const p = this.input.activePointer
+    g.setPosition(p.worldX || p.x, p.worldY || p.y)
+    this.rangeIndicator = g
+  }
+
+  _hideRangeIndicator() {
+    if (this.rangeIndicator) {
+      this.rangeIndicator.destroy()
+      this.rangeIndicator = null
+    }
   }
 
   // ── Input ──
@@ -394,6 +442,13 @@ export class AgencyFactoryScene extends Phaser.Scene {
     const escHandler = () => this._clearSelection()
     kb.on('keydown-ESC', escHandler)
     this._keyHandlers.push(['keydown-ESC', escHandler])
+
+    // Pointer move — update range indicator position
+    this.input.on('pointermove', (pointer) => {
+      if (this.rangeIndicator) {
+        this.rangeIndicator.setPosition(pointer.worldX || pointer.x, pointer.worldY || pointer.y)
+      }
+    })
   }
 
   // ── Tower placement ──
@@ -427,12 +482,23 @@ export class AgencyFactoryScene extends Phaser.Scene {
     bg.lineStyle(3, def.tier === 3 ? C.SHOCK_BLUE : C.BLACK, 1)
     bg.strokeRect(-20, -20, 40, 40)
 
-    const abbrColor = def.tier === 3 ? COLORS.BLACK : COLORS.BONE
-    const lbl = this.add.text(0, 0, def.abbr, {
-      fontFamily: FONT_DISPLAY, fontSize: '16px', color: abbrColor,
-    }).setOrigin(0.5)
+    // Tier indicator dot (replaces the abbreviation icon)
+    const dotColor = def.tier === 3 ? C.BLACK : C.BONE
+    const dotG = this.add.graphics()
+    dotG.fillStyle(dotColor, 1)
+    dotG.fillCircle(0, 0, 6)
 
-    container.add([shadow, bg, lbl])
+    container.add([shadow, bg, dotG])
+
+    // Software name label below the tower icon — black sticker for legibility
+    const nameStr = def.label
+    const nameLbl = this.add.text(0, 32, nameStr, {
+      fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold',
+      color: COLORS.BONE,
+      backgroundColor: COLORS.BLACK,
+      padding: { left: 4, right: 4, top: 2, bottom: 2 },
+    }).setOrigin(0.5)
+    container.add(nameLbl)
 
     const tower = {
       def, x, y, container,
@@ -444,7 +510,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
     // Support aura ring for zapier
     if (def.support) {
       const ring = this.add.graphics()
-      ring.lineStyle(2, C.SHOCK_BLUE, 0.35)
+      ring.lineStyle(2, C.HAZARD_YELLOW, 0.4)
       ring.strokeCircle(x, y, def.support.auraRange)
       tower._ring = ring
     }
@@ -503,9 +569,15 @@ export class AgencyFactoryScene extends Phaser.Scene {
       fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.GREY_700,
     }).setOrigin(0.5)
 
+    // Auto-shrink wave name to fit
+    let nameSize = 40
     const name = this.add.text(0, -10, wave.name, {
-      fontFamily: FONT_DISPLAY, fontSize: '44px', color: COLORS.BLACK,
+      fontFamily: FONT_DISPLAY, fontSize: `${nameSize}px`, color: COLORS.BLACK,
     }).setOrigin(0.5)
+    while (name.width > w - 60 && nameSize > 22) {
+      nameSize -= 2
+      name.setFontSize(nameSize)
+    }
 
     const subt = this.add.text(0, 44, wave.boss ? '⚠ BOSS WAVE ⚠' : `${wave.count} INCOMING`, {
       fontFamily: FONT_MONO, fontSize: '13px', fontStyle: 'bold',
@@ -570,7 +642,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
     bg.strokeRect(-w / 2, -h / 2, w, h)
 
     const lbl = this.add.text(0, 0, ENEMY_LABELS[wave.type] || wave.type.toUpperCase(), {
-      fontFamily: FONT_MONO, fontSize: wave.boss ? '12px' : '9px', fontStyle: 'bold',
+      fontFamily: FONT_MONO, fontSize: wave.boss ? '11px' : '9px', fontStyle: 'bold',
       color: COLORS.BONE,
     }).setOrigin(0.5)
 
@@ -603,7 +675,6 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     // End-of-wave check
     if (this.waveActive && this.enemies.length === 0) {
-      const wave = WAVES[this.waveIndex]
       // Ensure spawner has finished
       const spawnDone = !this._timers.some(t => t && !t.getProgress || (t && t.getProgress() < 1))
       if (spawnDone) {
@@ -983,13 +1054,13 @@ export class AgencyFactoryScene extends Phaser.Scene {
     overlay.fillStyle(C.BLACK, 0.7)
     overlay.fillRect(0, 0, width, height)
 
-    BrutalUI.showNarrative(this, width / 2, height / 2, 640, 240,
+    BrutalUI.showNarrative(this, width / 2, height / 2, 620, 220,
       `CHAPTER 4 COMPLETE.\n\nTHE STACK HELD. ${this.kills} THREATS NEUTRALIZED.\nSCORE: ${score}%`,
       () => {
         this.cameras.main.fadeOut(400, 10, 10, 10)
         this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
       },
-      { fill: C.BONE, accentColor: C.SHOCK_BLUE, fontSize: '18px' })
+      { fill: C.BONE, accentColor: C.SHOCK_BLUE, fontSize: '16px' })
   }
 
   _onDefeat() {
@@ -1000,13 +1071,13 @@ export class AgencyFactoryScene extends Phaser.Scene {
     overlay.fillStyle(C.BLACK, 0.7)
     overlay.fillRect(0, 0, width, height)
 
-    BrutalUI.showNarrative(this, width / 2, height / 2, 640, 220,
+    BrutalUI.showNarrative(this, width / 2, height / 2, 620, 200,
       `PIPELINE COLLAPSED.\n\n${this.kills} KILLS. WAVE ${this.waveIndex + 1}/${WAVES.length}.\nREBUILD THE STACK.`,
       () => {
         this.cameras.main.fadeOut(400, 10, 10, 10)
         this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
       },
-      { fill: C.BONE, accentColor: C.SHOCK_RED, fontSize: '18px' })
+      { fill: C.BONE, accentColor: C.SHOCK_RED, fontSize: '16px' })
   }
 
   // ── Cleanup ──
@@ -1020,5 +1091,6 @@ export class AgencyFactoryScene extends Phaser.Scene {
       this._keyHandlers.forEach(([ev, fn]) => { try { this.input.keyboard.off(ev, fn) } catch (e) {} })
     }
     this._keyHandlers = []
+    this._hideRangeIndicator()
   }
 }
