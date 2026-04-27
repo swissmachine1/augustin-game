@@ -1066,7 +1066,7 @@ export class InterviewRoomScene extends Phaser.Scene {
     const name = (this._playerName && this._playerName !== 'friend') ? this._playerName.toUpperCase() : 'YOU'
     this.add.text(W / 2, 146, `${name}, YOU NOW KNOW MY STORY.`, {
       fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.BONE,
-      letterSpacing: 3,
+      letterSpacing: 3, wordWrap: { width: W - 80 }, align: 'center',
     }).setOrigin(0.5)
 
     // Career timeline
@@ -1104,16 +1104,18 @@ export class InterviewRoomScene extends Phaser.Scene {
       { label: 'CLAY/N8N/AI',      year: '2025' },
     ]
     const y = 204
-    const pad = 80
-    const step = (W - pad * 2) / (nodes.length - 1)
+    const padL = 60
+    const padR = 180 // reserve room for "→ HIRE ME" label
+    const pad = padL
+    const step = (W - padL - padR) / (nodes.length - 1)
 
     // Connector line (thick bone)
     const g = this.add.graphics()
     g.lineStyle(4, C.BONE, 1)
-    g.beginPath(); g.moveTo(pad, y); g.lineTo(W - pad, y); g.strokePath()
+    g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.strokePath()
     // Accent overlay
     g.lineStyle(2, ACCENT.num, 1)
-    g.beginPath(); g.moveTo(pad, y); g.lineTo(W - pad, y); g.strokePath()
+    g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.strokePath()
 
     nodes.forEach((n, i) => {
       const x = pad + step * i
@@ -1142,8 +1144,8 @@ export class InterviewRoomScene extends Phaser.Scene {
     })
 
     // Final HIRE ME marker
-    const xEnd = W - pad
-    const flag = this.add.text(xEnd + 36, y, '→ HIRE ME', {
+    const xEnd = W - padR
+    const flag = this.add.text(xEnd + 24, y, '→ HIRE ME', {
       fontFamily: FONT_DISPLAY, fontSize: '16px', color: ACCENT.hex,
     }).setOrigin(0, 0.5).setAlpha(0)
     this.tweens.add({ targets: flag, alpha: 1, duration: 300, delay: 60 * nodes.length + 100 })
@@ -1278,21 +1280,21 @@ export class InterviewRoomScene extends Phaser.Scene {
 
     // BOOK A CALL — acid fill, black text (primary)
     const a = BrutalUI.drawButton(this, startX, y, btnW, btnH, 'BOOK A CALL', () => {
-      window.open('https://calendly.com/augustin', '_blank', 'noopener,noreferrer')
+      window.open('https://cal.com/augustinr/30min', '_blank')
     }, {
       fill: ACCENT.num, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
     })
 
     // LINKEDIN — bone fill, black text
     BrutalUI.drawButton(this, startX + btnW + gap, y, btnW, btnH, 'LINKEDIN', () => {
-      window.open('https://linkedin.com/in/augustin-romaneschi', '_blank', 'noopener,noreferrer')
+      window.open('https://www.linkedin.com/in/augustinr/', '_blank')
     }, {
       fill: C.BONE, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
     })
 
     // CV — black fill, bone text with acid border accent
-    BrutalUI.drawButton(this, startX + (btnW + gap) * 2, y, btnW, btnH, 'CV (PDF)', () => {
-      window.open('/cv.pdf', '_blank', 'noopener,noreferrer')
+    BrutalUI.drawButton(this, startX + (btnW + gap) * 2, y, btnW, btnH, 'DOWNLOAD CV', () => {
+      window.open('/cv.pdf', '_blank')
     }, {
       fill: C.BLACK, labelColor: COLORS.BONE, fontSize: '20px', shadowOffset: 8,
     })
