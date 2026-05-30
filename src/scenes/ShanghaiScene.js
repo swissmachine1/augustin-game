@@ -1,8 +1,11 @@
 import * as Phaser from 'phaser'
-import { KEYS } from '../systems/GameRegistry.js'
+import { KEYS, recordBestTime, addPlayTime } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
 import { COLORS, C, TEXT, FONT_DISPLAY, FONT_MONO } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
+import { AudioCtx } from '../ui/AudioCtx.js'
+import { Particles } from '../ui/Particles.js'
+import { TextReveal } from '../ui/TextReveal.js'
 
 // Level 1 — Shanghai: Build the Rocket / Escape Velocity
 // Neo-Brutalist. Catch falling STARTUP moments to fuel the rocket.
@@ -91,11 +94,20 @@ export class ShanghaiScene extends Phaser.Scene {
     this._mouseTargetX = 640
 
     this._drawBackground()
+    BrutalUI.drawScanlines(this, 1280, 720)
+
+    // Resume audio + opening cue on first user gesture
+    this.input.once('pointerdown', () => AudioCtx.resume())
+    AudioCtx.fx('open')
+
+    // Streak sticker tag (recreated on each milestone)
+    this._streakTag = null
+    this._lastComboMult = 1.0
 
     BrutalUI.drawHomeButton(this, {
       onClick: () => {
-        this.cameras.main.fadeOut(250, 10, 10, 10)
-        this.time.delayedCall(270, () => this.scene.start('LevelSelectHub'))
+        AudioCtx.fx('click')
+        BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
       },
     })
 
@@ -428,6 +440,28 @@ export class ShanghaiScene extends Phaser.Scene {
     })
   }
 
+  _showStreakTag(n) {
+    this._clearStreakTag()
+    this._streakTag = BrutalUI.drawSticker(this, 640, 80, `STREAK x${n}`, {
+      fill: C.HAZARD_YELLOW, fontSize: '14px',
+    })
+    this._streakTag.setDepth(200).setScale(0.6).setAlpha(0)
+    this.tweens.add({
+      targets: this._streakTag, scale: 1.0, alpha: 1, duration: 220, ease: 'Back.easeOut',
+    })
+  }
+
+  _clearStreakTag() {
+    if (this._streakTag) {
+      const tag = this._streakTag
+      this._streakTag = null
+      this.tweens.add({
+        targets: tag, alpha: 0, scale: 0.7, duration: 180,
+        onComplete: () => tag.destroy(),
+      })
+    }
+  }
+
   // ── Items ──────────────────────────────────────────────────────
   _spawnItem() {
     let isBrave
@@ -634,8 +668,10 @@ export class ShanghaiScene extends Phaser.Scene {
 
   // ── Catch / Miss ───────────────────────────────────────────────
   _onCatch(item) {
+    const trayY = 570
     if (item.isBrave) {
       // STARTUP — gain fuel, build combo
+      const prevStreak = this._currentStreak
       this._currentStreak++
       let mult = 1.0
       if (this._currentStreak === 2) mult = 1.3
@@ -645,8 +681,27 @@ export class ShanghaiScene extends Phaser.Scene {
       this._bravesCaught++
 
       const gained = Math.max(1, item.fuel * mult)
+      const prevFuel = this._fuel
       this._fuel = Math.min(100, this._fuel + gained)
       this._totalCaught++
+
+      AudioCtx.fx('catchGood')
+      Particles.burst(this, item.x, trayY, C.SHOCK_RED, 8)
+
+      // Combo level change sfx + popup
+      if (mult !== this._lastComboMult && mult > 1.0) {
+        AudioCtx.fx('combo')
+        Particles.popup(this, this._trayX, trayY - 60, `COMBO X${mult.toFixed(1)}`, '#ffcf00')
+      }
+      this._lastComboMult = mult
+
+      // Streak milestone tag (3+, then every increment)
+      if (this._currentStreak >= 3) this._showStreakTag(this._currentStreak)
+
+      // Fuel reaches 100 — ring around rocket
+      if (prevFuel < 100 && this._fuel >= 100 && this._rocketContainer) {
+        Particles.ring(this, this._rocketContainer.x, this._rocketContainer.y, C.SHOCK_RED, { maxRadius: 200 })
+      }
 
       this.cameras.main.shake(140, 0.003)
       const flash = this.add.rectangle(640, 360, 1280, 720, C.SHOCK_RED, 0.12).setDepth(50)
@@ -660,14 +715,20 @@ export class ShanghaiScene extends Phaser.Scene {
     } else {
       // LAW PATH — MALUS, drain fuel, reset combo
       this._currentStreak = 0
+      this._lastComboMult = 1.0
+      this._clearStreakTag()
       this._lawsCaught++
       this._totalCaught++
 
       const drain = Math.abs(item.fuel) // 4
       this._fuel = Math.max(0, this._fuel - drain)
 
+      AudioCtx.fx('catchBad')
+      Particles.burst(this, item.x, trayY, C.GREY_500, 6, { shape: 'sticker' })
+      Particles.popup(this, item.x, trayY - 20, `-${drain} FUEL`, '#ff2d1f')
+
       this._flashTrayMalus()
-      this.cameras.main.shake(180, 0.005)
+      this.cameras.main.shake(180, 0.012)
 
       // Floating "-4" text
       const malusText = this.add.text(item.x, item.y, `-${drain}`, {
@@ -689,6 +750,9 @@ export class ShanghaiScene extends Phaser.Scene {
     // Missing a LAW item is GOOD (no malus, no stat hit). Missing a STARTUP item counts as a miss.
     if (item.isBrave) {
       this._totalMissed++
+      this._currentStreak = 0
+      this._lastComboMult = 1.0
+      this._clearStreakTag()
     }
     const mx = item.x
     for (let i = 0; i < 4; i++) {
@@ -729,7 +793,13 @@ export class ShanghaiScene extends Phaser.Scene {
     })
     launch.container.setAlpha(0).setDepth(100)
     this.tweens.add({ targets: launch.container, alpha: 1, duration: 200 })
-    this.cameras.main.shake(500, 0.008)
+
+    AudioCtx.fx('launch')
+    if (this._rocketContainer) {
+      Particles.confetti(this, this._rocketContainer.x, this._rocketContainer.y, 60)
+    }
+    this.cameras.main.shake(500, 0.02)
+    this._clearStreakTag()
 
     this.time.delayedCall(700, () => {
       this.tweens.add({
@@ -827,7 +897,35 @@ export class ShanghaiScene extends Phaser.Scene {
     this.tweens.add({
       targets: sticker, scale: 1.0, alpha: 1, duration: 250, ease: 'Back.easeOut',
     })
-    this.cameras.main.shake(220, 0.004)
+
+    AudioCtx.fx('layerBreak')
+    const isFinal = labelName === 'THIS IS MY LIFE NOW'
+    const rx = this._rocketContainer ? this._rocketContainer.x : 640
+    const ry = this._rocketContainer ? this._rocketContainer.y : 320
+    Particles.burst(this, rx, ry, C.BONE, 14, { speed: 350 })
+    this.cameras.main.shake(isFinal ? 800 : 220, isFinal ? 0.025 : 0.018)
+
+    // Letter-by-letter reveal for the final narrative layer
+    if (isFinal) {
+      const rev = TextReveal.typewrite(this, labelName, {
+        x: 640, y: 480,
+        style: { fontFamily: FONT_MONO, fontSize: '18px', color: COLORS.BONE, fontStyle: 'bold' },
+        stepMs: 60,
+      })
+      rev.setDepth(180)
+      this._lastReveal = rev
+      const skip = () => {
+        if (rev && rev.skipReveal) rev.skipReveal()
+        this.input.off('pointerdown', skip)
+      }
+      this.input.on('pointerdown', skip)
+      this.time.delayedCall(2400, () => {
+        if (rev && rev.active !== false) {
+          this.tweens.add({ targets: rev, alpha: 0, duration: 300,
+            onComplete: () => rev.destroy() })
+        }
+      })
+    }
 
     this.time.delayedCall(900, () => {
       this.tweens.add({
@@ -889,7 +987,16 @@ export class ShanghaiScene extends Phaser.Scene {
     const cur = this.registry.get(KEYS.STAT_CURIOSITY) ?? 0
     this.registry.set(KEYS.STAT_CURIOSITY, Math.min(100, cur + curiosityGain))
 
-    completeLevel(this, KEYS.SCORE_L1, KEYS.COMPLETED_L1, finalScore)
+    // Best time + play time tracking
+    const elapsedMs = Math.max(0, Math.round(elapsed))
+    const isNewBest = recordBestTime(this, KEYS.BEST_T1, elapsedMs)
+    addPlayTime(this, elapsedMs)
+
+    // Add best-streak bonus into the recorded score
+    const finalScoreWithStreak = Math.max(20, Math.min(100, finalScore + Math.min(10, this._bestStreak)))
+
+    AudioCtx.fx('success')
+    completeLevel(this, KEYS.SCORE_L1, KEYS.COMPLETED_L1, finalScoreWithStreak)
 
     const cardW = 680, cardH = 440
     const card = BrutalUI.drawCard(this, 640, 360, cardW, cardH, {
@@ -921,18 +1028,34 @@ export class ShanghaiScene extends Phaser.Scene {
     const badge = BrutalUI.drawStatBadge(this, 640 - 230, 360 + 80, curiosityGain, 'CURIOSITY')
     badge.setDepth(172)
 
-    const stats = `STARTUP ${this._bravesCaught}  ·  LAW ${this._lawsCaught}\nBEST STREAK ${this._bestStreak}  ·  CATCH ${Math.round(catchRate * 100)}%`
+    const totalSec = Math.floor(elapsedMs / 1000)
+    const mm = Math.floor(totalSec / 60)
+    const ss = String(totalSec % 60).padStart(2, '0')
+    const timeStr = `${mm}:${ss}`
+    const stats = `STARTUP ${this._bravesCaught}  ·  LAW ${this._lawsCaught}\nBEST STREAK ${this._bestStreak}  ·  CATCH ${Math.round(catchRate * 100)}%\nTIME ${timeStr}`
     const statsText = this.add.text(640 + 30, 360 + 80, stats, {
       fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_700,
       letterSpacing: 1, wordWrap: { width: 320 }, align: 'left', lineSpacing: 6,
     }).setOrigin(0, 0.5).setDepth(172)
 
+    // NEW BEST tag
+    let newBestTag = null
+    if (isNewBest) {
+      newBestTag = BrutalUI.drawSticker(this, 640 + 200, 360 + 40, 'NEW BEST!', {
+        fill: C.HAZARD_YELLOW, fontSize: '12px', rotation: 6 * Math.PI / 180,
+      })
+      newBestTag.setDepth(173).setScale(0.6).setAlpha(0)
+      this.tweens.add({
+        targets: newBestTag, scale: 1.0, alpha: 1, duration: 320, ease: 'Back.easeOut', delay: 250,
+      })
+    }
+
     let returned = false
     const returnToHub = () => {
       if (returned) return
       returned = true
-      this.cameras.main.fadeOut(400, 10, 10, 10)
-      this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
+      AudioCtx.fx('click')
+      BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
     }
 
     const btn = BrutalUI.drawButton(this, 640, 360 + cardH / 2 - 50, 280, 56, 'BACK TO INDEX', returnToHub, {
@@ -943,5 +1066,6 @@ export class ShanghaiScene extends Phaser.Scene {
     this.input.keyboard.once('keydown-SPACE', returnToHub)
 
     this._scoreCleanup = [topBar, kicker, title, bigScore, percent, badge, statsText]
+    if (newBestTag) this._scoreCleanup.push(newBestTag)
   }
 }
