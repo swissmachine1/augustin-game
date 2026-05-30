@@ -25,6 +25,23 @@ export const KEYS = Object.freeze({
   STAT_TECH:          'statTech',
   STAT_TEAMPLAYER:    'statTeamPlayer',
   STAT_LANGUAGES:     'statLanguages',
+
+  // Best times per level (ms, lower = better)
+  BEST_T1:            'bestT1',
+  BEST_T2:            'bestT2',
+  BEST_T3:            'bestT3',
+  BEST_T4:            'bestT4',
+  BEST_T5:            'bestT5',
+
+  // Cumulative play time (ms)
+  PLAY_TIME_MS:       'playTimeMs',
+
+  // URL personalization
+  TARGET_COMPANY:     'targetCompany',
+  TARGET_ROLE:        'targetRole',
+
+  // Settings
+  MUTED:              'muted',
 })
 
 const STORAGE_KEY = 'augustin-files-v2'
@@ -61,6 +78,48 @@ export function initRegistry(scene) {
   reg.set(KEYS.STAT_TECH,         saved.statTech ?? 0)
   reg.set(KEYS.STAT_TEAMPLAYER,   saved.statTeamPlayer ?? 0)
   reg.set(KEYS.STAT_LANGUAGES,    saved.statLanguages ?? 0)
+
+  // Best times (null = never recorded)
+  reg.set(KEYS.BEST_T1, saved.bestT1 ?? null)
+  reg.set(KEYS.BEST_T2, saved.bestT2 ?? null)
+  reg.set(KEYS.BEST_T3, saved.bestT3 ?? null)
+  reg.set(KEYS.BEST_T4, saved.bestT4 ?? null)
+  reg.set(KEYS.BEST_T5, saved.bestT5 ?? null)
+
+  // Play time
+  reg.set(KEYS.PLAY_TIME_MS, saved.playTimeMs ?? 0)
+
+  // URL personalization (read once at boot from query string)
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const company = (params.get('company') || params.get('co') || '').trim().slice(0, 32)
+    const role    = (params.get('role')    || params.get('r')  || '').trim().slice(0, 32)
+    reg.set(KEYS.TARGET_COMPANY, company || saved.targetCompany || '')
+    reg.set(KEYS.TARGET_ROLE,    role    || saved.targetRole    || '')
+  } catch (e) {
+    reg.set(KEYS.TARGET_COMPANY, saved.targetCompany || '')
+    reg.set(KEYS.TARGET_ROLE,    saved.targetRole    || '')
+  }
+
+  // Settings
+  reg.set(KEYS.MUTED, saved.muted ?? false)
+}
+
+// Best-time helper — only stores if better than previous (lower)
+export function recordBestTime(scene, key, timeMs) {
+  const prev = scene.registry.get(key)
+  if (prev == null || timeMs < prev) {
+    scene.registry.set(key, timeMs)
+    saveRegistry(scene)
+    return true
+  }
+  return false
+}
+
+// Play-time accumulator
+export function addPlayTime(scene, deltaMs) {
+  const cur = scene.registry.get(KEYS.PLAY_TIME_MS) ?? 0
+  scene.registry.set(KEYS.PLAY_TIME_MS, cur + deltaMs)
 }
 
 export function saveRegistry(scene) {

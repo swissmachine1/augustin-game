@@ -8,6 +8,7 @@ import { LatinAmericaScene } from '../scenes/LatinAmericaScene.js'
 import { GreenlandScene } from '../scenes/GreenlandScene.js'
 import { AgencyFactoryScene } from '../scenes/AgencyFactoryScene.js'
 import { InterviewRoomScene } from '../scenes/InterviewRoomScene.js'
+import { FinalReportScene } from '../scenes/FinalReportScene.js'
 
 export const GameConfig = {
   type: Phaser.AUTO,
@@ -22,7 +23,7 @@ export const GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, OpeningCinematicScene, LevelSelectHub, ShanghaiScene, LatinAmericaScene, GreenlandScene, AgencyFactoryScene, InterviewRoomScene],
+  scene: [BootScene, TitleScene, OpeningCinematicScene, LevelSelectHub, ShanghaiScene, LatinAmericaScene, GreenlandScene, AgencyFactoryScene, InterviewRoomScene, FinalReportScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO, LEVEL_COLORS } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
+import { AudioCtx } from '../ui/AudioCtx.js'
 
 const LEVELS = [
   {
@@ -91,6 +92,30 @@ export class LevelSelectHub extends Phaser.Scene {
       fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_500,
       letterSpacing: 2,
     }).setOrigin(0.5, 1)
+
+    // Audio resume on first click (browsers require user gesture)
+    this.input.once('pointerdown', () => AudioCtx.resume())
+
+    // Mute toggle bottom-left
+    const muted = this.registry.get(KEYS.MUTED) === true
+    AudioCtx.setMuted(muted)
+    const muteBtn = BrutalUI.drawButton(this, 60, height - 50, 90, 36,
+      muted ? '🔇 MUTED' : '🔊 SOUND', () => {
+        const newMuted = !AudioCtx.isMuted()
+        AudioCtx.setMuted(newMuted)
+        this.registry.set(KEYS.MUTED, newMuted)
+        saveRegistry(this)
+        muteBtn.text.setText(newMuted ? '🔇 MUTED' : '🔊 SOUND')
+      }, { fill: C.GREY_700, labelColor: COLORS.BONE, fontSize: '10px', shadowOffset: 4 })
+
+    // FINALE CTA — if all 5 done, show a big "VIEW FINAL REPORT" button
+    if (completedCount === LEVELS.length) {
+      BrutalUI.drawButton(this, width / 2, height - 60, 360, 56, '★ VIEW FINAL REPORT ★', () => {
+        AudioCtx.fx('open')
+        this.cameras.main.fadeOut(400, 10, 10, 10)
+        this.time.delayedCall(420, () => this.scene.start('FinalReportScene'))
+      }, { fill: C.SHOCK_ACID, labelColor: COLORS.BLACK, fontSize: '18px', shadowOffset: 6 })
+    }
 
     this.events.once('shutdown', () => {}, this)
   }
@@ -194,6 +219,7 @@ export class LevelSelectHub extends Phaser.Scene {
     })
     hit.on('pointerdown', () => {
       container.setScale(0.97)
+      AudioCtx.fx('snap')
       this.time.delayedCall(80, () => this._launchLevel(level))
     })
   }

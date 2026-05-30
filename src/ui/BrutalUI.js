@@ -94,21 +94,66 @@ export class BrutalUI {
 
     const hit = scene.add.rectangle(x, y, w + Math.abs(shadowOffset), h + Math.abs(shadowOffset), 0x000000, 0)
     hit.setInteractive({ useHandCursor: true })
+    // Press-depth shift: button translates by shadow offset, shadow shrinks to 0
     hit.on('pointerover', () => {
-      container.setScale(1.03)
+      bgG.y = -1; txt.y = -1
     })
     hit.on('pointerout', () => {
-      container.setScale(1)
+      bgG.x = 0; bgG.y = 0; txt.x = 0; txt.y = 0
+      shadowG.alpha = 1
     })
     hit.on('pointerdown', () => {
-      container.setScale(0.97)
-      scene.time.delayedCall(60, () => {
-        container.setScale(1)
+      bgG.x = shadowOffset; bgG.y = shadowOffset
+      txt.x = shadowOffset; txt.y = shadowOffset
+      shadowG.alpha = 0
+      scene.time.delayedCall(80, () => {
+        bgG.x = 0; bgG.y = 0; txt.x = 0; txt.y = 0
+        shadowG.alpha = 1
         if (onClick) onClick()
       })
     })
 
     return { container, bg: bgG, text: txt, hit }
+  }
+
+  // ── Scanline ambient overlay (call once per scene at create) ──
+  static drawScanlines(scene, w, h, opts = {}) {
+    const { alpha = 0.04, spacing = 3 } = opts
+    const g = scene.add.graphics()
+    g.lineStyle(1, 0x000000, alpha)
+    for (let y = 0; y < h; y += spacing) {
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.strokePath()
+    }
+    g.setDepth(9999)
+    return g
+  }
+
+  // ── Brutalist page-turn transition (a bone block sweeps across) ──
+  // Calls onMid when the screen is fully covered. Then auto-completes.
+  static pageTurn(scene, onMid, opts = {}) {
+    const { duration = 360, color = 0xf5f0e6, direction = 'rtl' } = opts
+    const { width, height } = scene.cameras.main
+    const block = scene.add.graphics()
+    block.fillStyle(color, 1)
+    block.fillRect(0, 0, width, height)
+    block.setDepth(99999)
+
+    const startX = direction === 'rtl' ? width : -width
+    const midX = 0
+    const endX = direction === 'rtl' ? -width : width
+    block.x = startX
+
+    scene.tweens.add({
+      targets: block, x: midX, duration: duration / 2, ease: 'Cubic.easeOut',
+      onComplete: () => {
+        if (onMid) onMid()
+        scene.tweens.add({
+          targets: block, x: endX, duration: duration / 2, ease: 'Cubic.easeIn',
+          onComplete: () => block.destroy(),
+        })
+      },
+    })
+    return block
   }
 
   // ── Tilted sticker/stamp ──────────────────────────────────────
