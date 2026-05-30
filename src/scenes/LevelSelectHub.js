@@ -3,6 +3,7 @@ import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO, LEVEL_COLORS } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
 import { AudioCtx } from '../ui/AudioCtx.js'
+import { Music } from '../ui/Music.js'
 
 const LEVELS = [
   {
@@ -93,8 +94,11 @@ export class LevelSelectHub extends Scene {
       letterSpacing: 2,
     }).setOrigin(0.5, 1)
 
-    // Audio resume on first click (browsers require user gesture)
-    this.input.once('pointerdown', () => AudioCtx.resume())
+    // Audio resume + music start on first click (browsers require a user gesture)
+    this.input.once('pointerdown', () => {
+      AudioCtx.resume()
+      Music.play()
+    })
 
     // Mute toggle bottom-left
     const muted = this.registry.get(KEYS.MUTED) === true
@@ -103,6 +107,8 @@ export class LevelSelectHub extends Scene {
       muted ? '🔇 MUTED' : '🔊 SOUND', () => {
         const newMuted = !AudioCtx.isMuted()
         AudioCtx.setMuted(newMuted)
+        Music.applyMuteState()
+        if (!newMuted) Music.play()
         this.registry.set(KEYS.MUTED, newMuted)
         saveRegistry(this)
         muteBtn.text.setText(newMuted ? '🔇 MUTED' : '🔊 SOUND')

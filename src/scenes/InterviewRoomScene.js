@@ -21,7 +21,7 @@ const PLATFORMS = [
   { id: 2, label: 'FIRST SALES JOB',  year: '2015', col: 5, row: 2, angle: '/'  },
   { id: 3, label: 'LATIN AMERICA',    year: '2017', col: 2, row: 2, angle: '/'  },
   { id: 4, label: 'TRAINING DOCTORS', year: '2018', col: 2, row: 4, angle: '\\' },
-  { id: 5, label: '$1M ARR',          year: '2020', col: 6, row: 4, angle: '\\' },
+  { id: 5, label: '$1M ARR',          year: '2017', col: 6, row: 4, angle: '\\' },
   { id: 6, label: 'GREENLAND',        year: '2007', col: 6, row: 6, angle: '/'  },
   { id: 7, label: 'AGENCY LAUNCH',    year: '2023', col: 3, row: 6, angle: '/'  },
   { id: 8, label: 'CLAY / N8N / AI',  year: '2025', col: 3, row: 7, angle: '\\' },
@@ -1258,7 +1258,7 @@ export class InterviewRoomScene extends Phaser.Scene {
       { label: 'FIRST SALES',      year: '2015' },
       { label: 'LATIN AMERICA',    year: '2017' },
       { label: 'TRAINING DOCS',    year: '2018' },
-      { label: '$1M ARR',          year: '2020' },
+      { label: '$1M ARR',          year: '2017' },
       { label: 'GREENLAND',        year: '2007' },
       { label: 'AGENCY LAUNCH',    year: '2023' },
       { label: 'CLAY/N8N/AI',      year: '2025' },
@@ -1459,12 +1459,12 @@ export class InterviewRoomScene extends Phaser.Scene {
       fill: C.BONE, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
     })
 
-    // CV — black fill, bone text with acid border accent
+    // CV — hazard yellow, high contrast
     const c = BrutalUI.drawButton(this, startX + (btnW + gap) * 2, y, btnW, btnH, 'DOWNLOAD CV', () => {
       AudioCtx.fx('click')
       window.open('/cv.pdf', '_blank')
     }, {
-      fill: C.BLACK, labelColor: COLORS.BONE, fontSize: '20px', shadowOffset: 8,
+      fill: C.HAZARD_YELLOW, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
     })
 
     // Subtle hover ripple on each

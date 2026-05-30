@@ -31,8 +31,8 @@ const OBSTACLES = [
   { key: 'dengue',   label: 'DENGUE FEVER',     region: 'asia',    fill: C.HAZARD_YELLOW, text: COLORS.BLACK, story: "3 DAYS OF FEVER IN A SHARED DORM. NO HOSPITAL." },
   { key: 'flat',     label: 'FLAT TIRE',        region: 'asia',    fill: C.BONE,          text: COLORS.BLACK, story: "THIRD PUNCTURE THIS WEEK. PATCH KIT EMPTY." },
   { key: 'card',     label: 'CARD DECLINED',    region: 'europe',  fill: C.SHOCK_PINK,    text: COLORS.BLACK, story: "NO MONEY. TEN DAYS FROM THE NEXT CITY." },
-  { key: 'border',   label: 'BORDER HASSLE',    region: 'europe',  fill: C.HAZARD_YELLOW, text: COLORS.BLACK, story: "SIX HOURS. THREE OFFICIALS. ONE BRIBE REFUSED." },
   { key: 'wrong',    label: 'WRONG TURN',       region: 'europe',  fill: C.BONE,          text: COLORS.BLACK, story: "30KM OFF ROUTE. NO SIGNAL. RIDE BACK." },
+  { key: 'rough',    label: 'ROUGH ROAD',       region: 'europe',  fill: C.HAZARD_YELLOW, text: COLORS.BLACK, story: "GRAVEL FOR 80KM. WHEELS BARELY HOLDING." },
   { key: 'village',  label: 'EMPTY VILLAGE',    region: 'bulgaria',fill: C.BONE,          text: COLORS.BLACK, story: "I KNOCKED ON EVERY DOOR. HOUSE #7 HAD A FIRE GOING." },
   { key: 'food',     label: 'NO FOOD',          region: 'bulgaria',fill: C.HAZARD_YELLOW, text: COLORS.BLACK, story: "BREAD AND BUTTER. BEST MEAL OF MY LIFE." },
   { key: 'icebergs', label: 'ICEBERGS',         region: 'greenland',fill: C.BONE,         text: COLORS.BLACK, story: "THE BOAT WASN'T COMING. I PUT ON THE PACK." },
@@ -110,8 +110,9 @@ export class GreenlandScene extends Phaser.Scene {
   _showIntro() {
     const lines = [
       "THESE OBSTACLES ARE REAL.\nEVERY ONE OF THEM HAPPENED.",
-      "I CYCLED ACROSS TURKEY, SOUTHEAST ASIA,\nEASTERN EUROPE, AND GREENLAND.",
-      "I CARRIED EVERYTHING I OWNED\nON A 20KG PACK.",
+      "I WAS 20. I PACKED A BIKE AND LEFT.",
+      "SOLO BIKEPACKING ACROSS TURKEY,\nSOUTHEAST ASIA, AND EASTERN EUROPE.",
+      "LATER, GREENLAND — WHERE I CARRIED\n20KG ON MY BACK FOR TWO DAYS.",
       "HERE'S WHAT TRIED TO STOP ME.",
     ]
     let i = 0

@@ -286,6 +286,68 @@ export class LatinAmericaScene extends Phaser.Scene {
     this._insightsContainer = this.add.container(0, 0)
   }
 
+  // Big front-of-screen overlay shown when a pair matches — easy to read
+  _showInsightOverlay(label, text, wild) {
+    const cx = 640
+    const cy = 280
+    const w = 820, h = 230
+    const container = this.add.container(cx, cy).setDepth(50000).setAlpha(0)
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 1)
+    shadow.fillRect(-w / 2 + 10, -h / 2 + 10, w, h)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(C.BONE, 1)
+    bg.fillRect(-w / 2, -h / 2, w, h)
+    bg.lineStyle(5, C.BLACK, 1)
+    bg.strokeRect(-w / 2, -h / 2, w, h)
+
+    // Top accent stripe
+    const stripe = this.add.graphics()
+    stripe.fillStyle(wild ? C.HAZARD_YELLOW : C.SHOCK_LIME, 1)
+    stripe.fillRect(-w / 2, -h / 2, w, 14)
+
+    // Tag at top — "MATCHED" or "WILD CARD!"
+    const tagText = wild ? '★ WILD CARD' : '✓ MATCHED'
+    const tag = BrutalUI.drawSticker(this, -w / 2 + 80, -h / 2 + 38, tagText, {
+      fill: C.BLACK, textColor: wild ? COLORS.HAZARD_YELLOW : COLORS.SHOCK_LIME,
+      rotation: -3 * Math.PI / 180, fontSize: '13px', paddingX: 12, paddingY: 5,
+    })
+
+    // The matched label — BIG
+    const labelText = this.add.text(0, -h / 2 + 70, label, {
+      fontFamily: 'Archivo Black, sans-serif',
+      fontSize: '32px', color: COLORS.BLACK,
+      align: 'center', wordWrap: { width: w - 80 },
+    }).setOrigin(0.5, 0)
+
+    // The insight — readable size
+    const insightText = this.add.text(0, h / 2 - 30, text, {
+      fontFamily: 'Space Mono, monospace',
+      fontSize: '18px', fontStyle: 'bold', color: COLORS.BLACK,
+      align: 'center', wordWrap: { width: w - 80 },
+      lineSpacing: 4,
+    }).setOrigin(0.5, 1)
+
+    container.add([shadow, bg, stripe, tag, labelText, insightText])
+
+    // Slide in from above, hold, then slide out
+    container.y = cy - 100
+    this.tweens.add({
+      targets: container, y: cy, alpha: 1, duration: 280, ease: 'Cubic.easeOut',
+    })
+    this.time.delayedCall(wild ? 2800 : 2000, () => {
+      this.tweens.add({
+        targets: container, alpha: 0, y: cy + 20,
+        duration: 260, ease: 'Cubic.easeIn',
+        onComplete: () => container.destroy(),
+      })
+    })
+
+    return container
+  }
+
   _addInsight(label, text, wild) {
     const { x, y, w, h } = this._insightsPanel
     const pad = 8
@@ -294,12 +356,13 @@ export class LatinAmericaScene extends Phaser.Scene {
 
     // Measure required height by probing the wrapped insight text
     const probe = this.add.text(0, 0, text, {
-      fontFamily: FONT_MONO, fontSize: '8px', color: COLORS.GREY_700,
+      fontFamily: FONT_MONO, fontSize: '12px', color: COLORS.GREY_700,
       wordWrap: { width: cardW - 18 },
+      lineSpacing: 2,
     })
     const insightH = probe.height
     probe.destroy()
-    const entryH = Math.max(28, 4 + 10 + insightH + 3) // top pad + label line + insight + bottom pad
+    const entryH = Math.max(38, 6 + 14 + insightH + 6)
 
     // Compute ey based on running offset (entries are variable height)
     if (this._insightsCursorY === undefined) this._insightsCursorY = y + pad
@@ -325,20 +388,21 @@ export class LatinAmericaScene extends Phaser.Scene {
     stripe.fillStyle(wild ? C.BLACK : C.SHOCK_LIME, 1)
     stripe.fillRect(ex, ey, 6, entryH)
 
-    const labelTxt = this.add.text(ex + 12, ey + 3, label, {
-      fontFamily: FONT_MONO, fontSize: '9px', fontStyle: 'bold', color: COLORS.BLACK,
+    const labelTxt = this.add.text(ex + 12, ey + 5, label, {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.BLACK,
       letterSpacing: 1,
       wordWrap: { width: cardW - 18 },
     })
 
-    // Typewriter the insight text in
+    // Typewriter the insight text in — bigger and easier to read
     const insightTxt = TextReveal.typewrite(this, text, {
-      x: ex + 12, y: ey + 14,
+      x: ex + 12, y: ey + 22,
       origin: 0,
-      stepMs: 18,
+      stepMs: 16,
       style: {
-        fontFamily: FONT_MONO, fontSize: '8px', color: COLORS.GREY_700,
+        fontFamily: FONT_MONO, fontSize: '12px', color: COLORS.GREY_700,
         wordWrap: { width: cardW - 18 },
+        lineSpacing: 2,
       },
     })
 
@@ -580,6 +644,7 @@ export class LatinAmericaScene extends Phaser.Scene {
       this.time.delayedCall(180, () => {
         this._matchEffect(a, b)
         this._addInsight(a.text, a.insight, a.wild)
+        this._showInsightOverlay(a.text, a.insight, a.wild)
         if (a.wild) {
           Particles.confetti(this, 640, 360, 80)
           Particles.ring(this, 640, 360, C.HAZARD_YELLOW, { maxRadius: 400 })

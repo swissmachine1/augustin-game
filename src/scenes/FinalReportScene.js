@@ -196,7 +196,7 @@ export class FinalReportScene extends Scene {
     BrutalUI.drawButton(this, 1000, ctaY, 280, 56, 'DOWNLOAD CV', () => {
       AudioCtx.fx('click')
       window.open('/cv.pdf', '_blank')
-    }, { fill: C.BLACK, labelColor: COLORS.BONE, fontSize: '17px', shadowOffset: 6 })
+    }, { fill: C.HAZARD_YELLOW, labelColor: COLORS.BLACK, fontSize: '17px', shadowOffset: 6 })
 
     // Home button — also bottom-right "REPLAY"
     BrutalUI.drawHomeButton(this)

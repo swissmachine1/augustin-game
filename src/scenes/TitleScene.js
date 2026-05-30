@@ -1,5 +1,5 @@
 import { Scene } from 'phaser'
-import { KEYS } from '../systems/GameRegistry.js'
+import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO, FONT_HAND } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
 
@@ -70,9 +70,17 @@ export class TitleScene extends Scene {
       letterSpacing: 2,
     }).setOrigin(0.5)
 
-    // Name input
+    // Name input — prefer URL ?name=, fall back to saved name
     const urlName = this._readUrlName()
-    this._createNameInput(urlName)
+    const savedName = this.registry.get(KEYS.PLAYER_NAME)
+    const prefill = urlName || (savedName && savedName !== 'friend' ? savedName : '')
+    this._createNameInput(prefill)
+    if (prefill) {
+      this.add.text(width / 2, 600, `WELCOME BACK, ${prefill.toUpperCase()}`, {
+        fontFamily: 'Space Mono', fontSize: '12px', fontStyle: 'bold', color: '#d4ff00',
+        letterSpacing: 2,
+      }).setOrigin(0.5)
+    }
 
     // Start button — big brutalist CTA
     BrutalUI.drawButton(this, width / 2, 660, 240, 64, '▶  OPEN FILES', () => this._start(), {
@@ -156,6 +164,7 @@ export class TitleScene extends Scene {
     let name = inputEl ? inputEl.value.trim() : ''
     if (!name) name = 'friend'
     this.registry.set(KEYS.PLAYER_NAME, name)
+    saveRegistry(this)
     this._removeNameInput()
 
     this.cameras.main.fadeOut(400, 10, 10, 10)
