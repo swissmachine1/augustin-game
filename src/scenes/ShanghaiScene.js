@@ -21,7 +21,12 @@ const FUEL_ITEMS = [
 
 const LAW_ENEMIES = [
   'BAR EXAM', 'LAW LECTURE', 'INTERNSHIP',
-  'PRACTICE EXAM', 'STUDY GROUP', 'MOOT COURT',
+  'MOOT COURT', 'CASE BRIEF', 'TORT EXAM',
+]
+
+const LAW_PATH_TARGETS = [
+  'ATTEND LECTURE', 'PRACTICE EXAM', 'STUDY GROUP',
+  'FOLLOW SYLLABUS', 'OFFICE HOURS', 'BAR REVIEW',
 ]
 
 const INTRO_BEATS = [
@@ -64,9 +69,11 @@ export class ShanghaiScene extends Phaser.Scene {
     this._fumesMode = false
 
     this._fuelItems = []
+    this._lawTargets = []
     this._enemies = []
     this._playerBullets = []
     this._enemyBullets = []
+    this._fuelSpawnCount = 0
 
     this._totalFuelCollected = 0
     this._totalEnemiesKilled = 0
@@ -282,6 +289,13 @@ export class ShanghaiScene extends Phaser.Scene {
         callback: () => {
           if (!this._gameActive) return
           this._spawnFuelItem()
+          this._fuelSpawnCount++
+          // ~1 law-path decoy per 4 fuel items, with safe spacing
+          if (this._fuelSpawnCount % 4 === 0) {
+            this.time.delayedCall(400 + Math.random() * 300, () => {
+              if (this._gameActive) this._spawnLawTarget()
+            })
+          }
           if (this._fuelSpawnTimer) this._fuelSpawnTimer.delay = this._fuelSpawnInterval
         },
         loop: true,
@@ -535,8 +549,95 @@ export class ShanghaiScene extends Phaser.Scene {
 
   _spawnEnemy() {
     const label = LAW_ENEMIES[Math.floor(Math.random() * LAW_ENEMIES.length)]
-    const x = 140 + Math.random() * 1000
+    const x = 180 + Math.random() * 920
     const speed = this._enemyDriftSpeed + Math.random() * 25
+
+    const container = this.add.container(x, -80)
+
+    // 50% larger font + padding
+    const txt = this.add.text(0, 0, label, {
+      fontFamily: FONT_MONO, fontSize: '18px', fontStyle: 'bold',
+      color: COLORS.BONE, align: 'center',
+      wordWrap: { width: 260 },
+    }).setOrigin(0.5)
+
+    const padX = 22, padY = 16
+    const w = Math.max(180, Math.min(320, txt.width + padX * 2))
+    const h = txt.height + padY * 2
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.SHOCK_RED, 1)
+    shadow.fillRect(-w / 2 + 6, -h / 2 + 6, w, h)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(C.OFF_BLACK, 1)
+    bg.fillRect(-w / 2, -h / 2, w, h)
+    bg.lineStyle(6, C.BLACK, 1)
+    bg.strokeRect(-w / 2, -h / 2, w, h)
+
+    // Pulsing red border (animated)
+    const pulseBorder = this.add.graphics()
+    pulseBorder.lineStyle(4, C.SHOCK_RED, 1)
+    pulseBorder.strokeRect(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4)
+
+    // Top LAW indicator banner
+    const banner = this.add.graphics()
+    banner.fillStyle(C.SHOCK_RED, 1)
+    banner.fillRect(-w / 2, -h / 2 - 22, w, 20)
+    banner.lineStyle(2, C.BLACK, 1)
+    banner.strokeRect(-w / 2, -h / 2 - 22, w, 20)
+    const bannerText = this.add.text(0, -h / 2 - 12, '⚠ LAW ENEMY ⚠', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.BONE,
+      letterSpacing: 2,
+    }).setOrigin(0.5)
+
+    // HP pips along the bottom
+    const hpGfx = this.add.graphics()
+    container.hpGfx = hpGfx
+    const drawHp = (hp) => {
+      hpGfx.clear()
+      for (let i = 0; i < 3; i++) {
+        const px = -w / 2 + 8 + i * 14
+        const py = h / 2 + 6
+        hpGfx.fillStyle(i < hp ? C.SHOCK_RED : C.GREY_700, 1)
+        hpGfx.fillRect(px, py, 10, 6)
+        hpGfx.lineStyle(1, C.BLACK, 1)
+        hpGfx.strokeRect(px, py, 10, 6)
+      }
+    }
+    drawHp(3)
+    container.drawHp = drawHp
+
+    container.add([shadow, bg, pulseBorder, banner, bannerText, txt, hpGfx])
+
+    // Pulse animation on the red border
+    container.pulseTween = this.tweens.add({
+      targets: pulseBorder, alpha: { from: 1, to: 0.25 },
+      duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    })
+
+    container.itemSpeed = speed
+    container.itemW = w
+    container.itemH = h
+    container.bg = bg
+    container.kind = 'enemy'
+    container.hp = 3
+    container.maxHits = 3
+    container.telegraphing = false
+
+    this._enemies.push(container)
+  }
+
+  _spawnLawTarget() {
+    const label = LAW_PATH_TARGETS[Math.floor(Math.random() * LAW_PATH_TARGETS.length)]
+    // Keep horizontally away from currently visible fuel items so it's not clustered
+    let x = 140 + Math.random() * 1000
+    for (let tries = 0; tries < 6; tries++) {
+      const tooClose = this._fuelItems.some(f => f.y < 200 && Math.abs(f.x - x) < 180)
+      if (!tooClose) break
+      x = 140 + Math.random() * 1000
+    }
+    const speed = this._fuelDriftSpeed + Math.random() * 30
 
     const container = this.add.container(x, -50)
 
@@ -551,7 +652,7 @@ export class ShanghaiScene extends Phaser.Scene {
     const h = txt.height + padY * 2
 
     const shadow = this.add.graphics()
-    shadow.fillStyle(C.GREY_900, 1)
+    shadow.fillStyle(C.BLACK, 1)
     shadow.fillRect(-w / 2 + 4, -h / 2 + 4, w, h)
 
     const bg = this.add.graphics()
@@ -560,14 +661,14 @@ export class ShanghaiScene extends Phaser.Scene {
     bg.lineStyle(4, C.SHOCK_RED, 1)
     bg.strokeRect(-w / 2, -h / 2, w, h)
 
-    // "LAW" hazard tag corner
+    // Hazard yellow corner tag (different from fuel's red)
     const tag = this.add.graphics()
     tag.fillStyle(C.HAZARD_YELLOW, 1)
-    tag.fillRect(-w / 2 - 4, -h / 2 - 4, 32, 14)
+    tag.fillRect(-w / 2 - 4, -h / 2 - 4, 30, 14)
     tag.lineStyle(2, C.BLACK, 1)
-    tag.strokeRect(-w / 2 - 4, -h / 2 - 4, 32, 14)
-    const tagText = this.add.text(-w / 2 + 12, -h / 2 + 3, 'LAW', {
-      fontFamily: FONT_MONO, fontSize: '9px', fontStyle: 'bold', color: COLORS.BLACK,
+    tag.strokeRect(-w / 2 - 4, -h / 2 - 4, 30, 14)
+    const tagText = this.add.text(-w / 2 + 11, -h / 2 + 3, '✗', {
+      fontFamily: FONT_DISPLAY, fontSize: '11px', color: COLORS.BLACK,
     }).setOrigin(0.5)
 
     container.add([shadow, bg, txt, tag, tagText])
@@ -576,31 +677,61 @@ export class ShanghaiScene extends Phaser.Scene {
     container.itemW = w
     container.itemH = h
     container.bg = bg
-    container.kind = 'enemy'
-    container.hp = 3
-    container.maxHits = 3
-    container.fireOffset = Math.random() * 1500
+    container.kind = 'lawTarget'
 
-    this._enemies.push(container)
+    this._lawTargets.push(container)
   }
 
   _enemiesFire() {
-    // Each enemy has a chance to fire on the global tick
+    // Each enemy has a chance to fire — with a 300ms telegraph first
     this._enemies.forEach(e => {
       if (e.y < 60 || e.y > 480) return
-      if (Math.random() < 0.55) this._enemyShoot(e)
+      if (e.telegraphing) return
+      if (Math.random() < 0.55) this._telegraphShoot(e)
+    })
+  }
+
+  _telegraphShoot(enemy) {
+    enemy.telegraphing = true
+    // Red glow under enemy that grows during 300ms windup
+    const glow = this.add.graphics()
+    glow.fillStyle(C.SHOCK_RED, 0.75)
+    glow.fillCircle(0, enemy.itemH / 2 + 8, 8)
+    enemy.add(glow)
+    this.tweens.add({
+      targets: glow, scale: { from: 0.6, to: 2.2 }, alpha: { from: 0.9, to: 0.3 },
+      duration: 300, ease: 'Quad.easeOut',
+      onComplete: () => {
+        glow.destroy()
+        if (enemy.active !== false && this._gameActive && this._enemies.includes(enemy)) {
+          this._enemyShoot(enemy)
+        }
+        enemy.telegraphing = false
+      },
     })
   }
 
   _enemyShoot(enemy) {
-    const b = this.add.graphics()
-    b.fillStyle(C.SHOCK_RED, 1)
-    b.fillRect(-3, -10, 6, 20)
-    b.lineStyle(1, C.BLACK, 1)
-    b.strokeRect(-3, -10, 6, 20)
-    b.x = enemy.x
-    b.y = enemy.y + enemy.itemH / 2
+    // Bigger glowing red bullet with halo
+    const b = this.add.container(enemy.x, enemy.y + enemy.itemH / 2)
+    const halo = this.add.graphics()
+    halo.fillStyle(C.SHOCK_RED, 0.35)
+    halo.fillCircle(0, 0, 18)
+    const core = this.add.graphics()
+    core.fillStyle(C.SHOCK_RED, 1)
+    core.fillRect(-6, -16, 12, 32)
+    core.fillStyle(C.HAZARD_YELLOW, 1)
+    core.fillRect(-2, -12, 4, 24)
+    core.lineStyle(2, C.BLACK, 1)
+    core.strokeRect(-6, -16, 12, 32)
+    b.add([halo, core])
     b.speed = this._enemyBulletSpeed
+    b.halo = halo
+    // Pulsing halo for visibility
+    this.tweens.add({
+      targets: halo, alpha: { from: 0.35, to: 0.75 }, scale: { from: 1, to: 1.4 },
+      duration: 220, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    })
     this._enemyBullets.push(b)
     AudioCtx.fx('shoot')
   }
@@ -691,6 +822,17 @@ export class ShanghaiScene extends Phaser.Scene {
         }
       }
       if (hit) { b.destroy(); this._playerBullets.splice(i, 1); continue }
+      // Check collisions vs law-path targets (BAD — penalize)
+      for (let j = this._lawTargets.length - 1; j >= 0; j--) {
+        const lt = this._lawTargets[j]
+        if (Math.abs(b.x - lt.x) <= lt.itemW / 2 && Math.abs(b.y - lt.y) <= lt.itemH / 2) {
+          this._onLawTargetShot(lt)
+          this._lawTargets.splice(j, 1)
+          hit = true
+          break
+        }
+      }
+      if (hit) { b.destroy(); this._playerBullets.splice(i, 1); continue }
       // Check collisions vs enemies
       for (let j = this._enemies.length - 1; j >= 0; j--) {
         const e = this._enemies[j]
@@ -703,14 +845,30 @@ export class ShanghaiScene extends Phaser.Scene {
       if (hit) { b.destroy(); this._playerBullets.splice(i, 1) }
     }
 
-    // Update enemy bullets
+    // Update enemy bullets (now containers with halos + trail)
     for (let i = this._enemyBullets.length - 1; i >= 0; i--) {
       const b = this._enemyBullets[i]
       b.y += b.speed * dt
+      // Drop red trail particles occasionally
+      if (Math.random() < 0.6) {
+        const trail = this.add.rectangle(b.x, b.y - 12, 4, 4, C.SHOCK_RED, 0.8)
+        this.tweens.add({
+          targets: trail, alpha: 0, scale: 0.3, duration: 280,
+          onComplete: () => trail.destroy(),
+        })
+      }
       if (b.y > 740) { b.destroy(); this._enemyBullets.splice(i, 1); continue }
       // Hit rocket?
       if (Math.abs(b.x - this._rocketX) <= 28 && Math.abs(b.y - this._rocketY) <= 40) {
-        this._takeDamage()
+        // Highlight the bullet right before destroying so player sees what hit them
+        const burstFlash = this.add.graphics()
+        burstFlash.fillStyle(C.SHOCK_RED, 1)
+        burstFlash.fillCircle(b.x, b.y, 24)
+        this.tweens.add({
+          targets: burstFlash, alpha: 0, scale: 2, duration: 220,
+          onComplete: () => burstFlash.destroy(),
+        })
+        this._takeDamage('bullet')
         b.destroy(); this._enemyBullets.splice(i, 1)
       }
     }
@@ -722,15 +880,35 @@ export class ShanghaiScene extends Phaser.Scene {
       if (f.y > 760) { f.destroy(); this._fuelItems.splice(i, 1) }
     }
 
+    // Update law-path targets (drift down — harmless if let through)
+    for (let i = this._lawTargets.length - 1; i >= 0; i--) {
+      const lt = this._lawTargets[i]
+      lt.y += lt.itemSpeed * dt
+      if (lt.y > 760) { lt.destroy(); this._lawTargets.splice(i, 1) }
+    }
+
     // Update enemies (drift down)
     for (let i = this._enemies.length - 1; i >= 0; i--) {
       const e = this._enemies[i]
       e.y += e.itemSpeed * dt
       // Reach bottom = damage
       if (e.y > 660) {
-        this._takeDamage()
-        Particles.burst(this, e.x, e.y, C.SHOCK_RED, 10)
-        e.destroy()
+        // Highlight the enemy briefly so player sees what hit them
+        const flash = this.add.graphics()
+        flash.fillStyle(C.SHOCK_RED, 0.9)
+        flash.fillRect(-e.itemW / 2, -e.itemH / 2, e.itemW, e.itemH)
+        e.add(flash)
+        this.tweens.add({
+          targets: flash, alpha: 0, duration: 280,
+          onComplete: () => flash.destroy(),
+        })
+        this._takeDamage('enemyReach')
+        Particles.burst(this, e.x, e.y, C.SHOCK_RED, 14)
+        if (e.pulseTween) e.pulseTween.stop()
+        this.tweens.add({
+          targets: e, alpha: 0, duration: 250,
+          onComplete: () => e.destroy(),
+        })
         this._enemies.splice(i, 1)
       }
     }
@@ -812,11 +990,12 @@ export class ShanghaiScene extends Phaser.Scene {
 
   _onEnemyHit(enemy, idx) {
     enemy.hp--
+    if (enemy.drawHp) enemy.drawHp(Math.max(0, enemy.hp))
     AudioCtx.fx('hit')
 
-    // Knockback flash — red border flashes brighter
+    // Knockback flash — bone-white impact
     const flash = this.add.graphics()
-    flash.fillStyle(C.SHOCK_RED, 0.6)
+    flash.fillStyle(C.BONE, 0.8)
     flash.fillRect(-enemy.itemW / 2, -enemy.itemH / 2, enemy.itemW, enemy.itemH)
     enemy.add(flash)
     this.tweens.add({
@@ -832,6 +1011,7 @@ export class ShanghaiScene extends Phaser.Scene {
       this._fuel = Math.min(100, this._fuel + 2)
       Particles.burst(this, enemy.x, enemy.y, C.SHOCK_RED, 14, { speed: 320, size: 6 })
       Particles.popup(this, enemy.x, enemy.y - 10, '+2 FUEL', '#d4ff00', { fontSize: '18px' })
+      if (enemy.pulseTween) enemy.pulseTween.stop()
       this.tweens.add({
         targets: enemy, scale: 0.4, alpha: 0, duration: 200,
         onComplete: () => enemy.destroy(),
@@ -840,28 +1020,88 @@ export class ShanghaiScene extends Phaser.Scene {
     }
   }
 
-  _takeDamage() {
+  _onLawTargetShot(lt) {
+    AudioCtx.fx('catchBad')
+    // Big visual: yellow X popup
+    Particles.popup(this, lt.x, lt.y - 10, "DON'T SHOOT LAW!", '#ffcf00', { fontSize: '20px' })
+    Particles.burst(this, lt.x, lt.y, C.HAZARD_YELLOW, 12, { speed: 220, size: 4 })
+    this._currentStreak = 0
+    this.tweens.add({
+      targets: lt, scale: 1.4, alpha: 0, duration: 220,
+      onComplete: () => lt.destroy(),
+    })
+    this._takeDamage('lawTarget')
+  }
+
+  _takeDamage(cause = 'unknown') {
     if (this._fumesMode) {
-      // No more damage — just visual feedback
       this._flashRocket()
       this.cameras.main.shake(120, 0.008)
       AudioCtx.fx('catchBad')
       return
     }
 
+    const hitHeartIdx = this._health - 1
     this._health--
     this._currentStreak = 0
     this._updateHearts()
+    this._flashHeart(hitHeartIdx)
     AudioCtx.fx('catchBad')
     this._flashRocket()
-    this.cameras.main.shake(180, 0.012)
-    Particles.burst(this, this._rocketX, this._rocketY, C.SHOCK_RED, 10)
-    Particles.popup(this, this._rocketX, this._rocketY - 60, '-1 HEALTH', '#ff2d1f', { fontSize: '18px' })
+    this._drawDamageRing()
+    this.cameras.main.shake(260, 0.018)
+    this.cameras.main.flash(120, 80, 10, 10)
+    Particles.burst(this, this._rocketX, this._rocketY, C.SHOCK_RED, 14, { speed: 240, size: 5 })
+    Particles.popup(this, this._rocketX, this._rocketY - 70, '-1 HEALTH', '#ff2d1f', { fontSize: '24px' })
+
+    // Cause-specific sub-popup
+    let subLabel = null
+    if (cause === 'bullet') subLabel = 'HIT BY LAW BULLET'
+    else if (cause === 'enemyReach') subLabel = 'LAW REACHED YOU'
+    else if (cause === 'lawTarget') subLabel = 'WRONG TARGET!'
+    if (subLabel) {
+      const sub = this.add.text(this._rocketX, this._rocketY - 100, subLabel, {
+        fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.HAZARD_YELLOW,
+        letterSpacing: 2,
+      }).setOrigin(0.5).setDepth(190)
+      this.tweens.add({
+        targets: sub, y: this._rocketY - 130, alpha: 0, duration: 800,
+        onComplete: () => sub.destroy(),
+      })
+    }
 
     if (this._health <= 0) {
       this._health = 0
       this._enterFumesMode()
     }
+  }
+
+  _flashHeart(idx) {
+    if (idx < 0 || idx >= this._heartGraphics.length) return
+    const g = this._heartGraphics[idx]
+    if (!g) return
+    const cx = 24 + idx * 36 + 14
+    const y = 158
+    // Draw a giant bone flash where the heart was
+    const flash = this.add.graphics()
+    flash.fillStyle(C.BONE, 1)
+    flash.fillCircle(cx, y, 22)
+    this.tweens.add({
+      targets: flash, alpha: 0, scale: 2, duration: 360,
+      onComplete: () => flash.destroy(),
+    })
+  }
+
+  _drawDamageRing() {
+    const ring = this.add.graphics()
+    ring.lineStyle(6, C.SHOCK_RED, 1)
+    ring.strokeCircle(0, 0, 40)
+    ring.x = this._rocketX
+    ring.y = this._rocketY
+    this.tweens.add({
+      targets: ring, alpha: 0, scale: 2.5, duration: 480, ease: 'Quad.easeOut',
+      onComplete: () => ring.destroy(),
+    })
   }
 
   _flashRocket() {
@@ -911,6 +1151,7 @@ export class ShanghaiScene extends Phaser.Scene {
       arr.length = 0
     }
     sweepAway(this._fuelItems)
+    sweepAway(this._lawTargets)
     sweepAway(this._enemies)
     sweepAway(this._playerBullets)
     sweepAway(this._enemyBullets)
