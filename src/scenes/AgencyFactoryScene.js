@@ -1,8 +1,14 @@
 import * as Phaser from 'phaser'
 import { COLORS, C, FONT_MONO, FONT_DISPLAY } from '../config/theme.js'
-import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
+import { KEYS, saveRegistry, recordBestTime, addPlayTime } from '../systems/GameRegistry.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
+import { AudioCtx } from '../ui/AudioCtx.js'
+import { Particles } from '../ui/Particles.js'
+import { TextReveal } from '../ui/TextReveal.js'
 import { completeLevel } from './LevelSelectHub.js'
+
+// Heavy-shot towers — get shootBig SFX
+const HEAVY_KEYS = new Set(['hubSpot', 'clay', 'n8n', 'claudeCode', 'salesNav'])
 
 // ── Serpentine enemy path through play area ──
 const PATH_POINTS = [
@@ -157,8 +163,35 @@ export class AgencyFactoryScene extends Phaser.Scene {
     // Range indicator (created lazily in _selectTower)
     this.rangeIndicator = null
 
+    // Scanlines overlay
+    BrutalUI.drawScanlines(this, width, height)
+
+    // Streak / combo state
+    this.streakCount = 0
+    this.streakMultiplier = 1
+    this.lastKillTime = 0
+    this.streakText = this.add.text(150, 58, '', {
+      fontFamily: FONT_DISPLAY, fontSize: '16px', color: COLORS.SHOCK_RED,
+      stroke: '#0a0a0a', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setDepth(100).setVisible(false)
+
+    // Best-time tracking
+    this.runStartMs = null
+    this.runElapsedMs = 0
+
+    // Audio throttle counters
+    this._shootTick = 0
+    this._killTick = 0
+    this._bossHitCount = 0
+
     // Inputs
     this._setupInput()
+
+    // Resume audio on first pointer
+    this.input.once('pointerdown', () => AudioCtx.resume())
+
+    // Scene-start audio
+    AudioCtx.fx('open')
 
     // Start with wave intro
     this._showWaveIntro()
@@ -464,6 +497,8 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     const spot = TOWER_SPOTS[spotIdx]
     this._placeTower(def, spot.x, spot.y)
+    AudioCtx.fx('place')
+    Particles.ring(this, spot.x, spot.y, C.SHOCK_BLUE, { maxRadius: 80 })
     this._clearSelection()
     this._updatePanelAffordability()
   }
@@ -569,7 +604,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
       fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.GREY_700,
     }).setOrigin(0.5)
 
-    // Auto-shrink wave name to fit
+    // Auto-shrink wave name to fit — measured first with full text, then typewritten in place
     let nameSize = 40
     const name = this.add.text(0, -10, wave.name, {
       fontFamily: FONT_DISPLAY, fontSize: `${nameSize}px`, color: COLORS.BLACK,
@@ -578,6 +613,18 @@ export class AgencyFactoryScene extends Phaser.Scene {
       nameSize -= 2
       name.setFontSize(nameSize)
     }
+    const fullName = wave.name
+    name.setText('')
+    let revealI = 0
+    const revealEv = this.time.addEvent({
+      delay: 32,
+      repeat: fullName.length - 1,
+      callback: () => {
+        revealI++
+        name.setText(fullName.slice(0, revealI))
+      },
+    })
+    this._timers.push(revealEv)
 
     const subt = this.add.text(0, 44, wave.boss ? '⚠ BOSS WAVE ⚠' : `${wave.count} INCOMING`, {
       fontFamily: FONT_MONO, fontSize: '13px', fontStyle: 'bold',
@@ -612,6 +659,18 @@ export class AgencyFactoryScene extends Phaser.Scene {
     const wave = WAVES[this.waveIndex]
     this.waveActive = true
     this.waveTag.setText(`WAVE ${this.waveIndex + 1}/${WAVES.length}`)
+
+    // Start best-time timer on first wave
+    if (this.runStartMs == null) this.runStartMs = this.time.now
+
+    // Wave-start audio + shake
+    AudioCtx.fx('waveStart')
+    if (wave.boss) {
+      AudioCtx.fx('boss')
+      this.cameras.main.shake(280, 0.012)
+    } else {
+      this.cameras.main.shake(200, 0.008)
+    }
 
     let spawned = 0
     const interval = wave.boss ? 1400 : 900
@@ -673,14 +732,26 @@ export class AgencyFactoryScene extends Phaser.Scene {
     this._updateProjectiles(dt)
     this._updateFX(dt)
 
+    // Streak decay
+    if (this.streakMultiplier > 1 && this.time.now - this.lastKillTime > 1500) {
+      this.streakMultiplier = 1
+      this.streakCount = 0
+      this.streakText.setVisible(false)
+    }
+
     // End-of-wave check
     if (this.waveActive && this.enemies.length === 0) {
       // Ensure spawner has finished
       const spawnDone = !this._timers.some(t => t && !t.getProgress || (t && t.getProgress() < 1))
       if (spawnDone) {
         this.waveActive = false
+        // Wave complete bonus
+        this.ink += 10
+        this._updateInk()
+        const { width } = this.cameras.main
+        Particles.popup(this, width / 2, 130, 'WAVE COMPLETE +10 INK', '#0066ff', { fontSize: '28px', dy: -60, duration: 1100 })
         this.waveIndex++
-        this.time.delayedCall(700, () => this._showWaveIntro())
+        this.time.delayedCall(900, () => this._showWaveIntro())
       }
     }
   }
@@ -744,11 +815,39 @@ export class AgencyFactoryScene extends Phaser.Scene {
     if (!e.alive) return
     e.alive = false
     this.kills++
-    this.ink += e.reward
+
+    // Streak / combo logic — multiplier if kills within 1s of each other
+    const now = this.time.now
+    if (now - this.lastKillTime < 1000) {
+      this.streakCount++
+      this.streakMultiplier = Math.min(3, 1 + Math.floor(this.streakCount / 2))
+    } else {
+      this.streakCount = 1
+      this.streakMultiplier = 1
+    }
+    this.lastKillTime = now
+    if (this.streakMultiplier > 1) {
+      this.streakText.setText(`x${this.streakMultiplier} INK`).setVisible(true)
+      this.streakText.setScale(1.25)
+      this.tweens.add({ targets: this.streakText, scale: 1, duration: 180, ease: 'Cubic.easeOut' })
+    }
+
+    const bonusInk = Math.round(e.reward * this.streakMultiplier)
+    this.ink += bonusInk
     this.score += e.boss ? 100 : 10
     this.killsText.setText(`KILLS ${this.kills}`)
     this.scoreText.setText(`SCORE ${this.score}`)
     this._updateInk()
+
+    // Particles + audio
+    Particles.burst(this, e.x, e.y, C.BONE, 6, { shape: 'sticker' })
+    this._killTick++
+    if (this._killTick % 3 === 0 || e.boss) AudioCtx.fx('kill')
+
+    if (e.boss) {
+      Particles.confetti(this, e.x, e.y, 80)
+      this.cameras.main.shake(800, 0.025)
+    }
   }
 
   // ── Towers firing ──
@@ -812,6 +911,14 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     proj.g = this.add.graphics()
     this._drawProjectile(proj)
+
+    // Throttled shoot SFX — only ~1 in 3-4 shots to keep audio rhythmic
+    this._shootTick = (this._shootTick + 1) % 100
+    if (HEAVY_KEYS.has(def.key)) {
+      if (Math.random() < 0.45) AudioCtx.fx('shootBig')
+    } else {
+      if (Math.random() < 0.28) AudioCtx.fx('shoot')
+    }
     // Trail for sales nav
     if (proj.kind === 'trail') {
       proj.trailPts = []
@@ -942,6 +1049,10 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     if (p.explosive) {
       this._spawnExplosion(target.x, target.y, p.aoe, true)
+      AudioCtx.fx('explode')
+      this.cameras.main.shake(280, 0.018)
+      Particles.ring(this, target.x, target.y, C.HAZARD_YELLOW, { maxRadius: 120, thickness: 6 })
+      Particles.burst(this, target.x, target.y, C.HAZARD_YELLOW, 14)
       for (const e of this.enemies) {
         if (!e.alive) continue
         const d = Math.hypot(e.x - target.x, e.y - target.y)
@@ -962,6 +1073,8 @@ export class AgencyFactoryScene extends Phaser.Scene {
       }
     } else if (p.chain) {
       target.hp -= p.damage
+      Particles.burst(this, target.x, target.y, C.SHOCK_BLUE, 4)
+      this._maybeBossDamageShake(target)
       if (target.hp <= 0) this._killEnemy(target)
       p.chainedHits.push(target)
       let prev = target
@@ -976,6 +1089,8 @@ export class AgencyFactoryScene extends Phaser.Scene {
         if (!next) break
         this._spawnChainLightning(prev.x, prev.y, next.x, next.y)
         next.hp -= p.damage * 0.75
+        Particles.burst(this, next.x, next.y, C.SHOCK_BLUE, 4)
+        this._maybeBossDamageShake(next)
         if (next.hp <= 0) this._killEnemy(next)
         p.chainedHits.push(next)
         prev = next
@@ -983,7 +1098,16 @@ export class AgencyFactoryScene extends Phaser.Scene {
       }
     } else {
       target.hp -= p.damage
+      this._maybeBossDamageShake(target)
       if (target.hp <= 0) this._killEnemy(target)
+    }
+  }
+
+  _maybeBossDamageShake(e) {
+    if (!e || !e.boss || !e.alive) return
+    this._bossHitCount++
+    if (this._bossHitCount % 6 === 0) {
+      this.cameras.main.shake(120, 0.006)
     }
   }
 
@@ -1047,18 +1171,31 @@ export class AgencyFactoryScene extends Phaser.Scene {
     completeLevel(this, KEYS.SCORE_L4, KEYS.COMPLETED_L4, score)
     const prevTech = this.registry.get(KEYS.STAT_TECH) ?? 0
     this.registry.set(KEYS.STAT_TECH, Math.max(prevTech, score))
+
+    // Best-time tracking
+    const elapsedMs = this.runStartMs != null ? (this.time.now - this.runStartMs) : 0
+    this.runElapsedMs = elapsedMs
+    const newBest = recordBestTime(this, KEYS.BEST_T4, elapsedMs)
+    addPlayTime(this, elapsedMs)
     saveRegistry(this)
+
+    AudioCtx.fx('success')
+
+    const secs = Math.floor(elapsedMs / 1000)
+    const mm = String(Math.floor(secs / 60)).padStart(2, '0')
+    const ss = String(secs % 60).padStart(2, '0')
+    const timeStr = `${mm}:${ss}`
+    const bestTag = newBest ? '\n★ NEW BEST! ★' : ''
 
     const { width, height } = this.cameras.main
     const overlay = this.add.graphics()
     overlay.fillStyle(C.BLACK, 0.7)
     overlay.fillRect(0, 0, width, height)
 
-    BrutalUI.showNarrative(this, width / 2, height / 2, 620, 220,
-      `CHAPTER 4 COMPLETE.\n\nTHE STACK HELD. ${this.kills} THREATS NEUTRALIZED.\nSCORE: ${score}%`,
+    BrutalUI.showNarrative(this, width / 2, height / 2, 640, 260,
+      `CHAPTER 4 COMPLETE.\n\nTHE STACK HELD. ${this.kills} THREATS NEUTRALIZED.\nSCORE: ${score}%   TIME: ${timeStr}${bestTag}`,
       () => {
-        this.cameras.main.fadeOut(400, 10, 10, 10)
-        this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
+        BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
       },
       { fill: C.BONE, accentColor: C.SHOCK_BLUE, fontSize: '16px' })
   }

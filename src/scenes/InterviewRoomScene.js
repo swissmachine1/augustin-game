@@ -1,8 +1,11 @@
 import * as Phaser from 'phaser'
-import { KEYS } from '../systems/GameRegistry.js'
+import { KEYS, recordBestTime, addPlayTime } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
 import { COLORS, C, TEXT, FONT_MONO, FONT_DISPLAY, LEVEL_COLORS } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
+import { AudioCtx } from '../ui/AudioCtx.js'
+import { Particles } from '../ui/Particles.js'
+import { TextReveal } from '../ui/TextReveal.js'
 
 const GRID = { cols: 8, rows: 8, cellSize: 60, originX: 80, originY: 140 }
 const WATCH_CELL_MS = 520    // slow so player can follow
@@ -71,8 +74,15 @@ export class InterviewRoomScene extends Phaser.Scene {
     this._drawHeader()
     this._createBallTexture()
 
+    // Subtle scanlines
+    BrutalUI.drawScanlines(this, 1280, 720, { alpha: 0.03 })
+
     // Persistent home button
     BrutalUI.drawHomeButton(this)
+
+    // Audio: scene open + resume on first pointer
+    AudioCtx.fx('open')
+    this.input.once('pointerdown', () => AudioCtx.resume())
 
     this.events.once('shutdown', () => this._cleanup())
 
@@ -130,19 +140,80 @@ export class InterviewRoomScene extends Phaser.Scene {
 
     const step = (i) => {
       if (i >= lines.length) {
-        this.time.delayedCall(200, () => this._startPhaseWatch())
+        this.time.delayedCall(200, () => {
+          // Start game timer once onboarding ends
+          this._gameStartMs = this.time.now
+          this._startPhaseWatch()
+        })
         return
       }
       const [title, body] = lines[i]
-      const full = `${title}\n\n${body}`
-      BrutalUI.showNarrative(this, 640, 360, 760, 280, full, () => step(i + 1), {
-        fill: C.BONE,
-        border: C.BLACK,
-        accentColor: ACCENT.num,
-        fontSize: '18px',
-      })
+      this._typewriteNarrative(title, body, () => step(i + 1))
     }
     step(0)
+  }
+
+  _typewriteNarrative(title, body, onNext) {
+    const w = 760, h = 280
+    const cx = 640, cy = 360
+    const container = this.add.container(cx, cy)
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 1)
+    shadow.fillRect(-w / 2 + 6, -h / 2 + 6, w, h)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(C.BONE, 1)
+    bg.fillRect(-w / 2, -h / 2, w, h)
+    bg.lineStyle(4, C.BLACK, 1)
+    bg.strokeRect(-w / 2, -h / 2, w, h)
+
+    const accent = this.add.graphics()
+    accent.fillStyle(ACCENT.num, 1)
+    accent.fillRect(-w / 2, -h / 2, w, 8)
+
+    container.add([shadow, bg, accent])
+
+    // Title (instant, big)
+    const titleTxt = this.add.text(cx, cy - 70, title, {
+      fontFamily: FONT_DISPLAY, fontSize: '28px', color: COLORS.BLACK,
+    }).setOrigin(0.5)
+
+    // Body — typewriter
+    const bodyReveal = TextReveal.typewrite(this, body, {
+      x: cx, y: cy + 10,
+      style: {
+        fontFamily: FONT_MONO, fontSize: '16px', color: COLORS.BLACK,
+        align: 'center', wordWrap: { width: w - 60 }, lineSpacing: 4,
+      },
+      stepMs: 22, origin: 0.5,
+    })
+
+    const hint = this.add.text(cx, cy + h / 2 - 24, '▶ CLICK TO CONTINUE', {
+      fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold',
+      color: COLORS.GREY_500,
+    }).setOrigin(0.5).setAlpha(0)
+    this.tweens.add({ targets: hint, alpha: 1, duration: 400, delay: 700 })
+    const blink = this.tweens.add({
+      targets: hint, alpha: 0.3, duration: 600, yoyo: true, repeat: -1, delay: 1200,
+    })
+
+    const handler = () => {
+      this.input.off('pointerdown', handler)
+      blink.stop()
+      AudioCtx.fx('click')
+      // Skip reveal if not done
+      if (bodyReveal.skipReveal) bodyReveal.skipReveal()
+      this.tweens.add({
+        targets: [container, titleTxt, bodyReveal, hint],
+        alpha: 0, duration: 180,
+        onComplete: () => {
+          container.destroy(); titleTxt.destroy(); bodyReveal.destroy(); hint.destroy()
+          if (onNext) onNext()
+        },
+      })
+    }
+    this.input.once('pointerdown', handler)
   }
 
   _cellCenter(col, row) {
@@ -424,6 +495,9 @@ export class InterviewRoomScene extends Phaser.Scene {
     const plat = node.platform
     const center = this._cellCenter(plat.col, plat.row)
 
+    // Bounce sound (Watch + Verify both)
+    AudioCtx.fx('bounce')
+
     // Flash the platform
     if (plat._graphic) {
       this.tweens.add({
@@ -689,6 +763,7 @@ export class InterviewRoomScene extends Phaser.Scene {
     const toggleAngle = () => {
       piece.angle = piece.angle === '/' ? '\\' : '/'
       angleText.setText(piece.angle === '/' ? '/' : '\\')
+      AudioCtx.fx('click')
       this.tweens.add({ targets: angleText, scale: { from: 0.5, to: 1 }, duration: 150 })
     }
 
@@ -755,6 +830,8 @@ export class InterviewRoomScene extends Phaser.Scene {
     piece.cellKey = `${col},${row}`
     this._placements.set(piece.cellKey, piece)
 
+    AudioCtx.fx('place')
+
     this.tweens.add({
       targets: piece.container,
       x: center.x - size / 2,
@@ -798,6 +875,7 @@ export class InterviewRoomScene extends Phaser.Scene {
   }
 
   _returnPieceHome(piece) {
+    AudioCtx.fx('click')
     this.tweens.add({
       targets: piece.container,
       x: piece.homeX,
@@ -818,6 +896,8 @@ export class InterviewRoomScene extends Phaser.Scene {
   _endPhaseRecall() {
     if (this._phase !== 'RECALL') return
     this._phase = 'TRANSITION'
+    AudioCtx.fx('lockIn')
+    this.cameras.main.shake(120, 0.008)
     if (this._timerEvent) { this._timerEvent.remove(false); this._timerEvent = null }
 
     this._finalPlacements = new Map()
@@ -987,12 +1067,19 @@ export class InterviewRoomScene extends Phaser.Scene {
     let stampLabel, stampFill, lineText, lineColor
     if (status === 'CORRECT') {
       stampLabel = 'CORRECT'; stampFill = ACCENT.num; lineText = `${plat.label} — +11`; lineColor = ACCENT.hex
+      if (!silent) AudioCtx.fx('correct')
+      Particles.burst(this, center.x, center.y, C.SHOCK_ACID, 8)
     } else if (status === 'PARTIAL') {
       stampLabel = 'CLOSE'; stampFill = C.HAZARD_YELLOW; lineText = `${plat.label} — +4 ANGLE OFF`; lineColor = COLORS.HAZARD_YELLOW
+      if (!silent) AudioCtx.fx('click')
+      Particles.burst(this, center.x, center.y, C.HAZARD_YELLOW, 6)
     } else if (status === 'WRONG_POS') {
       stampLabel = 'WRONG'; stampFill = C.SHOCK_RED; lineText = `${plat.label} — WRONG SPOT`; lineColor = COLORS.SHOCK_RED
+      if (!silent) AudioCtx.fx('wrong')
+      Particles.burst(this, center.x, center.y, C.SHOCK_RED, 6)
     } else {
       stampLabel = 'MISSED'; stampFill = C.GREY_500; lineText = `${plat.label} — MISSED`; lineColor = COLORS.GREY_500
+      if (!silent) AudioCtx.fx('wrong')
     }
 
     // Draw the real platform as a ghost at its true location
@@ -1035,6 +1122,22 @@ export class InterviewRoomScene extends Phaser.Scene {
     completeLevel(this, KEYS.SCORE_L5, KEYS.COMPLETED_L5, finalScore)
     this._score = finalScore
 
+    // Best time + play time
+    const elapsedMs = (this._gameStartMs != null) ? (this.time.now - this._gameStartMs) : 0
+    this._elapsedMs = elapsedMs
+    this._isNewBest = false
+    if (elapsedMs > 0) {
+      this._isNewBest = recordBestTime(this, KEYS.BEST_T5, elapsedMs)
+      addPlayTime(this, elapsedMs)
+    }
+
+    if (allCorrect) {
+      AudioCtx.fx('perfect')
+      this.cameras.main.shake(600, 0.020)
+      Particles.confetti(this, 640, 360, 100)
+      Particles.ring(this, 640, 360, C.SHOCK_ACID, { maxRadius: 500 })
+    }
+
     this.time.delayedCall(1200, () => this._showCompletionScreen(allCorrect))
   }
 
@@ -1054,12 +1157,32 @@ export class InterviewRoomScene extends Phaser.Scene {
   _drawCTA(perfect) {
     const W = 1280, H = 720
     this._drawBackdrop()
+    BrutalUI.drawScanlines(this, W, H, { alpha: 0.03 })
 
     BrutalUI.drawHomeButton(this)
 
-    // Big header "CAREER UNLOCKED"
-    const header = BrutalUI.drawBlockType(this, W / 2, 96, 'CAREER UNLOCKED', {
-      fontSize: '64px', color: COLORS.BONE, shadowColor: ACCENT.hex, shadowOffset: 6,
+    // Success cue
+    AudioCtx.fx('success')
+
+    // Big header "CAREER UNLOCKED" — letter-by-letter typewriter at 80ms/char
+    const heroText = 'CAREER UNLOCKED'
+    // Shadow underlay (full text, accent color, behind)
+    const heroShadow = this.add.text(W / 2 + 6, 96 + 6, '', {
+      fontFamily: FONT_DISPLAY, fontSize: '64px', color: ACCENT.hex,
+    }).setOrigin(0.5)
+    const heroMain = TextReveal.typewrite(this, heroText, {
+      x: W / 2, y: 96,
+      style: { fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.BONE },
+      stepMs: 80, origin: 0.5,
+      onComplete: () => { heroShadow.setText(heroText) },
+    })
+    // Keep shadow in sync as it types
+    const heroSync = this.time.addEvent({
+      delay: 40, loop: true,
+      callback: () => {
+        heroShadow.setText(heroMain.text)
+        if (heroMain.text === heroText) heroSync.remove(false)
+      },
     })
 
     // Personalized line
@@ -1068,6 +1191,27 @@ export class InterviewRoomScene extends Phaser.Scene {
       fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.BONE,
       letterSpacing: 3, wordWrap: { width: W - 80 }, align: 'center',
     }).setOrigin(0.5)
+
+    // Time display + NEW BEST tag
+    if (this._elapsedMs != null && this._elapsedMs > 0) {
+      const secs = Math.floor(this._elapsedMs / 1000)
+      const mm = Math.floor(secs / 60)
+      const ss = secs % 60
+      const timeStr = `TIME ${mm}:${ss.toString().padStart(2, '0')}`
+      const tTxt = this.add.text(W / 2, 168, timeStr, {
+        fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_300,
+        letterSpacing: 3,
+      }).setOrigin(0.5)
+      if (this._isNewBest) {
+        const tagX = tTxt.x + tTxt.width / 2 + 50
+        const tag = BrutalUI.drawSticker(this, tagX, 168, 'NEW BEST!', {
+          fill: ACCENT.num, textColor: COLORS.BLACK, fontSize: '10px',
+          rotation: -6 * Math.PI / 180,
+        })
+        tag.setScale(0)
+        this.tweens.add({ targets: tag, scale: 1, duration: 360, delay: 400, ease: 'Back.easeOut' })
+      }
+    }
 
     // Career timeline
     this._drawCareerTimeline(W)
@@ -1081,6 +1225,19 @@ export class InterviewRoomScene extends Phaser.Scene {
     // CTAs
     this._drawCTAButtons(W)
 
+    // VIEW FULL REPORT — only if all 5 levels complete
+    const allDone = this.registry.get(KEYS.COMPLETED_L1) && this.registry.get(KEYS.COMPLETED_L2)
+      && this.registry.get(KEYS.COMPLETED_L3) && this.registry.get(KEYS.COMPLETED_L4)
+      && this.registry.get(KEYS.COMPLETED_L5)
+    if (allDone) {
+      const reportBtn = BrutalUI.drawButton(this, W / 2, H - 60, 280, 44, 'VIEW FULL REPORT', () => {
+        AudioCtx.fx('click')
+        BrutalUI.pageTurn(this, () => this.scene.start('FinalReportScene'))
+      }, {
+        fill: ACCENT.num, labelColor: COLORS.BLACK, fontSize: '14px', shadowOffset: 6,
+      })
+    }
+
     // Replay link
     const replay = this.add.text(W / 2, H - 24, '↻ REPLAY', {
       fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_300,
@@ -1088,7 +1245,10 @@ export class InterviewRoomScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true })
     replay.on('pointerover', () => replay.setColor(ACCENT.hex))
     replay.on('pointerout', () => replay.setColor(COLORS.GREY_300))
-    replay.on('pointerdown', () => this.scene.restart())
+    replay.on('pointerdown', () => {
+      AudioCtx.fx('click')
+      BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
+    })
   }
 
   _drawCareerTimeline(W) {
