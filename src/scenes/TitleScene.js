@@ -1,9 +1,9 @@
-import * as Phaser from 'phaser'
+import { Scene } from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO, FONT_HAND } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
 
-export class TitleScene extends Phaser.Scene {
+export class TitleScene extends Scene {
   constructor() {
     super('TitleScene')
   }

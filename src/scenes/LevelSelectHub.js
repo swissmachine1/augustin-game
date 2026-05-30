@@ -1,4 +1,4 @@
-import * as Phaser from 'phaser'
+import { Scene } from 'phaser'
 import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO, LEVEL_COLORS } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
@@ -32,7 +32,7 @@ const LEVELS = [
   },
 ]
 
-export class LevelSelectHub extends Phaser.Scene {
+export class LevelSelectHub extends Scene {
   constructor() {
     super('LevelSelectHub')
   }

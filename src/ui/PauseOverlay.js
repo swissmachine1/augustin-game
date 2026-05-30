@@ -1,4 +1,4 @@
-import * as Phaser from 'phaser'
+import { Scene } from 'phaser'
 import { KEYS, saveRegistry } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO } from '../config/theme.js'
 import { BrutalUI } from './BrutalUI.js'
@@ -12,7 +12,7 @@ const NON_PAUSEABLE = new Set([
   'PauseScene',
 ])
 
-export class PauseScene extends Phaser.Scene {
+export class PauseScene extends Scene {
   constructor() {
     super('PauseScene')
   }

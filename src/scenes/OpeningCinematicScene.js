@@ -1,10 +1,10 @@
-import * as Phaser from 'phaser'
+import { Scene } from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
 
 // Click-to-advance narrative — one beat at a time, triggered by mouse click anywhere.
-export class OpeningCinematicScene extends Phaser.Scene {
+export class OpeningCinematicScene extends Scene {
   constructor() {
     super('OpeningCinematicScene')
   }

@@ -1,9 +1,9 @@
-import * as Phaser from 'phaser'
+import { Scene } from 'phaser'
 import WebFont from 'webfontloader'
 import { initRegistry } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO } from '../config/theme.js'
 
-export class BootScene extends Phaser.Scene {
+export class BootScene extends Scene {
   constructor() {
     super('BootScene')
   }

@@ -1,4 +1,4 @@
-import * as Phaser from 'phaser'
+import { Scene } from 'phaser'
 import { KEYS } from '../systems/GameRegistry.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO, LEVEL_COLORS } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
@@ -23,7 +23,7 @@ const STATS = [
   { key: KEYS.STAT_TECH,         label: 'TECH' },
 ]
 
-export class FinalReportScene extends Phaser.Scene {
+export class FinalReportScene extends Scene {
   constructor() {
     super('FinalReportScene')
   }
