@@ -1,8 +1,11 @@
 import * as Phaser from 'phaser'
-import { KEYS } from '../systems/GameRegistry.js'
+import { KEYS, recordBestTime, addPlayTime } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
 import { COLORS, C, TEXT, FONT_DISPLAY, FONT_MONO, LEVEL_COLORS } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
+import { AudioCtx } from '../ui/AudioCtx.js'
+import { Particles } from '../ui/Particles.js'
+import { TextReveal } from '../ui/TextReveal.js'
 
 // Level 2 — Latin America: brutalist memory match.
 // Match two cards with the SAME text. Deck mixes challenge labels and skill labels,
@@ -64,6 +67,16 @@ export class LatinAmericaScene extends Phaser.Scene {
     this._foundWild = false
     this._insightEntries = []
     this._shutdownHandlers = []
+    this._streak = 0
+    this._bestStreak = 0
+    this._streakSticker = null
+    this._isNewBest = false
+
+    // Resume audio context on first pointer down (browser autoplay rules)
+    this.input.once('pointerdown', () => AudioCtx.resume())
+
+    // Scene-start sound
+    AudioCtx.fx('open')
 
     // Grid background
     this._drawBackground(width, height)
@@ -122,7 +135,15 @@ export class LatinAmericaScene extends Phaser.Scene {
     this._cards.forEach(c => c.container.setAlpha(0))
 
     // Home button (persistent top-left — but header covers 0-150, so draw above)
-    BrutalUI.drawHomeButton(this)
+    BrutalUI.drawHomeButton(this, {
+      onClick: () => {
+        AudioCtx.fx('click')
+        BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
+      },
+    })
+
+    // Scanline atmosphere
+    BrutalUI.drawScanlines(this, 1280, 720)
 
     // Kick off intro narrative
     this._showIntroBeat(0)
@@ -276,14 +297,23 @@ export class LatinAmericaScene extends Phaser.Scene {
       wordWrap: { width: cardW - 18 },
     })
 
-    const insightTxt = this.add.text(ex + 12, ey + 14, text, {
-      fontFamily: FONT_MONO, fontSize: '8px', color: COLORS.GREY_700,
-      wordWrap: { width: cardW - 18 },
+    // Typewriter the insight text in
+    const insightTxt = TextReveal.typewrite(this, text, {
+      x: ex + 12, y: ey + 14,
+      origin: 0,
+      stepMs: 18,
+      style: {
+        fontFamily: FONT_MONO, fontSize: '8px', color: COLORS.GREY_700,
+        wordWrap: { width: cardW - 18 },
+      },
     })
 
     entry.add([shadow, card, stripe, labelTxt, insightTxt])
     entry.setAlpha(0)
     this.tweens.add({ targets: entry, alpha: 1, duration: 260 })
+
+    // "+1 INSIGHT" popup at insight position
+    Particles.popup(this, ex + cardW / 2, ey + entryH / 2, '+1 INSIGHT', '#d4ff00')
 
     this._insightEntries.push(entry)
     this._insightsCursorY = ey + entryH + gap
@@ -430,6 +460,7 @@ export class LatinAmericaScene extends Phaser.Scene {
 
   _flipUp(card) {
     card.isFlipped = true
+    AudioCtx.fx('flip')
     const isSecond = this._firstPick !== null
     if (isSecond) this._inputLocked = true
 
@@ -493,10 +524,33 @@ export class LatinAmericaScene extends Phaser.Scene {
 
       if (a.wild) this._foundWild = true
 
+      // Streak tracking
+      this._streak++
+      if (this._streak > this._bestStreak) this._bestStreak = this._streak
+      this._updateStreakSticker()
+
+      // Audio
+      if (a.wild) {
+        AudioCtx.fx('wild')
+        this.cameras.main.shake(400, 0.02)
+      } else {
+        AudioCtx.fx('match')
+        if (this._streak >= 5) this.cameras.main.shake(200, 0.008)
+      }
+
+      // Burst at midpoint
+      const midX = (a.container.x + b.container.x) / 2
+      const midY = (a.container.y + b.container.y) / 2
+      Particles.burst(this, midX, midY, C.SHOCK_LIME, 12)
+
       this.time.delayedCall(180, () => {
         this._matchEffect(a, b)
         this._addInsight(a.text, a.insight, a.wild)
-        if (a.wild) this._celebrate()
+        if (a.wild) {
+          Particles.confetti(this, 640, 360, 80)
+          Particles.ring(this, 640, 360, C.HAZARD_YELLOW, { maxRadius: 400 })
+          this._celebrate()
+        }
 
         this.time.delayedCall(400, () => {
           this._firstPick = null
@@ -508,6 +562,14 @@ export class LatinAmericaScene extends Phaser.Scene {
         })
       })
     } else {
+      // Streak break
+      this._streak = 0
+      this._updateStreakSticker()
+      AudioCtx.fx('mismatch')
+      // Red burst on each mismatched card
+      ;[a, b].forEach(card => {
+        Particles.burst(this, card.container.x, card.container.y, C.SHOCK_RED, 4)
+      })
       this.time.delayedCall(1000, () => {
         // Red shake
         ;[a, b].forEach(card => {
@@ -527,6 +589,28 @@ export class LatinAmericaScene extends Phaser.Scene {
             this._inputLocked = false
           })
         })
+      })
+    }
+  }
+
+  _updateStreakSticker() {
+    if (this._streakSticker) {
+      if (this._streakPulse) { this._streakPulse.stop(); this._streakPulse = null }
+      this._streakSticker.destroy()
+      this._streakSticker = null
+    }
+    if (this._streak >= 3) {
+      this._streakSticker = BrutalUI.drawSticker(
+        this, 640, 110, `ON FIRE x${this._streak}`,
+        { fill: C.SHOCK_LIME }
+      )
+      this._streakPulse = this.tweens.add({
+        targets: this._streakSticker,
+        scale: { from: 1, to: 1.08 },
+        duration: 360,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
       })
     }
   }
@@ -645,7 +729,13 @@ export class LatinAmericaScene extends Phaser.Scene {
     this._gameActive = false
     this._timerStarted = false
 
-    const elapsedSec = (this.time.now - this._gameStartTime) / 1000
+    const elapsedMs = this.time.now - this._gameStartTime
+    const elapsedSec = elapsedMs / 1000
+    this._elapsedMs = elapsedMs
+
+    // Persist best time and play time
+    this._isNewBest = recordBestTime(this, KEYS.BEST_T2, elapsedMs)
+    addPlayTime(this, elapsedMs)
 
     const BASE = 100
     const PENALTY = 3
@@ -654,8 +744,11 @@ export class LatinAmericaScene extends Phaser.Scene {
     const movePenalty = extra * PENALTY
     const timeBonus = elapsedSec < 60 ? 10 : 0
     const wildBonus = this._foundWild ? 15 : 0
-    const raw = BASE - movePenalty + timeBonus + wildBonus
+    const streakBonus = this._bestStreak // +1 per best streak
+    const raw = BASE - movePenalty + timeBonus + wildBonus + streakBonus
     const score = Math.max(10, Math.min(100, Math.round(raw)))
+
+    AudioCtx.fx('success')
 
     const salesGain = Math.round(score / 5)
     const eqGain = Math.round(score / 8)
@@ -711,6 +804,26 @@ export class LatinAmericaScene extends Phaser.Scene {
     }).setOrigin(0.5)
     elems.push(scoreLbl)
 
+    // TIME display
+    const totalSec = Math.floor((this._elapsedMs || 0) / 1000)
+    const tMin = Math.floor(totalSec / 60)
+    const tSec = totalSec % 60
+    const timeStr = `TIME: ${tMin}:${tSec.toString().padStart(2, '0')}`
+    const timeTxt = this.add.text(width / 2, 400, timeStr, {
+      fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.BONE,
+      letterSpacing: 2,
+    }).setOrigin(0.5)
+    elems.push(timeTxt)
+
+    if (this._isNewBest) {
+      const newBest = BrutalUI.drawSticker(this, width / 2 + 140, 400, 'NEW BEST!', {
+        fill: C.HAZARD_YELLOW,
+        textColor: COLORS.BLACK,
+        fontSize: '12px',
+      })
+      elems.push(newBest)
+    }
+
     // Stat badges
     const sales = BrutalUI.drawStatBadge(this, width / 2 - 140, 470, salesGain, '+SALES', { accent: C.SHOCK_LIME })
     const eq = BrutalUI.drawStatBadge(this, width / 2, 470, eqGain, '+EQ', { accent: C.SHOCK_LIME })
@@ -719,8 +832,8 @@ export class LatinAmericaScene extends Phaser.Scene {
 
     // Return button
     BrutalUI.drawButton(this, width / 2, 620, 280, 56, 'RETURN TO INDEX →', () => {
-      this.cameras.main.fadeOut(350, 10, 10, 10)
-      this.time.delayedCall(380, () => this.scene.start('LevelSelectHub'))
+      AudioCtx.fx('click')
+      BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
     }, {
       fill: C.SHOCK_LIME,
       labelColor: COLORS.BLACK,
@@ -734,8 +847,8 @@ export class LatinAmericaScene extends Phaser.Scene {
     })
 
     const returnToHub = () => {
-      this.cameras.main.fadeOut(350, 10, 10, 10)
-      this.time.delayedCall(380, () => this.scene.start('LevelSelectHub'))
+      AudioCtx.fx('click')
+      BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
     }
     this.input.keyboard.once('keydown-SPACE', returnToHub)
   }
