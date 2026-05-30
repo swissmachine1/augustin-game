@@ -206,6 +206,31 @@ export class FinalReportScene extends Scene {
       this.scene.start('LevelSelectHub')
     }, { fill: C.GREY_700, labelColor: COLORS.BONE, fontSize: '11px', shadowOffset: 4 })
 
+    // Shareable link — copies URL with score baked in
+    const shareBtn = BrutalUI.drawButton(this, width - 220, 50, 160, 36, '📤 SHARE SCORE', () => {
+      AudioCtx.fx('click')
+      const url = new URL(window.location.href)
+      url.searchParams.set('score', String(avg))
+      url.searchParams.set('rating', rating)
+      if (name && name !== 'FRIEND') url.searchParams.set('name', name.toLowerCase())
+      const text = url.toString()
+      const copyAndFeedback = () => {
+        Particles.popup(this, width - 220, 90, 'LINK COPIED', '#00ff6a', { fontSize: '14px' })
+        shareBtn.text.setText('COPIED ✓')
+        this.time.delayedCall(1600, () => shareBtn.text.setText('📤 SHARE SCORE'))
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(copyAndFeedback).catch(() => {})
+      } else {
+        const ta = document.createElement('textarea')
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'
+        document.body.appendChild(ta); ta.select()
+        try { document.execCommand('copy'); copyAndFeedback() }
+        catch (e) { /* ignore */ }
+        document.body.removeChild(ta)
+      }
+    }, { fill: C.SHOCK_BLUE, labelColor: COLORS.BONE, fontSize: '11px', shadowOffset: 4 })
+
     // Confetti for completion drama
     this.time.delayedCall(300, () => {
       Particles.confetti(this, width / 2, 60, 50)
