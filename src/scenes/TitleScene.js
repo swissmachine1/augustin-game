@@ -45,10 +45,10 @@ export class TitleScene extends Scene {
     titleGroup.add([shadowT, mainT])
 
     const filesGroup = this.add.container(width / 2, 380)
-    const shadowF = this.add.text(6, 6, 'FILES', {
+    const shadowF = this.add.text(6, 6, 'GAME', {
       fontFamily: FONT_DISPLAY, fontSize: '108px', color: COLORS.SHOCK_RED,
     }).setOrigin(0.5)
-    const mainF = this.add.text(0, 0, 'FILES', {
+    const mainF = this.add.text(0, 0, 'GAME', {
       fontFamily: FONT_DISPLAY, fontSize: '108px', color: COLORS.BONE,
     }).setOrigin(0.5)
     filesGroup.add([shadowF, mainF])
@@ -83,7 +83,7 @@ export class TitleScene extends Scene {
     }
 
     // Start button — big brutalist CTA
-    BrutalUI.drawButton(this, width / 2, 660, 240, 64, '▶  OPEN FILES', () => this._start(), {
+    BrutalUI.drawButton(this, width / 2, 660, 240, 64, '▶  START', () => this._start(), {
       fill: C.SHOCK_RED, labelColor: COLORS.BLACK, fontSize: '22px',
       shadowOffset: 8, borderWidth: 4,
     })

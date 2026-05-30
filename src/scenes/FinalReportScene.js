@@ -53,10 +53,10 @@ export class FinalReportScene extends Scene {
     })
 
     // HERO TITLE
-    const titleShadow = this.add.text(width / 2 + 5, 110 + 5, 'AUGUSTIN FILES', {
+    const titleShadow = this.add.text(width / 2 + 5, 110 + 5, 'AUGUSTIN GAME', {
       fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.SHOCK_RED,
     }).setOrigin(0.5)
-    this.add.text(width / 2, 110, 'AUGUSTIN FILES', {
+    this.add.text(width / 2, 110, 'AUGUSTIN GAME', {
       fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.BONE,
     }).setOrigin(0.5)
     const subShadow = this.add.text(width / 2 + 4, 168 + 4, 'COMPLETE', {

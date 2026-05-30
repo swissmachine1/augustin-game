@@ -59,7 +59,7 @@ function mountMobileFallback() {
 
   const header = el('div', 'm-header')
   header.appendChild(el('div', 'm-stamp', 'VOL. I'))
-  header.appendChild(el('div', 'm-title', 'The Augustin Files'))
+  header.appendChild(el('div', 'm-title', 'The Augustin Game'))
   header.appendChild(el('div', 'm-sub', 'A playable CV · Five mini-games · ~10 minutes'))
   page.appendChild(header)
 

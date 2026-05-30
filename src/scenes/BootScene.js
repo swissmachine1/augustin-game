@@ -15,13 +15,13 @@ export class BootScene extends Scene {
     this.cameras.main.setBackgroundColor(COLORS.BLACK)
 
     // Block-type loading
-    const headline = this.add.text(width / 2, height / 2 - 40, 'THE AUGUSTIN FILES', {
+    const headline = this.add.text(width / 2, height / 2 - 40, 'THE AUGUSTIN GAME', {
       fontFamily: 'Arial Black, Impact, sans-serif',
       fontSize: '52px',
       color: COLORS.BONE,
     }).setOrigin(0.5)
 
-    const shock = this.add.text(width / 2 + 4, height / 2 - 36, 'THE AUGUSTIN FILES', {
+    const shock = this.add.text(width / 2 + 4, height / 2 - 36, 'THE AUGUSTIN GAME', {
       fontFamily: 'Arial Black, Impact, sans-serif',
       fontSize: '52px',
       color: COLORS.SHOCK_RED,

@@ -1,4 +1,4 @@
-// The Augustin Files — Neo-Brutalist Design System
+// The Augustin Game — Neo-Brutalist Design System
 // Black, bone, one shock color per level. Hard edges. No gradients.
 
 export const COLORS = {
