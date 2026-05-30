@@ -35,6 +35,9 @@ const OBSTACLES = [
   { key: 'rough',    label: 'ROUGH ROAD',       region: 'europe',  fill: C.HAZARD_YELLOW, text: COLORS.BLACK, story: "GRAVEL FOR 80KM. WHEELS BARELY HOLDING." },
   { key: 'village',  label: 'EMPTY VILLAGE',    region: 'bulgaria',fill: C.BONE,          text: COLORS.BLACK, story: "I KNOCKED ON EVERY DOOR. HOUSE #7 HAD A FIRE GOING." },
   { key: 'food',     label: 'NO FOOD',          region: 'bulgaria',fill: C.HAZARD_YELLOW, text: COLORS.BLACK, story: "BREAD AND BUTTER. BEST MEAL OF MY LIFE." },
+  { key: 'heat',     label: 'HEAT STROKE',      region: 'asia',    fill: C.SHOCK_PINK,    text: COLORS.BLACK, story: "40°C IN THE SHADE. I RODE AT NIGHT FOR A WEEK." },
+  { key: 'puncture', label: 'PUNCTURED TIRE',   region: 'europe',  fill: C.HAZARD_YELLOW, text: COLORS.BLACK, story: "GLASS ON THE SHOULDER. INNER TUBE GONE. WALK 12KM." },
+  { key: 'mud',      label: 'MUDDY ROAD',       region: 'bulgaria',fill: C.SHOCK_PINK,    text: COLORS.BLACK, story: "RAIN TURNED THE TRACK TO SOUP. WHEELS LOCKED SOLID." },
   { key: 'icebergs', label: 'ICEBERGS',         region: 'greenland',fill: C.BONE,         text: COLORS.BLACK, story: "THE BOAT WASN'T COMING. I PUT ON THE PACK." },
   { key: 'backpack', label: '20KG PACK',        region: 'greenland',fill: C.SHOCK_PINK,   text: COLORS.BLACK, story: "TWO DAYS WALK TO THE NEXT VILLAGE. NO TRAIL." },
 ]
@@ -74,9 +77,10 @@ export class GreenlandScene extends Phaser.Scene {
     this._coinInterval = 0.9
     this._rideTime = 0
     this._totalRideEstimate = OBSTACLES.length * 2.5 + 4 // for progress
-    this._scrollSpeed = 1.6      // grows over time
-    this._obstacleSpeed = 0.34   // z per second, grows over time
-    this._totalCoinsToSpawn = 26
+    this._scrollSpeed = 2.0      // grows over time (was 1.6)
+    this._obstacleSpeed = 0.42   // z per second, grows over time (was 0.34)
+    this._totalCoinsToSpawn = 32
+    this._packMode = false       // greenland-only pack on rider's back
 
     this.cameras.main.fadeIn(400, 10, 10, 10)
     this.cameras.main.setBackgroundColor(COLORS.BLACK)
@@ -194,72 +198,114 @@ export class GreenlandScene extends Phaser.Scene {
     const baseY = HORIZON_Y - 4
 
     if (region === 'turkey') {
-      // Minarets
+      // Warm dusty horizon glow
+      g.fillStyle(C.HAZARD_YELLOW, 0.08)
+      g.fillRect(0, baseY - 90, WIDTH, 90)
+      // Big domes (background)
       g.fillStyle(C.GREY_700, 1)
-      const ms = [180, 360, 1020, 1180]
-      ms.forEach(x => {
-        g.fillRect(x - 4, baseY - 60, 8, 60)
-        g.fillRect(x - 14, baseY - 30, 28, 8)
-        g.fillTriangle(x - 8, baseY - 60, x + 8, baseY - 60, x, baseY - 78)
-      })
-      // Domes
+      g.fillEllipse(270, baseY - 14, 140, 56)
+      g.fillEllipse(1080, baseY - 14, 130, 52)
+      g.fillEllipse(640, baseY - 8, 80, 26) // distant dome at vanishing
+      // Minarets (taller, more dramatic)
       g.fillStyle(C.GREY_500, 1)
-      g.fillEllipse(270, baseY - 12, 90, 36)
-      g.fillEllipse(1100, baseY - 12, 80, 32)
+      const ms = [160, 220, 320, 1000, 1060, 1160]
+      ms.forEach(x => {
+        g.fillRect(x - 4, baseY - 90, 8, 90)
+        g.fillRect(x - 14, baseY - 50, 28, 8) // balcony
+        g.fillTriangle(x - 8, baseY - 90, x + 8, baseY - 90, x, baseY - 112)
+      })
+      // Crescent moon hint
+      g.fillStyle(C.BONE, 0.6)
+      g.fillCircle(110, baseY - 130, 16)
+      g.fillStyle(C.BLACK, 1)
+      g.fillCircle(118, baseY - 132, 14)
     } else if (region === 'asia') {
-      // Palm trees
+      // Lush green horizon glow
+      g.fillStyle(C.SHOCK_ACID, 0.06)
+      g.fillRect(0, baseY - 80, WIDTH, 80)
+      // Dense palm tree silhouettes
       g.fillStyle(C.GREY_700, 1)
-      const palms = [120, 240, 980, 1100, 1220]
-      palms.forEach(x => {
-        g.fillRect(x - 2, baseY - 50, 4, 50)
-        // fronds
-        for (let f = 0; f < 5; f++) {
-          const a = (f / 5) * Math.PI - Math.PI / 2
-          const ex = x + Math.cos(a) * 22
-          const ey = baseY - 50 + Math.sin(a) * 14
-          g.lineStyle(3, C.GREY_500, 1)
-          g.beginPath(); g.moveTo(x, baseY - 50); g.lineTo(ex, ey); g.strokePath()
+      const palms = [80, 140, 200, 280, 340, 940, 1000, 1070, 1140, 1210]
+      palms.forEach((x, idx) => {
+        const h = 55 + (idx % 3) * 12
+        g.fillRect(x - 3, baseY - h, 6, h)
+        // fronds — bigger, more dramatic
+        g.lineStyle(4, C.GREY_500, 1)
+        for (let f = 0; f < 7; f++) {
+          const a = (f / 7) * Math.PI - Math.PI / 2
+          const ex = x + Math.cos(a) * 26
+          const ey = baseY - h + Math.sin(a) * 16
+          g.beginPath(); g.moveTo(x, baseY - h); g.lineTo(ex, ey); g.strokePath()
         }
       })
+      // Distant hills
+      g.fillStyle(C.GREY_900, 1)
+      g.fillTriangle(400, baseY, 600, baseY, 500, baseY - 30)
+      g.fillTriangle(700, baseY, 900, baseY, 800, baseY - 36)
     } else if (region === 'europe') {
-      // Village rooflines
+      // Slate-grey hills behind
+      g.fillStyle(C.GREY_900, 1)
+      g.fillTriangle(0, baseY, 380, baseY, 200, baseY - 70)
+      g.fillTriangle(280, baseY, 560, baseY, 400, baseY - 90)
+      g.fillTriangle(900, baseY, 1280, baseY, 1100, baseY - 80)
+      g.fillTriangle(820, baseY, 1080, baseY, 950, baseY - 60)
+      // Village rooflines (chunky)
       g.fillStyle(C.GREY_700, 1)
-      let x = 80
-      while (x < WIDTH - 80) {
-        const w = 60 + Math.random() * 40
-        const h = 30 + Math.random() * 25
+      let x = 60
+      while (x < WIDTH - 60) {
+        const w = 70 + Math.random() * 50
+        const h = 36 + Math.random() * 28
         g.fillRect(x, baseY - h, w, h)
-        // peaked roof
-        g.fillTriangle(x - 4, baseY - h, x + w + 4, baseY - h, x + w / 2, baseY - h - 16)
-        x += w + 10
-        if (x > 500 && x < 800) x = 800 // gap for road horizon
+        g.fillTriangle(x - 4, baseY - h, x + w + 4, baseY - h, x + w / 2, baseY - h - 20)
+        // tiny window
+        g.fillStyle(C.HAZARD_YELLOW, 0.5)
+        g.fillRect(x + w / 2 - 4, baseY - h / 2, 8, 8)
+        g.fillStyle(C.GREY_700, 1)
+        x += w + 12
+        if (x > 500 && x < 800) x = 800
       }
     } else if (region === 'bulgaria') {
-      // Sparse bare trees
-      g.lineStyle(2, C.GREY_500, 1)
-      const trees = [100, 200, 320, 980, 1080, 1200]
-      trees.forEach(x => {
-        g.beginPath(); g.moveTo(x, baseY); g.lineTo(x, baseY - 40); g.strokePath()
-        // branches
-        g.beginPath(); g.moveTo(x, baseY - 30); g.lineTo(x - 12, baseY - 42); g.strokePath()
-        g.beginPath(); g.moveTo(x, baseY - 34); g.lineTo(x + 12, baseY - 46); g.strokePath()
-        g.beginPath(); g.moveTo(x, baseY - 22); g.lineTo(x - 8, baseY - 32); g.strokePath()
+      // Foggy band
+      g.fillStyle(C.BONE, 0.05)
+      g.fillRect(0, baseY - 80, WIDTH, 80)
+      g.fillStyle(C.BONE, 0.08)
+      g.fillRect(0, baseY - 40, WIDTH, 40)
+      // Sparse bare trees, more of them
+      g.lineStyle(3, C.GREY_500, 1)
+      const trees = [80, 160, 260, 340, 420, 880, 960, 1040, 1140, 1220]
+      trees.forEach((x, i) => {
+        const h = 45 + (i % 3) * 10
+        g.beginPath(); g.moveTo(x, baseY); g.lineTo(x, baseY - h); g.strokePath()
+        g.beginPath(); g.moveTo(x, baseY - h * 0.7); g.lineTo(x - 14, baseY - h - 4); g.strokePath()
+        g.beginPath(); g.moveTo(x, baseY - h * 0.85); g.lineTo(x + 14, baseY - h - 8); g.strokePath()
+        g.beginPath(); g.moveTo(x, baseY - h * 0.5); g.lineTo(x - 10, baseY - h * 0.6); g.strokePath()
+        g.beginPath(); g.moveTo(x, baseY - h * 0.6); g.lineTo(x + 10, baseY - h * 0.7); g.strokePath()
       })
     } else if (region === 'greenland') {
-      // Jagged white icebergs
+      // Cold pink horizon (aurora hint)
+      g.fillStyle(C.SHOCK_PINK, 0.08)
+      g.fillRect(0, baseY - 100, WIDTH, 100)
+      // Jagged white icebergs — taller, more dramatic
       g.fillStyle(C.BONE, 1)
       const peaks = [
-        [60, 1, 110], [220, 1, 80], [380, 1, 130],
-        [900, 1, 100], [1060, 1, 140], [1220, 1, 90],
+        [40, 100], [160, 130], [280, 90], [400, 150], [500, 80],
+        [820, 110], [940, 160], [1080, 100], [1200, 140], [1280, 90],
       ]
-      peaks.forEach(([cx, _, w]) => {
-        const h = 40 + Math.random() * 30
-        g.fillTriangle(cx - w / 2, baseY, cx + w / 2, baseY, cx - 8, baseY - h)
-        g.fillTriangle(cx - 8, baseY - h, cx + w / 2, baseY, cx + w / 4, baseY - h * 0.6)
+      peaks.forEach(([cx, w], i) => {
+        const h = 60 + (i % 4) * 18
+        const tipX = cx - 6 + (i % 2) * 12
+        g.fillTriangle(cx - w / 2, baseY, cx + w / 2, baseY, tipX, baseY - h)
+        // Inner shadow facet
+        g.fillStyle(C.GREY_300, 1)
+        g.fillTriangle(tipX, baseY - h, cx + w / 2, baseY, cx + w / 6, baseY - h * 0.55)
+        g.fillStyle(C.BONE, 1)
       })
-      g.lineStyle(2, C.GREY_300, 1)
-      peaks.forEach(([cx, _, w]) => {
-        g.beginPath(); g.moveTo(cx - w / 2, baseY); g.lineTo(cx - 8, baseY - 50); g.lineTo(cx + w / 2, baseY); g.strokePath()
+      // Pink edge highlights
+      g.lineStyle(2, C.SHOCK_PINK, 0.8)
+      peaks.forEach(([cx, w], i) => {
+        const h = 60 + (i % 4) * 18
+        const tipX = cx - 6 + (i % 2) * 12
+        g.beginPath(); g.moveTo(cx - w / 2, baseY); g.lineTo(tipX, baseY - h); g.strokePath()
       })
     }
 
@@ -333,83 +379,156 @@ export class GreenlandScene extends Phaser.Scene {
     }
   }
 
-  // ── Bike (more detailed) ──────────────────────────────────────
+  // ── Bike (region-aware, animated) ─────────────────────────────
   _drawBike() {
     this._bikeContainer = this.add.container(WIDTH / 2, BIKE_Y)
     this._bikeContainer.setDepth(1500)
-    const g = this.add.graphics()
 
-    // Shadow
-    g.fillStyle(C.BLACK, 0.65)
-    g.fillEllipse(0, 56, 160, 22)
+    // Shadow (static)
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 0.7)
+    shadow.fillEllipse(0, 58, 170, 24)
 
-    // Wheels (rear-quarter view)
+    // Wheels — separated so we can animate spokes
+    this._wheelL = this.add.graphics()
+    this._wheelR = this.add.graphics()
+    // Bike body (re-drawn when pack mode changes)
+    this._bikeBody = this.add.graphics()
+
+    this._bikeContainer.add([shadow, this._wheelL, this._wheelR, this._bikeBody])
+
+    this._renderBikeBody(false) // start: panniers (no pack)
+    this._wheelPhase = 0
+  }
+
+  _renderWheel(g, x, y, phase) {
+    g.clear()
+    // Tire ellipse
     g.fillStyle(C.BLACK, 1)
+    g.fillEllipse(x, y, 50, 22)
     g.lineStyle(4, C.BONE, 1)
-    g.fillEllipse(-42, 44, 44, 20)
-    g.strokeEllipse(-42, 44, 44, 20)
-    g.fillEllipse(42, 44, 44, 20)
-    g.strokeEllipse(42, 44, 44, 20)
-    // Wheel spokes hint
-    g.lineStyle(1, C.GREY_500, 1)
-    g.beginPath(); g.moveTo(-42, 36); g.lineTo(-42, 52); g.strokePath()
-    g.beginPath(); g.moveTo(42, 36); g.lineTo(42, 52); g.strokePath()
+    g.strokeEllipse(x, y, 50, 22)
+    // Hub
+    g.fillStyle(C.SHOCK_PINK, 1)
+    g.fillCircle(x, y, 4)
+    g.lineStyle(2, C.BLACK, 1)
+    g.strokeCircle(x, y, 4)
+    // Animated spokes — 4 spinning lines
+    g.lineStyle(1.5, C.GREY_300, 0.9)
+    for (let i = 0; i < 4; i++) {
+      const a = phase + (i / 4) * Math.PI * 2
+      const rx = Math.cos(a) * 23
+      const ry = Math.sin(a) * 10
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + rx, y + ry); g.strokePath()
+    }
+  }
 
-    // Frame (rear hub + seat post)
+  _renderBikeBody(showPack) {
+    const g = this._bikeBody
+    g.clear()
+
+    // ── Bike frame (chunky, recognizable) ──
+    // Down tube / chainstay area
     g.fillStyle(C.OFF_BLACK, 1)
     g.lineStyle(3, C.BONE, 1)
-    g.fillRect(-22, 4, 44, 36)
-    g.strokeRect(-22, 4, 44, 36)
+    g.fillRect(-26, 6, 52, 38)
+    g.strokeRect(-26, 6, 52, 38)
+    // Frame accent (pink stripe)
+    g.fillStyle(C.SHOCK_PINK, 1)
+    g.fillRect(-26, 18, 52, 6)
+
+    if (!showPack) {
+      // ── PANNIERS (Turkey/Asia/Europe/Bulgaria) ──
+      // Rear rack
+      g.lineStyle(3, C.GREY_500, 1)
+      g.beginPath(); g.moveTo(-30, 2); g.lineTo(30, 2); g.strokePath()
+      // Left pannier
+      g.fillStyle(C.HAZARD_YELLOW, 1)
+      g.fillRect(-44, 8, 18, 30)
+      g.lineStyle(3, C.BLACK, 1)
+      g.strokeRect(-44, 8, 18, 30)
+      g.lineStyle(2, C.BLACK, 1)
+      g.beginPath(); g.moveTo(-44, 18); g.lineTo(-26, 18); g.strokePath()
+      // Right pannier
+      g.fillStyle(C.HAZARD_YELLOW, 1)
+      g.fillRect(26, 8, 18, 30)
+      g.lineStyle(3, C.BLACK, 1)
+      g.strokeRect(26, 8, 18, 30)
+      g.lineStyle(2, C.BLACK, 1)
+      g.beginPath(); g.moveTo(26, 18); g.lineTo(44, 18); g.strokePath()
+    }
+
     // Seat post
     g.fillStyle(C.GREY_700, 1)
     g.fillRect(-4, -12, 8, 18)
 
     // Seat
     g.fillStyle(C.SHOCK_PINK, 1)
-    g.fillRect(-22, -16, 44, 12)
+    g.fillRect(-24, -18, 48, 12)
     g.lineStyle(3, C.BLACK, 1)
-    g.strokeRect(-22, -16, 44, 12)
+    g.strokeRect(-24, -18, 48, 12)
 
-    // Pack on rider's back (20KG PACK detail)
-    g.fillStyle(C.HAZARD_YELLOW, 1)
-    g.fillRect(-22, -54, 44, 38)
-    g.lineStyle(3, C.BLACK, 1)
-    g.strokeRect(-22, -54, 44, 38)
-    // Pack straps
-    g.lineStyle(2, C.BLACK, 1)
-    g.beginPath(); g.moveTo(-14, -54); g.lineTo(-14, -16); g.strokePath()
-    g.beginPath(); g.moveTo(14, -54); g.lineTo(14, -16); g.strokePath()
-    // "20KG" tag
-    g.fillStyle(C.BLACK, 1)
-    g.fillRect(-10, -38, 20, 10)
+    if (showPack) {
+      // ── 20KG PACK (Greenland only) ──
+      g.fillStyle(C.HAZARD_YELLOW, 1)
+      g.fillRect(-26, -58, 52, 42)
+      g.lineStyle(3, C.BLACK, 1)
+      g.strokeRect(-26, -58, 52, 42)
+      // Top flap
+      g.fillStyle(C.OFF_BLACK, 1)
+      g.fillRect(-26, -58, 52, 8)
+      // Compression straps
+      g.lineStyle(2, C.BLACK, 1)
+      g.beginPath(); g.moveTo(-26, -42); g.lineTo(26, -42); g.strokePath()
+      g.beginPath(); g.moveTo(-26, -28); g.lineTo(26, -28); g.strokePath()
+      // "20KG" tag (bone with black border)
+      g.fillStyle(C.BONE, 1)
+      g.fillRect(-14, -42, 28, 12)
+      g.lineStyle(2, C.BLACK, 1)
+      g.strokeRect(-14, -42, 28, 12)
+    }
 
-    // Rider torso (leaning forward slightly)
+    // ── Rider torso (silhouette + highlight) ──
     g.fillStyle(C.BLACK, 1)
     g.lineStyle(3, C.BONE, 1)
     g.beginPath()
-    g.moveTo(-20, -16)
-    g.lineTo(20, -16)
-    g.lineTo(16, -64)
-    g.lineTo(-16, -64)
+    g.moveTo(-22, -18)
+    g.lineTo(22, -18)
+    g.lineTo(18, -68)
+    g.lineTo(-18, -68)
     g.closePath()
     g.fillPath()
     g.strokePath()
+    // Shoulder highlight (BONE shading)
+    g.fillStyle(C.BONE, 0.3)
+    g.fillTriangle(-18, -68, -8, -68, -22, -40)
+    g.fillTriangle(18, -68, 8, -68, 22, -40)
+    // Spine line
+    g.lineStyle(1, C.BONE, 0.4)
+    g.beginPath(); g.moveTo(0, -66); g.lineTo(0, -22); g.strokePath()
 
-    // Arms reaching to handlebars
-    g.lineStyle(6, C.BLACK, 1)
-    g.beginPath(); g.moveTo(-16, -52); g.lineTo(-46, -32); g.strokePath()
-    g.beginPath(); g.moveTo(16, -52); g.lineTo(46, -32); g.strokePath()
+    // ── Arms (reaching to handlebars) ──
+    g.lineStyle(8, C.BLACK, 1)
+    g.beginPath(); g.moveTo(-18, -56); g.lineTo(-50, -34); g.strokePath()
+    g.beginPath(); g.moveTo(18, -56); g.lineTo(50, -34); g.strokePath()
+    // Arm highlight
+    g.lineStyle(2, C.BONE, 0.4)
+    g.beginPath(); g.moveTo(-18, -54); g.lineTo(-48, -34); g.strokePath()
+    g.beginPath(); g.moveTo(18, -54); g.lineTo(48, -34); g.strokePath()
 
-    // Helmet (rounded top)
+    // ── Helmet ──
     g.fillStyle(C.SHOCK_PINK, 1)
-    g.fillEllipse(0, -82, 32, 22)
+    g.fillEllipse(0, -84, 36, 24)
     g.lineStyle(3, C.BLACK, 1)
-    g.strokeEllipse(0, -82, 32, 22)
-    // Helmet vents
+    g.strokeEllipse(0, -84, 36, 24)
+    // Helmet highlight
+    g.fillStyle(C.BONE, 0.35)
+    g.fillEllipse(-6, -90, 14, 6)
+    // Vents
     g.lineStyle(2, C.BLACK, 1)
-    g.beginPath(); g.moveTo(-8, -90); g.lineTo(-8, -78); g.strokePath()
-    g.beginPath(); g.moveTo(0, -92); g.lineTo(0, -76); g.strokePath()
-    g.beginPath(); g.moveTo(8, -90); g.lineTo(8, -78); g.strokePath()
+    g.beginPath(); g.moveTo(-10, -92); g.lineTo(-10, -78); g.strokePath()
+    g.beginPath(); g.moveTo(0, -94); g.lineTo(0, -76); g.strokePath()
+    g.beginPath(); g.moveTo(10, -92); g.lineTo(10, -78); g.strokePath()
 
     // Head/neck under helmet
     g.fillStyle(C.BONE_WARM, 1)
@@ -417,18 +536,19 @@ export class GreenlandScene extends Phaser.Scene {
     g.lineStyle(2, C.BLACK, 1)
     g.strokeCircle(0, -72, 8)
 
-    // Handlebars
+    // ── Handlebars (drop bars) ──
     g.lineStyle(6, C.BONE, 1)
-    g.beginPath(); g.moveTo(-54, -32); g.lineTo(54, -32); g.strokePath()
+    g.beginPath(); g.moveTo(-58, -34); g.lineTo(58, -34); g.strokePath()
     // Grips
     g.fillStyle(C.SHOCK_PINK, 1)
-    g.fillRect(-60, -36, 12, 10)
-    g.fillRect(48, -36, 12, 10)
+    g.fillRect(-66, -38, 14, 12)
+    g.fillRect(52, -38, 14, 12)
     g.lineStyle(2, C.BLACK, 1)
-    g.strokeRect(-60, -36, 12, 10)
-    g.strokeRect(48, -36, 12, 10)
-
-    this._bikeContainer.add(g)
+    g.strokeRect(-66, -38, 14, 12)
+    g.strokeRect(52, -38, 14, 12)
+    // Stem
+    g.fillStyle(C.GREY_500, 1)
+    g.fillRect(-4, -34, 8, 8)
   }
 
   // ── HUD ───────────────────────────────────────────────────────
@@ -471,7 +591,25 @@ export class GreenlandScene extends Phaser.Scene {
     }
     this._updateLaneDots()
 
-    // Progress / distance
+    // Obstacle progress counter (top-right, offset below score)
+    this._obstacleLabel = this.add.text(WIDTH - 24, 86, 'OBSTACLE', {
+      fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.BONE,
+      letterSpacing: 2,
+    }).setOrigin(1, 0)
+    this._obstacleCounter = this.add.text(WIDTH - 24, 102, `0 / ${OBSTACLES.length}`, {
+      fontFamily: FONT_DISPLAY, fontSize: '22px', color: COLORS.HAZARD_YELLOW,
+    }).setOrigin(1, 0)
+    // Counter background plate (brutalist tag)
+    const plate = this.add.graphics()
+    plate.fillStyle(C.BLACK, 0.8)
+    plate.fillRect(WIDTH - 140, 82, 116, 50)
+    plate.lineStyle(2, C.HAZARD_YELLOW, 1)
+    plate.strokeRect(WIDTH - 140, 82, 116, 50)
+    plate.setDepth(-1)
+    this._obstacleLabel.setDepth(1)
+    this._obstacleCounter.setDepth(1)
+
+    // Legacy progress text kept (bottom-left, smaller)
     this._progressText = this.add.text(24, HEIGHT - 24, `0 / ${OBSTACLES.length}`, {
       fontFamily: FONT_DISPLAY, fontSize: '14px', color: COLORS.BONE,
     }).setOrigin(0, 1)
@@ -544,6 +682,20 @@ export class GreenlandScene extends Phaser.Scene {
 
     // Update region scenery as we cross into a new region
     this._drawScenery(def.region)
+    // Toggle 20KG PACK only during Greenland segment
+    const shouldPack = (def.region === 'greenland')
+    if (shouldPack !== this._packMode) {
+      this._packMode = shouldPack
+      this._renderBikeBody(shouldPack)
+      // Brief flash if entering Greenland with pack
+      if (shouldPack) {
+        const tag = this.add.text(this._bikeContainer.x, BIKE_Y - 160, '+ 20KG PACK', {
+          fontFamily: FONT_DISPLAY, fontSize: '20px', color: COLORS.HAZARD_YELLOW,
+        }).setOrigin(0.5).setDepth(1900)
+        this.tweens.add({ targets: tag, y: tag.y - 30, alpha: 0, duration: 1400,
+          onComplete: () => tag.destroy() })
+      }
+    }
 
     const laneIndex = Phaser.Math.Between(0, 2)
 
@@ -578,6 +730,7 @@ export class GreenlandScene extends Phaser.Scene {
     const ob = {
       def, container, lane: laneIndex,
       z: SPAWN_Z, resolved: false, hit: false,
+      bobSeed: Math.random() * 6.28,
     }
     this._activeObstacles.push(ob)
     this._updateObstacleTransform(ob)
@@ -586,9 +739,11 @@ export class GreenlandScene extends Phaser.Scene {
   _updateObstacleTransform(ob) {
     const z = Phaser.Math.Clamp(ob.z, 0, 1.15)
     const x = this._laneXAtZ(ob.lane, z)
-    const y = this._yAtZ(z)
+    const baseY = this._yAtZ(z)
+    // Bob slightly as it approaches (only at mid-far distance, never at the bike)
+    const bob = Math.sin(this.time.now / 220 + (ob.bobSeed || 0)) * 4 * z
     const s = this._scaleAtZ(z)
-    ob.container.setPosition(x, y)
+    ob.container.setPosition(x, baseY + bob)
     ob.container.setScale(s)
     ob.container.setDepth(Math.floor(z * 1000))
   }
@@ -621,6 +776,7 @@ export class GreenlandScene extends Phaser.Scene {
     const coin = {
       container, lane: laneIndex,
       z: SPAWN_Z, resolved: false,
+      bobSeed: Math.random() * 6.28,
     }
     this._activeCoins.push(coin)
     this._updateObstacleTransform(coin)
@@ -643,11 +799,16 @@ export class GreenlandScene extends Phaser.Scene {
     this._rideTime += dt
 
     // Difficulty ramp: scroll & obstacle speed grow over time
-    const ramp = Phaser.Math.Clamp(this._rideTime / 30, 0, 1)
-    this._scrollSpeed = 1.6 + ramp * 1.6
-    this._obstacleSpeed = 0.34 + ramp * 0.32
-    // Spawn intervals tighten
-    this._spawnInterval = 2.5 - ramp * 0.9
+    const ramp = Phaser.Math.Clamp(this._rideTime / 25, 0, 1)
+    this._scrollSpeed = 2.0 + ramp * 2.0
+    this._obstacleSpeed = 0.42 + ramp * 0.42
+    // Spawn intervals tighten (was 2.5 → 1.6; now 1.9 → 1.05)
+    this._spawnInterval = 1.9 - ramp * 0.85
+
+    // Animate wheels (spin faster as scroll speed grows)
+    this._wheelPhase += dt * this._scrollSpeed * 6
+    this._renderWheel(this._wheelL, -44, 44, this._wheelPhase)
+    this._renderWheel(this._wheelR, 44, 44, this._wheelPhase + Math.PI / 4)
 
     // Road scroll
     this._roadScroll += dt * this._scrollSpeed
@@ -695,8 +856,10 @@ export class GreenlandScene extends Phaser.Scene {
       const coin = this._activeCoins[i]
       coin.z += this._obstacleSpeed * dt
       this._updateObstacleTransform(coin)
-      // gentle spin
-      coin.container.setScale(this._scaleAtZ(coin.z) * (0.9 + 0.1 * Math.sin(time / 100 + i)))
+      // Spinning disk effect — scaleX cycles 0..1..0
+      const baseScale = this._scaleAtZ(coin.z)
+      const spin = Math.abs(Math.cos(time / 180 + i))
+      coin.container.setScale(baseScale * (0.3 + 0.7 * spin), baseScale)
 
       if (!coin.resolved && coin.z >= HIT_Z) {
         if (coin.lane === this._currentLane) {
@@ -713,7 +876,9 @@ export class GreenlandScene extends Phaser.Scene {
 
     // HUD
     this._scoreText.setText(String(this._calculateScore()))
-    this._progressText.setText(`${this._dodged + this._hit} / ${OBSTACLES.length}`)
+    const done = this._dodged + this._hit
+    this._progressText.setText(`${done} / ${OBSTACLES.length}`)
+    this._obstacleCounter.setText(`${done} / ${OBSTACLES.length}`)
 
     // Distance bar
     const progress = Phaser.Math.Clamp((this._dodged + this._hit) / OBSTACLES.length, 0, 1)
