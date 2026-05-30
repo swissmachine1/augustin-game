@@ -1211,8 +1211,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
     BrutalUI.showNarrative(this, width / 2, height / 2, 620, 200,
       `PIPELINE COLLAPSED.\n\n${this.kills} KILLS. WAVE ${this.waveIndex + 1}/${WAVES.length}.\nREBUILD THE STACK.`,
       () => {
-        this.cameras.main.fadeOut(400, 10, 10, 10)
-        this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
+        BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
       },
       { fill: C.BONE, accentColor: C.SHOCK_RED, fontSize: '16px' })
   }
