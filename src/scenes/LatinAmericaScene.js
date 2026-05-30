@@ -15,15 +15,10 @@ const LABELS = [
   { text: 'NO SPANISH',            wild: false, insight: 'LEARNED TO SELL WITH DIAGRAMS AND PERSISTENCE.' },
   { text: 'ZERO NETWORK',          wild: false, insight: 'COLD EMAILS. CONFERENCE AMBUSHES. STRANGERS TURNED PARTNERS.' },
   { text: '11 COUNTRIES',          wild: false, insight: '11 REGULATORY FRAMEWORKS. 11 NETWORKS BUILT FROM ZERO.' },
-  { text: 'SOLO IN COLOMBIA',      wild: false, insight: 'NO TEAM. NO OFFICE. JUST A LAPTOP AND A LIST OF 200 DOCTORS.' },
-  { text: 'NO MARKETING BUDGET',   wild: false, insight: 'ZERO AD SPEND. WHATSAPP GROUPS AND HALLWAY DEMOS INSTEAD.' },
-  { text: 'SKEPTICAL KOLS',        wild: false, insight: 'EARNED MEETING ONE WITH A CASE STUDY. MEETING TWO BY REMEMBERING NAMES.' },
-  { text: 'CONSULTATIVE SELLING',  wild: false, insight: 'STOPPED SELLING PRODUCT. STARTED SELLING OUTCOMES.' },
-  { text: 'CROSS-CULTURAL EQ',     wild: false, insight: 'READ THE ROOM BEFORE OPENING YOUR MOUTH.' },
+  { text: 'SOLO IN MEDELLÍN',      wild: false, insight: 'NO TEAM. NO OFFICE. JUST A LAPTOP AND A LIST OF 200 DOCTORS.' },
+  { text: 'CONSULTATIVE SALES',    wild: false, insight: 'STOPPED SELLING PRODUCT. STARTED SELLING OUTCOMES.' },
   { text: 'SCRAPPY GTM',           wild: false, insight: 'PIPELINE BUILT ON DUCT TAPE AND CONVICTION.' },
-  { text: 'STAKEHOLDER MGMT',      wild: false, insight: 'EVERY DEAL — FIVE PEOPLE. EVERY PERSON — A REASON TO SAY NO.' },
-  { text: 'REMOTE LEADERSHIP',     wild: false, insight: 'FOUR TIME ZONES. ZERO DIRECT REPORTS IN THE SAME ROOM.' },
-  { text: 'RELATIONSHIP BUILDING', wild: false, insight: 'A 2-HOUR LUNCH BEATS A 20-PAGE PROPOSAL.' },
+  { text: 'TRUST BUILDING',        wild: false, insight: 'A 2-HOUR LUNCH BEATS A 20-PAGE PROPOSAL.' },
   { text: '$1M ARR',               wild: true,  insight: '12 MONTHS. 11 COUNTRIES. ONE MILLION DOLLARS.' },
 ]
 
@@ -33,15 +28,15 @@ const INTRO_BEATS = [
   'MATCH THE PAIRS. EACH LABEL APPEARS TWICE. FIND THE $1M ARR WILD CARD.',
 ]
 
-const COLS = 7
-// 26 cards / 7 cols → 4 rows (last row partial)
+const COLS = 4
+// 16 cards / 4 cols → 4 rows (full 4×4 square)
 
 // Grid geometry — left-aligned block, right side reserved for INSIGHTS panel.
-const CARD_W = 112
-const CARD_H = 88
+const CARD_W = 200
+const CARD_H = 125
 const H_GAP = 10
 const V_GAP = 10
-const GRID_X = 30
+const GRID_X = 40
 const GRID_Y = 180
 
 export class LatinAmericaScene extends Phaser.Scene {
@@ -199,20 +194,59 @@ export class LatinAmericaScene extends Phaser.Scene {
   }
 
   _startGame() {
-    // Fade cards in
+    const PREVIEW_MS = 2000
+
+    // Reveal all cards face-up immediately (preview peek)
     this._cards.forEach((card, i) => {
+      card.faceDown.setVisible(false)
+      card.faceUp.setVisible(true)
       this.tweens.add({
         targets: card.container,
         alpha: 1,
         duration: 220,
-        delay: i * 22,
+        delay: i * 18,
       })
     })
-    this.time.delayedCall(this._cards.length * 22 + 250, () => {
-      this._gameActive = true
-      this._inputLocked = false
-      this._timerStarted = true
-      this._gameStartTime = this.time.now
+
+    // Preview countdown sticker
+    const previewSticker = BrutalUI.drawSticker(this, 640, 130, 'MEMORIZE — 2 SEC', {
+      fill: C.SHOCK_LIME, textColor: COLORS.BLACK, rotation: -2 * Math.PI / 180,
+      fontSize: '16px', paddingX: 18, paddingY: 8,
+    })
+    this.tweens.add({
+      targets: previewSticker, scale: { from: 1, to: 1.08 },
+      duration: 400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    })
+
+    // After preview, flip all back to face-down
+    const fadeInTotal = this._cards.length * 18 + 220
+    this.time.delayedCall(Math.max(fadeInTotal, 200) + PREVIEW_MS, () => {
+      AudioCtx.fx('flip')
+      previewSticker.destroy()
+      this._cards.forEach((card, i) => {
+        this.time.delayedCall(i * 18, () => {
+          this.tweens.add({
+            targets: card.container, scaleX: { from: 1, to: 0 },
+            duration: 110, ease: 'Quad.easeIn',
+            onComplete: () => {
+              card.faceUp.setVisible(false)
+              card.faceDown.setVisible(true)
+              this.tweens.add({
+                targets: card.container, scaleX: { from: 0, to: 1 },
+                duration: 110, ease: 'Quad.easeOut',
+              })
+            },
+          })
+        })
+      })
+
+      // Start the actual game after the flip-back animation completes
+      this.time.delayedCall(this._cards.length * 18 + 250, () => {
+        this._gameActive = true
+        this._inputLocked = false
+        this._timerStarted = true
+        this._gameStartTime = this.time.now
+      })
     })
   }
 
@@ -398,7 +432,7 @@ export class LatinAmericaScene extends Phaser.Scene {
     bg.strokeRect(-w / 2, -h / 2, w, h)
 
     const q = this.add.text(0, 0, '?', {
-      fontFamily: FONT_DISPLAY, fontSize: '42px', color: COLORS.BONE,
+      fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.BONE,
     }).setOrigin(0.5)
 
     group.add([shadow, bg, q])
@@ -441,11 +475,11 @@ export class LatinAmericaScene extends Phaser.Scene {
       group.add(corners)
     }
 
-    const fontSize = text.length > 18 ? '11px' : text.length > 12 ? '13px' : '15px'
-    const t = this.add.text(0, 4, text, {
+    const fontSize = text.length > 18 ? '16px' : text.length > 12 ? '20px' : '24px'
+    const t = this.add.text(0, 8, text, {
       fontFamily: FONT_MONO, fontSize, fontStyle: 'bold', color: COLORS.BLACK,
       align: 'center',
-      wordWrap: { width: w - 18 },
+      wordWrap: { width: w - 24 },
     }).setOrigin(0.5)
     group.add(t)
   }
