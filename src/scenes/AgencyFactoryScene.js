@@ -107,13 +107,35 @@ const TOWER_ORDER = [
 
 // ── 6 named waves (business challenges) — rebalanced for shorter run ──
 const WAVES = [
-  { name: 'LEADS DRIED UP',         count: 10, hp: 30,  speed: 60,  reward: 6,  type: 'bad-leads', color: C.GREY_500 },
-  { name: 'DOMAIN BLACKLISTED',     count: 12, hp: 55,  speed: 72,  reward: 7,  type: 'blacklist', color: C.SHOCK_RED },
-  { name: 'DECISION-MAKER GHOSTED', count: 14, hp: 95,  speed: 85,  reward: 9,  type: 'ghost',     color: C.BONE_WARM },
-  { name: 'CAC EXPLODES',           count: 16, hp: 140, speed: 92,  reward: 11, type: 'cac',       color: C.HAZARD_YELLOW },
-  { name: 'CAMPAIGN FATIGUE',       count: 18, hp: 180, speed: 98,  reward: 13, type: 'fatigue',   color: C.DEEP_PURPLE },
-  { name: 'COMPETITOR UNDERCUT',    count: 8,  hp: 460, speed: 65,  reward: 28, type: 'boss',      color: C.SHOCK_BLUE, boss: true },
+  { name: 'LEADS DRIED UP',         count: 10, hp: 30,  speed: 60,  reward: 6,  type: 'bad-leads', color: C.GREY_500,
+    context: 'Your prospect list is tapped. No replies from the usual sources. Time to find new accounts and dial up volume.' },
+  { name: 'DOMAIN BLACKLISTED',     count: 12, hp: 55,  speed: 72,  reward: 7,  type: 'blacklist', color: C.SHOCK_RED,
+    context: 'Your sender domain got flagged. Emails go straight to spam. Warm new inboxes and clean the list before reputation tanks.' },
+  { name: 'DECISION-MAKER GHOSTED', count: 14, hp: 95,  speed: 85,  reward: 9,  type: 'ghost',     color: C.BONE_WARM,
+    context: 'The deal champion stopped replying. They went dark mid-cycle. Re-engage with a fresh angle or escalate above them.' },
+  { name: 'CAC EXPLODES',           count: 16, hp: 140, speed: 92,  reward: 11, type: 'cac',       color: C.HAZARD_YELLOW,
+    context: 'Cost per customer just doubled. The funnel is leaking. Find the broken step and fix it before you bleed budget.' },
+  { name: 'CAMPAIGN FATIGUE',       count: 18, hp: 180, speed: 98,  reward: 13, type: 'fatigue',   color: C.DEEP_PURPLE,
+    context: 'Your top-performing copy stopped converting. Audience has seen it too many times. Need fresh angles and new creatives, fast.' },
+  { name: 'COMPETITOR UNDERCUT',    count: 8,  hp: 460, speed: 65,  reward: 28, type: 'boss',      color: C.SHOCK_BLUE, boss: true,
+    context: 'A rival just slashed prices. Existing customers are reconsidering. Time to defend the book and prove value beyond cost.' },
 ]
+
+// ── Tower tooltips: what it does + why Augustin used it at his agency ──
+const TOWER_TOOLTIPS = {
+  googleSheets: { what: 'Spreadsheets that ran our ops.', why: 'I tracked every pipeline stage and KPI in Sheets before scaling to a real CRM.' },
+  mailchimp:    { what: 'Newsletter + nurture flows.', why: 'The bread-and-butter of email marketing — my first warm-audience engine.' },
+  linkedIn:     { what: 'The professional graph.', why: 'Where I sourced ICP accounts and warmed up DMs before any cold email.' },
+  hubSpot:      { what: 'CRM + marketing automation.', why: 'Single source of truth for every deal, sequence, and report I owned.' },
+  apollo:       { what: '200M+ contact database.', why: 'Where every prospect list I built started.' },
+  instantly:    { what: 'Cold email at scale with deliverability built-in.', why: 'Powered every outbound campaign I ran — millions of sends, zero burnt domains.' },
+  lemlist:      { what: 'Personalized cold email with images + video.', why: 'My weapon for breaking into stubborn accounts with custom creatives.' },
+  salesNav:     { what: 'LinkedIn premium prospecting.', why: 'Sniped buying signals — job changes, hires, intent — for my best campaigns.' },
+  clay:         { what: 'Enriches leads with 100+ signals.', why: 'I found perfect-fit accounts before anyone else did — Clay was my edge.' },
+  n8n:          { what: 'Open-source automation between any apps.', why: 'Chained 30+ tools together without writing code. Saved hours per week.' },
+  claudeCode:   { what: 'AI that writes code for you.', why: 'Shipped client deliverables 5x faster — built tools I could never build alone.' },
+  zapier:       { what: 'No-code integration glue.', why: 'Connected stack pieces fast — the duct tape of every GTM motion I ran.' },
+}
 
 const ENEMY_LABELS = {
   'bad-leads':'BAD LEADS','blacklist':'BLACKLIST','churn':'CHURN',
@@ -350,34 +372,42 @@ export class AgencyFactoryScene extends Phaser.Scene {
       shadow.fillRect(-slotInner / 2 + 3, -slotH / 2 + 3, slotInner, slotH)
 
       const bg = this.add.graphics()
-      const fill = def.tier === 1 ? C.GREY_500 : def.tier === 2 ? C.SHOCK_BLUE : C.BONE
-      bg.fillStyle(fill, 1)
+      bg.fillStyle(C.BONE, 1)
       bg.fillRect(-slotInner / 2, -slotH / 2, slotInner, slotH)
-      bg.lineStyle(3, def.tier === 3 ? C.SHOCK_BLUE : C.BLACK, 1)
+      bg.lineStyle(3, C.BLACK, 1)
       bg.strokeRect(-slotInner / 2, -slotH / 2, slotInner, slotH)
 
-      const labelColor = def.tier === 3 ? COLORS.BLACK : COLORS.BONE
+      // Tier strip on top
+      const tierColor = def.tier === 1 ? C.GREY_500 : def.tier === 2 ? C.SHOCK_BLUE : C.HAZARD_YELLOW
+      const tierStrip = this.add.graphics()
+      tierStrip.fillStyle(tierColor, 1)
+      tierStrip.fillRect(-slotInner / 2, -slotH / 2, slotInner, 4)
 
-      // Auto-shrink label to fit slot width
-      const maxNameW = slotInner - 8
-      let nameSize = 11
-      const nameTxt = this.add.text(0, -20, def.panelLabel, {
-        fontFamily: FONT_MONO, fontSize: `${nameSize}px`, fontStyle: 'bold', color: labelColor,
-      }).setOrigin(0.5)
-      while (nameTxt.width > maxNameW && nameSize > 8) {
+      // Tool icon (left side)
+      const iconG = this.add.graphics()
+      this._drawToolIcon(iconG, key, -slotInner / 2 + 20, -2, 0.9)
+
+      // Auto-shrink label to fit remaining slot width (right of icon)
+      const labelX = 8
+      const maxNameW = slotInner - 44
+      let nameSize = 10
+      const nameTxt = this.add.text(labelX, -18, def.panelLabel, {
+        fontFamily: FONT_MONO, fontSize: `${nameSize}px`, fontStyle: 'bold', color: COLORS.BLACK,
+      }).setOrigin(0, 0.5)
+      while (nameTxt.width > maxNameW && nameSize > 7) {
         nameSize -= 1
         nameTxt.setFontSize(nameSize)
       }
 
-      const cost = this.add.text(0, 2, `$${def.cost}`, {
-        fontFamily: FONT_DISPLAY, fontSize: '18px', color: labelColor,
-      }).setOrigin(0.5)
+      const cost = this.add.text(labelX, 2, `$${def.cost}`, {
+        fontFamily: FONT_DISPLAY, fontSize: '15px', color: COLORS.BLACK,
+      }).setOrigin(0, 0.5)
 
-      const key2 = this.add.text(0, 24, `[${def.shortcut}]`, {
-        fontFamily: FONT_MONO, fontSize: '9px', color: labelColor,
-      }).setOrigin(0.5)
+      const key2 = this.add.text(labelX, 22, `[${def.shortcut}]`, {
+        fontFamily: FONT_MONO, fontSize: '9px', color: COLORS.GREY_700,
+      }).setOrigin(0, 0.5)
 
-      slot.add([shadow, bg, nameTxt, cost, key2])
+      slot.add([shadow, bg, tierStrip, iconG, nameTxt, cost, key2])
 
       const dim = this.add.graphics()
       dim.fillStyle(C.BLACK, 0.55)
@@ -393,6 +423,9 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
       const hit = this.add.rectangle(x, y, slotInner, slotH, 0x000000, 0).setInteractive({ useHandCursor: true })
       hit.on('pointerdown', () => this._selectTower(key))
+      hit.on('pointerover', (pointer) => this._showTooltip(key, pointer))
+      hit.on('pointermove', (pointer) => this._moveTooltip(pointer))
+      hit.on('pointerout', () => this._hideTooltip())
 
       this.panelSlots[key] = { slot, dim, sel, cost }
     })
@@ -508,22 +541,26 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     const shadow = this.add.graphics()
     shadow.fillStyle(C.BLACK, 1)
-    shadow.fillRect(-20 + 3, -20 + 3, 40, 40)
+    shadow.fillRect(-22 + 3, -22 + 3, 44, 44)
 
     const bg = this.add.graphics()
-    const fill = def.tier === 1 ? C.GREY_500 : def.tier === 2 ? C.SHOCK_BLUE : C.BONE
-    bg.fillStyle(fill, 1)
-    bg.fillRect(-20, -20, 40, 40)
-    bg.lineStyle(3, def.tier === 3 ? C.SHOCK_BLUE : C.BLACK, 1)
-    bg.strokeRect(-20, -20, 40, 40)
+    bg.fillStyle(C.BONE, 1)
+    bg.fillRect(-22, -22, 44, 44)
+    bg.lineStyle(3, C.BLACK, 1)
+    bg.strokeRect(-22, -22, 44, 44)
 
-    // Tier indicator dot (replaces the abbreviation icon)
-    const dotColor = def.tier === 3 ? C.BLACK : C.BONE
-    const dotG = this.add.graphics()
-    dotG.fillStyle(dotColor, 1)
-    dotG.fillCircle(0, 0, 6)
+    // Tier strip on top
+    const tierColor = def.tier === 1 ? C.GREY_500 : def.tier === 2 ? C.SHOCK_BLUE : C.HAZARD_YELLOW
+    const tierStrip = this.add.graphics()
+    tierStrip.fillStyle(tierColor, 1)
+    tierStrip.fillRect(-22, -22, 44, 4)
 
-    container.add([shadow, bg, dotG])
+    container.add([shadow, bg, tierStrip])
+
+    // Tool icon — distinctive mini-illustration per tool
+    const iconG = this.add.graphics()
+    this._drawToolIcon(iconG, def.key, 0, 2, 1.0)
+    container.add(iconG)
 
     // Software name label below the tower icon — black sticker for legibility
     const nameStr = def.label
@@ -552,6 +589,332 @@ export class AgencyFactoryScene extends Phaser.Scene {
 
     // Recalculate support buffs whenever towers change
     this._recalculateSupport()
+  }
+
+  // ── Hover tooltip for tower panel slots ──
+  _showTooltip(key, pointer) {
+    this._hideTooltip()
+    const def = TOWER_DEFS[key]
+    const tip = TOWER_TOOLTIPS[key]
+    if (!def || !tip) return
+
+    const container = this.add.container(0, 0).setDepth(200)
+
+    const w = 280
+    const padding = 12
+    const nameTxt = this.add.text(padding, padding, def.label, {
+      fontFamily: FONT_DISPLAY, fontSize: '16px', color: COLORS.BLACK,
+    }).setOrigin(0, 0)
+    const whatTxt = this.add.text(padding, padding + 26, tip.what, {
+      fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.BLACK,
+      wordWrap: { width: w - padding * 2 }, lineSpacing: 3,
+    }).setOrigin(0, 0)
+    const whyTxt = this.add.text(padding, padding + 28 + whatTxt.height + 8, tip.why, {
+      fontFamily: FONT_MONO, fontSize: '11px', color: COLORS.GREY_700, fontStyle: 'italic',
+      wordWrap: { width: w - padding * 2 }, lineSpacing: 3,
+    }).setOrigin(0, 0)
+
+    const h = padding + 26 + whatTxt.height + 8 + whyTxt.height + padding
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(C.BLACK, 1)
+    shadow.fillRect(4, 4, w, h)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(C.BONE, 1)
+    bg.fillRect(0, 0, w, h)
+    bg.lineStyle(3, C.BLACK, 1)
+    bg.strokeRect(0, 0, w, h)
+    // Accent strip
+    const tierColor = def.tier === 1 ? C.GREY_500 : def.tier === 2 ? C.SHOCK_BLUE : C.HAZARD_YELLOW
+    bg.fillStyle(tierColor, 1)
+    bg.fillRect(0, 0, w, 4)
+
+    container.add([shadow, bg, nameTxt, whatTxt, whyTxt])
+    this._tooltip = { container, w, h }
+    this._moveTooltip(pointer)
+  }
+
+  _moveTooltip(pointer) {
+    if (!this._tooltip) return
+    const { container, w, h } = this._tooltip
+    const { width, height } = this.cameras.main
+    const px = pointer.worldX || pointer.x
+    const py = pointer.worldY || pointer.y
+    // Position above-right of cursor; flip if off-screen
+    let tx = px + 16
+    let ty = py - h - 16
+    if (tx + w > width - 8) tx = px - w - 16
+    if (ty < 8) ty = py + 24
+    container.setPosition(tx, ty)
+  }
+
+  _hideTooltip() {
+    if (this._tooltip) {
+      this._tooltip.container.destroy()
+      this._tooltip = null
+    }
+  }
+
+  // ── Tool icons — distinctive recognizable mini-illustrations ──
+  // Draws into provided graphics object centered at (cx, cy), scaled by s (1.0 = 32px footprint).
+  _drawToolIcon(g, key, cx, cy, s) {
+    const S = (n) => n * s
+    switch (key) {
+      case 'googleSheets': {
+        // Green spreadsheet grid 3x3
+        const w = S(22), h = S(24)
+        g.fillStyle(0x0F9D58, 1)
+        g.fillRect(cx - w / 2, cy - h / 2, w, h)
+        g.fillStyle(C.WHITE, 1)
+        // Header strip
+        g.fillRect(cx - w / 2 + S(2), cy - h / 2 + S(4), w - S(4), S(4))
+        // 3x3 grid cells
+        for (let r = 0; r < 3; r++) {
+          for (let col = 0; col < 3; col++) {
+            g.fillRect(cx - w / 2 + S(2) + col * S(6.5), cy - h / 2 + S(10) + r * S(4), S(5.5), S(3))
+          }
+        }
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeRect(cx - w / 2, cy - h / 2, w, h)
+        break
+      }
+      case 'mailchimp': {
+        // Yellow square with stylized M (chimp face hint)
+        const w = S(24), h = S(22)
+        g.fillStyle(0xFFE01B, 1)
+        g.fillRect(cx - w / 2, cy - h / 2, w, h)
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeRect(cx - w / 2, cy - h / 2, w, h)
+        // Stylized M: two arches
+        g.lineStyle(S(2.5), C.BLACK, 1)
+        g.beginPath()
+        g.moveTo(cx - S(7), cy + S(6))
+        g.lineTo(cx - S(7), cy - S(5))
+        g.lineTo(cx, cy + S(2))
+        g.lineTo(cx + S(7), cy - S(5))
+        g.lineTo(cx + S(7), cy + S(6))
+        g.strokePath()
+        break
+      }
+      case 'linkedIn': {
+        // Blue rounded square with "in"
+        const w = S(22), h = S(22)
+        g.fillStyle(0x0A66C2, 1)
+        g.fillRect(cx - w / 2, cy - h / 2, w, h)
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeRect(cx - w / 2, cy - h / 2, w, h)
+        // 'i' dot
+        g.fillStyle(C.WHITE, 1)
+        g.fillRect(cx - S(7), cy - S(7), S(3), S(3))
+        // 'i' stem
+        g.fillRect(cx - S(7), cy - S(2), S(3), S(8))
+        // 'n' bars
+        g.fillRect(cx - S(2), cy - S(2), S(3), S(8))
+        g.fillRect(cx + S(4), cy - S(2), S(3), S(8))
+        g.fillRect(cx - S(2), cy - S(2), S(9), S(3))
+        break
+      }
+      case 'hubSpot': {
+        // Orange sprocket/gear with center dot
+        g.fillStyle(0xFF7A59, 1)
+        g.fillCircle(cx, cy, S(11))
+        // Spokes (4 small bumps)
+        for (let i = 0; i < 4; i++) {
+          const a = i * Math.PI / 2
+          g.fillCircle(cx + Math.cos(a) * S(11), cy + Math.sin(a) * S(11), S(3))
+        }
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeCircle(cx, cy, S(11))
+        g.fillStyle(C.WHITE, 1)
+        g.fillCircle(cx, cy, S(3.5))
+        g.fillStyle(0xFF7A59, 1)
+        g.fillCircle(cx, cy, S(1.5))
+        break
+      }
+      case 'apollo': {
+        // Dark cosmos sphere with star
+        g.fillStyle(0x1B2A4E, 1)
+        g.fillCircle(cx, cy, S(12))
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeCircle(cx, cy, S(12))
+        // Small stars
+        g.fillStyle(C.WHITE, 1)
+        g.fillCircle(cx - S(5), cy - S(4), S(1.2))
+        g.fillCircle(cx + S(4), cy + S(2), S(1))
+        g.fillCircle(cx - S(2), cy + S(5), S(0.8))
+        // Big star center
+        g.fillStyle(C.HAZARD_YELLOW, 1)
+        const star = (px, py, r) => {
+          g.fillTriangle(px, py - r, px - r * 0.4, py - r * 0.4, px + r * 0.4, py - r * 0.4)
+          g.fillTriangle(px, py + r, px - r * 0.4, py + r * 0.4, px + r * 0.4, py + r * 0.4)
+          g.fillTriangle(px - r, py, px - r * 0.4, py - r * 0.4, px - r * 0.4, py + r * 0.4)
+          g.fillTriangle(px + r, py, px + r * 0.4, py - r * 0.4, px + r * 0.4, py + r * 0.4)
+        }
+        star(cx + S(2), cy - S(1), S(4))
+        break
+      }
+      case 'instantly': {
+        // Lightning bolt on red square
+        const w = S(22), h = S(22)
+        g.fillStyle(0xE63946, 1)
+        g.fillRect(cx - w / 2, cy - h / 2, w, h)
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeRect(cx - w / 2, cy - h / 2, w, h)
+        // Bolt
+        g.fillStyle(C.WHITE, 1)
+        g.beginPath()
+        g.moveTo(cx + S(2), cy - S(9))
+        g.lineTo(cx - S(5), cy + S(1))
+        g.lineTo(cx - S(1), cy + S(1))
+        g.lineTo(cx - S(3), cy + S(9))
+        g.lineTo(cx + S(5), cy - S(2))
+        g.lineTo(cx + S(1), cy - S(2))
+        g.closePath()
+        g.fillPath()
+        break
+      }
+      case 'lemlist': {
+        // Pink envelope with sparkle
+        const w = S(22), h = S(16)
+        g.fillStyle(0xFB78A0, 1)
+        g.fillRect(cx - w / 2, cy - h / 2, w, h)
+        g.lineStyle(S(1.5), C.BLACK, 1)
+        g.strokeRect(cx - w / 2, cy - h / 2, w, h)
+        // Envelope flap
+        g.beginPath()
+        g.moveTo(cx - w / 2, cy - h / 2)
+        g.lineTo(cx, cy + S(2))
+        g.lineTo(cx + w / 2, cy - h / 2)
+        g.strokePath()
+        // Sparkle
+        g.fillStyle(C.HAZARD_YELLOW, 1)
+        g.fillTriangle(cx + S(7), cy - S(10), cx + S(8), cy - S(7), cx + S(6), cy - S(7))
+        g.fillTriangle(cx + S(7), cy - S(4), cx + S(8), cy - S(7), cx + S(6), cy - S(7))
+        g.fillTriangle(cx + S(4), cy - S(7), cx + S(7), cy - S(8), cx + S(7), cy - S(6))
+        g.fillTriangle(cx + S(10), cy - S(7), cx + S(7), cy - S(8), cx + S(7), cy - S(6))
+        break
+      }
+      case 'salesNav': {
+        // Radar circle with pulse rings
+        g.fillStyle(0x004182, 1)
+        g.fillCircle(cx, cy, S(12))
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeCircle(cx, cy, S(12))
+        // Pulse rings
+        g.lineStyle(S(1), 0x70B5F9, 0.9)
+        g.strokeCircle(cx, cy, S(8))
+        g.strokeCircle(cx, cy, S(5))
+        // Sweep line
+        g.lineStyle(S(1.5), 0x70B5F9, 1)
+        g.beginPath()
+        g.moveTo(cx, cy)
+        g.lineTo(cx + S(9), cy - S(7))
+        g.strokePath()
+        // Center
+        g.fillStyle(C.WHITE, 1)
+        g.fillCircle(cx, cy, S(1.5))
+        break
+      }
+      case 'clay': {
+        // Orange clay-pot 3D shape
+        g.fillStyle(0xF95228, 1)
+        // pot body (trapezoid)
+        g.fillTriangle(cx - S(10), cy - S(2), cx + S(10), cy - S(2), cx - S(7), cy + S(10))
+        g.fillTriangle(cx + S(10), cy - S(2), cx + S(7), cy + S(10), cx - S(7), cy + S(10))
+        // rim
+        g.fillStyle(0xC73E1D, 1)
+        g.fillRect(cx - S(12), cy - S(5), S(24), S(4))
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeRect(cx - S(12), cy - S(5), S(24), S(4))
+        // pot outline
+        g.beginPath()
+        g.moveTo(cx - S(10), cy - S(2))
+        g.lineTo(cx - S(7), cy + S(10))
+        g.lineTo(cx + S(7), cy + S(10))
+        g.lineTo(cx + S(10), cy - S(2))
+        g.strokePath()
+        // highlight
+        g.lineStyle(S(1), 0xFFB199, 0.8)
+        g.beginPath()
+        g.moveTo(cx - S(7), cy + S(1))
+        g.lineTo(cx - S(5), cy + S(8))
+        g.strokePath()
+        break
+      }
+      case 'n8n': {
+        // Pink + purple connected nodes
+        g.lineStyle(S(2), C.WHITE, 1)
+        g.beginPath()
+        g.moveTo(cx - S(8), cy - S(6))
+        g.lineTo(cx, cy + S(2))
+        g.lineTo(cx + S(8), cy - S(6))
+        g.moveTo(cx, cy + S(2))
+        g.lineTo(cx, cy + S(10))
+        g.strokePath()
+        // nodes
+        g.fillStyle(0xEA4B71, 1)  // pink
+        g.fillCircle(cx - S(8), cy - S(6), S(4))
+        g.fillStyle(0xEA4B71, 1)
+        g.fillCircle(cx + S(8), cy - S(6), S(4))
+        g.fillStyle(0x6233E0, 1)  // purple
+        g.fillCircle(cx, cy + S(2), S(4.5))
+        g.fillStyle(0xEA4B71, 1)
+        g.fillCircle(cx, cy + S(10), S(3.5))
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeCircle(cx - S(8), cy - S(6), S(4))
+        g.strokeCircle(cx + S(8), cy - S(6), S(4))
+        g.strokeCircle(cx, cy + S(2), S(4.5))
+        g.strokeCircle(cx, cy + S(10), S(3.5))
+        break
+      }
+      case 'claudeCode': {
+        // Anthropic-style sparkle + C
+        // Background tile
+        const w = S(22), h = S(22)
+        g.fillStyle(0x1a1a1a, 1)
+        g.fillRect(cx - w / 2, cy - h / 2, w, h)
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeRect(cx - w / 2, cy - h / 2, w, h)
+        // Sparkle 4-point star (Anthropic mark)
+        g.fillStyle(0xDA7756, 1)
+        g.fillTriangle(cx, cy - S(9), cx - S(3), cy, cx + S(3), cy)
+        g.fillTriangle(cx, cy + S(9), cx - S(3), cy, cx + S(3), cy)
+        g.fillTriangle(cx - S(9), cy, cx, cy - S(3), cx, cy + S(3))
+        g.fillTriangle(cx + S(9), cy, cx, cy - S(3), cx, cy + S(3))
+        g.fillStyle(C.WHITE, 1)
+        g.fillCircle(cx, cy, S(1.5))
+        break
+      }
+      case 'zapier': {
+        // Orange Z-bolt shape
+        const w = S(22), h = S(22)
+        g.fillStyle(0xFF4F00, 1)
+        g.fillRect(cx - w / 2, cy - h / 2, w, h)
+        g.lineStyle(S(1), C.BLACK, 1)
+        g.strokeRect(cx - w / 2, cy - h / 2, w, h)
+        // Z
+        g.fillStyle(C.WHITE, 1)
+        g.beginPath()
+        g.moveTo(cx - S(8), cy - S(8))
+        g.lineTo(cx + S(8), cy - S(8))
+        g.lineTo(cx + S(8), cy - S(4))
+        g.lineTo(cx - S(2), cy + S(4))
+        g.lineTo(cx + S(8), cy + S(4))
+        g.lineTo(cx + S(8), cy + S(8))
+        g.lineTo(cx - S(8), cy + S(8))
+        g.lineTo(cx - S(8), cy + S(4))
+        g.lineTo(cx + S(2), cy - S(4))
+        g.lineTo(cx - S(8), cy - S(4))
+        g.closePath()
+        g.fillPath()
+        break
+      }
+      default: {
+        g.fillStyle(C.BONE, 1)
+        g.fillCircle(cx, cy, S(8))
+      }
+    }
   }
 
   _recalculateSupport() {
@@ -584,7 +947,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
     const { width, height } = this.cameras.main
 
     const card = this.add.container(width / 2, height / 2)
-    const w = 720, h = 240
+    const w = 760, h = 340
 
     const shadow = this.add.graphics()
     shadow.fillStyle(C.BLACK, 1)
@@ -600,13 +963,13 @@ export class AgencyFactoryScene extends Phaser.Scene {
     accent.fillStyle(C.SHOCK_BLUE, 1)
     accent.fillRect(-w / 2, -h / 2, w, 12)
 
-    const waveLbl = this.add.text(0, -60, `WAVE ${this.waveIndex + 1} / ${WAVES.length}`, {
+    const waveLbl = this.add.text(0, -h / 2 + 36, `WAVE ${this.waveIndex + 1} / ${WAVES.length}`, {
       fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.GREY_700,
     }).setOrigin(0.5)
 
     // Auto-shrink wave name to fit — measured first with full text, then typewritten in place
     let nameSize = 40
-    const name = this.add.text(0, -10, wave.name, {
+    const name = this.add.text(0, -h / 2 + 84, wave.name, {
       fontFamily: FONT_DISPLAY, fontSize: `${nameSize}px`, color: COLORS.BLACK,
     }).setOrigin(0.5)
     while (name.width > w - 60 && nameSize > 22) {
@@ -626,16 +989,30 @@ export class AgencyFactoryScene extends Phaser.Scene {
     })
     this._timers.push(revealEv)
 
-    const subt = this.add.text(0, 44, wave.boss ? '⚠ BOSS WAVE ⚠' : `${wave.count} INCOMING`, {
+    // Divider under name
+    const div = this.add.graphics()
+    div.lineStyle(2, C.BLACK, 1)
+    div.beginPath()
+    div.moveTo(-w / 2 + 40, -h / 2 + 120)
+    div.lineTo(w / 2 - 40, -h / 2 + 120)
+    div.strokePath()
+
+    // Plain-English context paragraph (Space Mono)
+    const ctx = this.add.text(0, -h / 2 + 158, wave.context || '', {
+      fontFamily: FONT_MONO, fontSize: '15px', color: COLORS.BLACK,
+      align: 'center', wordWrap: { width: w - 80 }, lineSpacing: 6,
+    }).setOrigin(0.5, 0)
+
+    const subt = this.add.text(0, h / 2 - 56, wave.boss ? '⚠ BOSS WAVE ⚠' : `${wave.count} INCOMING`, {
       fontFamily: FONT_MONO, fontSize: '13px', fontStyle: 'bold',
       color: wave.boss ? COLORS.SHOCK_RED : COLORS.BLACK,
     }).setOrigin(0.5)
 
-    const hint = this.add.text(0, h / 2 - 22, '▶ CLICK TO ENGAGE', {
+    const hint = this.add.text(0, h / 2 - 26, '▶ CLICK TO ENGAGE', {
       fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_500,
     }).setOrigin(0.5).setAlpha(0)
 
-    card.add([shadow, bg, accent, waveLbl, name, subt, hint])
+    card.add([shadow, bg, accent, waveLbl, name, div, ctx, subt, hint])
 
     const tw = this.tweens.add({ targets: hint, alpha: 1, duration: 300, delay: 300 })
     const blink = this.tweens.add({
@@ -1228,5 +1605,6 @@ export class AgencyFactoryScene extends Phaser.Scene {
     }
     this._keyHandlers = []
     this._hideRangeIndicator()
+    this._hideTooltip()
   }
 }
