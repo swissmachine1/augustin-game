@@ -158,9 +158,19 @@ export class LevelSelectHub extends Scene {
       container.add(stamp)
     }
 
-    // Title
+    // Title — auto-shrink to fit card width
+    const maxTitleW = w - 40
+    let titleSize = 24
+    const probe = this.add.text(0, 0, level.title, {
+      fontFamily: FONT_DISPLAY, fontSize: `${titleSize}px`,
+    })
+    while (probe.width > maxTitleW && titleSize > 14) {
+      titleSize -= 1
+      probe.setFontSize(`${titleSize}px`)
+    }
+    probe.destroy()
     const title = this.add.text(-w / 2 + 20, -h / 2 + 130, level.title, {
-      fontFamily: FONT_DISPLAY, fontSize: '24px', color: COLORS.BLACK,
+      fontFamily: FONT_DISPLAY, fontSize: `${titleSize}px`, color: COLORS.BLACK,
     }).setOrigin(0, 0.5)
 
     // Subtitle
