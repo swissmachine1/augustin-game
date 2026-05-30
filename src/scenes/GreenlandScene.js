@@ -1,8 +1,11 @@
 import * as Phaser from 'phaser'
-import { KEYS } from '../systems/GameRegistry.js'
+import { KEYS, recordBestTime, addPlayTime } from '../systems/GameRegistry.js'
 import { completeLevel } from './LevelSelectHub.js'
 import { COLORS, C, FONT_DISPLAY, FONT_MONO } from '../config/theme.js'
 import { BrutalUI } from '../ui/BrutalUI.js'
+import { AudioCtx } from '../ui/AudioCtx.js'
+import { Particles } from '../ui/Particles.js'
+import { TextReveal } from '../ui/TextReveal.js'
 
 // Level 3 — THE RIDE (behind-the-bike perspective)
 // Neo-brutalist: black road, bone lane markers, shock pink accents.
@@ -53,6 +56,12 @@ export class GreenlandScene extends Phaser.Scene {
     this._dodged = 0
     this._hit = 0
     this._coinsCollected = 0
+    this._streak = 0
+    this._bestStreak = 0
+    this._streakSticker = null
+    this._elapsedMs = 0
+    this._timerStartMs = 0
+    this._newBest = false
     this._currentLane = 1
     this._roadScroll = 0
     this._activeObstacles = []
@@ -80,6 +89,12 @@ export class GreenlandScene extends Phaser.Scene {
     this._drawHUD()
 
     BrutalUI.drawHomeButton(this)
+
+    // Atmospherics + audio kick
+    BrutalUI.drawScanlines(this, WIDTH, HEIGHT)
+    AudioCtx.fx('open')
+    this.input.once('pointerdown', () => AudioCtx.resume())
+    this.input.keyboard.once('keydown', () => AudioCtx.resume())
 
     this._showIntro()
 
@@ -113,6 +128,7 @@ export class GreenlandScene extends Phaser.Scene {
 
   _startRide() {
     this._gameActive = true
+    this._timerStartMs = this.time.now
     this._bindInput()
     const prompt = this.add.text(WIDTH / 2, HEIGHT - 56, '← →  DODGE  ·  TAP LEFT / RIGHT  ·  GRAB COINS', {
       fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.BONE,
@@ -716,6 +732,8 @@ export class GreenlandScene extends Phaser.Scene {
   _collectCoin(coin) {
     this._coinsCollected++
     this._coinText.setText(`x ${this._coinsCollected}`)
+    AudioCtx.fx('coin')
+    Particles.burst(this, coin.container.x, coin.container.y, C.HAZARD_YELLOW, 8, { shape: 'circle', size: 4 })
 
     // Score popup
     const popup = this.add.text(coin.container.x, coin.container.y - 20, '+5', {
@@ -751,6 +769,19 @@ export class GreenlandScene extends Phaser.Scene {
   // ── Dodge / Hit ───────────────────────────────────────────────
   _onDodge(ob) {
     this._dodged++
+    this._streak++
+    if (this._streak > this._bestStreak) this._bestStreak = this._streak
+    AudioCtx.fx('dodge')
+    Particles.burst(this, ob.container.x, ob.container.y, C.BONE, 6)
+
+    // Subtle shake for big obstacles even on dodge
+    if (ob.def.key === 'icebergs' || ob.def.key === 'backpack') {
+      this.cameras.main.shake(120, 0.006)
+    }
+
+    // Streak sticker at top-right after 3+
+    if (this._streak >= 3) this._showStreakSticker(this._streak)
+
     const tick = this.add.text(this._bikeContainer.x, BIKE_Y - 130, 'CLEAR', {
       fontFamily: FONT_DISPLAY, fontSize: '22px', color: COLORS.SHOCK_PINK,
     }).setOrigin(0.5).setDepth(1800)
@@ -762,31 +793,80 @@ export class GreenlandScene extends Phaser.Scene {
     this._flashStoryLine(ob.def)
   }
 
+  _showStreakSticker(n) {
+    if (this._streakSticker) { this._streakSticker.destroy(); this._streakSticker = null }
+    const sticker = BrutalUI.drawSticker(this, WIDTH - 90, 90, `STREAK x${n}`, {
+      fill: C.SHOCK_PINK, textColor: COLORS.BLACK, fontSize: '16px',
+    })
+    sticker.setDepth(2100)
+    this._streakSticker = sticker
+    this.tweens.add({
+      targets: sticker, scale: { from: 1.3, to: 1.0 }, duration: 200, ease: 'Back.easeOut',
+    })
+    this.tweens.add({
+      targets: sticker, scale: 1.08, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    })
+  }
+
+  _clearStreakSticker() {
+    if (this._streakSticker) {
+      const s = this._streakSticker
+      this._streakSticker = null
+      this.tweens.killTweensOf(s)
+      this.tweens.add({
+        targets: s, alpha: 0, scale: 0.6, duration: 220,
+        onComplete: () => s.destroy(),
+      })
+    }
+  }
+
   _flashStoryLine(def) {
     if (this._flashText) {
+      if (this._flashText.skipReveal) this._flashText.skipReveal()
       this._flashText.destroy()
       this._flashText = null
     }
     const padX = 24
     const maxW = WIDTH - 200
-    const text = this.add.text(WIDTH / 2, HEIGHT - 86, `"${def.story}"`, {
-      fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.BONE,
-      align: 'center', wordWrap: { width: maxW },
-      backgroundColor: '#000000aa',
-      padding: { x: padX, y: 8 },
-    }).setOrigin(0.5).setAlpha(0).setDepth(1900)
+    const full = `"${def.story}"`
+    const text = TextReveal.typewrite(this, full, {
+      x: WIDTH / 2, y: HEIGHT - 86,
+      style: {
+        fontFamily: FONT_MONO, fontSize: '14px', fontStyle: 'bold', color: COLORS.BONE,
+        align: 'center', wordWrap: { width: maxW },
+        backgroundColor: '#000000aa',
+        padding: { x: padX, y: 8 },
+      },
+      stepMs: 22,
+      origin: 0.5,
+    })
+    text.setDepth(1900)
     this._flashText = text
-    this.tweens.add({ targets: text, alpha: 1, duration: 250 })
+
+    // Click to skip reveal
+    const skipHandler = () => {
+      if (text && text.skipReveal) text.skipReveal()
+    }
+    this.input.on('pointerdown', skipHandler)
+
     this.tweens.add({
-      targets: text, alpha: 0, duration: 350, delay: 1500,
-      onComplete: () => { text.destroy(); if (this._flashText === text) this._flashText = null },
+      targets: text, alpha: 0, duration: 350, delay: 1800,
+      onComplete: () => {
+        this.input.off('pointerdown', skipHandler)
+        text.destroy()
+        if (this._flashText === text) this._flashText = null
+      },
     })
   }
 
   _onHit(ob) {
     this._hit++
+    this._streak = 0
+    this._clearStreakSticker()
+    AudioCtx.fx('hit')
+    Particles.burst(this, this._bikeContainer.x, BIKE_Y, C.SHOCK_RED, 12, { speed: 300 })
     this._loseHeart()
-    this.cameras.main.shake(280, 0.022)
+    this.cameras.main.shake(320, 0.022)
 
     const flash = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0xff2d95, 0.35)
     flash.setDepth(2000)
@@ -839,7 +919,8 @@ export class GreenlandScene extends Phaser.Scene {
     const dodgeScore = dodgeRate * 65
     const heartScore = Math.max(0, this._lives) * 6
     const coinScore = this._coinsCollected * 1.2
-    const raw = dodgeScore + heartScore + coinScore + 1
+    const streakBonus = Math.min(10, this._bestStreak * 1.2)
+    const raw = dodgeScore + heartScore + coinScore + streakBonus + 1
     return Math.max(15, Math.min(100, Math.round(raw)))
   }
 
@@ -848,6 +929,15 @@ export class GreenlandScene extends Phaser.Scene {
     const score = this._calculateScore()
     const gritGain = Math.round(score / 4)
     const indepGain = Math.round(score / 5)
+
+    // Stop timer, record best, accumulate play time
+    this._elapsedMs = this.time.now - this._timerStartMs
+    this._newBest = recordBestTime(this, KEYS.BEST_T3, this._elapsedMs)
+    addPlayTime(this, this._elapsedMs)
+
+    AudioCtx.fx('success')
+    Particles.confetti(this, this._bikeContainer.x, BIKE_Y, 60)
+    this._clearStreakSticker()
 
     const curGrit = this.registry.get(KEYS.STAT_GRIT) ?? 0
     const curIndep = this.registry.get(KEYS.STAT_INDEPENDENCE) ?? 0
@@ -893,11 +983,23 @@ export class GreenlandScene extends Phaser.Scene {
       fontFamily: FONT_DISPLAY, fontSize: '110px', color: COLORS.SHOCK_PINK,
     }).setOrigin(0.5).setDepth(3001)
 
+    const timeStr = this._formatTime(this._elapsedMs)
     const stats = this.add.text(WIDTH / 2, 380,
-      `${this._dodged}/${OBSTACLES.length} DODGED   ${this._coinsCollected} COINS   +${gritGain} GRIT   +${indepGain} INDEP.`, {
+      `${this._dodged}/${OBSTACLES.length} DODGED   ${this._coinsCollected} COINS   BEST STREAK x${this._bestStreak}   TIME ${timeStr}   +${gritGain} GRIT   +${indepGain} INDEP.`, {
       fontFamily: FONT_MONO, fontSize: '13px', fontStyle: 'bold', color: COLORS.BONE,
       letterSpacing: 2, wordWrap: { width: WIDTH - 60 }, align: 'center',
     }).setOrigin(0.5).setDepth(3001)
+
+    if (this._newBest) {
+      const tag = BrutalUI.drawSticker(this, WIDTH / 2 + 130, 280, 'NEW BEST!', {
+        fill: C.HAZARD_YELLOW, textColor: COLORS.BLACK, fontSize: '16px',
+        rotation: 8 * Math.PI / 180,
+      })
+      tag.setDepth(3002)
+      this.tweens.add({
+        targets: tag, scale: { from: 0, to: 1 }, duration: 320, ease: 'Back.easeOut',
+      })
+    }
 
     let flavor
     if (score >= 90) flavor = "UNTOUCHABLE. YOU'VE DONE THIS BEFORE."
@@ -913,10 +1015,17 @@ export class GreenlandScene extends Phaser.Scene {
     BrutalUI.drawButton(this, WIDTH / 2, 580, 280, 60, 'RETURN TO INDEX', () => {
       if (this._returning) return
       this._returning = true
-      this.cameras.main.fadeOut(400, 10, 10, 10)
-      this.time.delayedCall(420, () => this.scene.start('LevelSelectHub'))
+      AudioCtx.fx('pageTurn')
+      BrutalUI.pageTurn(this, () => this.scene.start('LevelSelectHub'))
     }, {
       fill: C.SHOCK_PINK, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 6,
     }).container.setDepth(3001)
+  }
+
+  _formatTime(ms) {
+    const totalSec = Math.floor(ms / 1000)
+    const m = Math.floor(totalSec / 60)
+    const s = totalSec % 60
+    return `${m}:${String(s).padStart(2, '0')}`
   }
 }
