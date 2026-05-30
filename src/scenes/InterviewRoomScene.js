@@ -1427,6 +1427,11 @@ export class InterviewRoomScene extends Phaser.Scene {
       this.tweens.addCounter({
         from: 0, to: val, duration: 900, delay: 200 + 90 * i,
         onUpdate: (t) => valTxt.setText(`${Math.floor(t.getValue())}`),
+        onComplete: () => {
+          if (val > 0) {
+            Particles.popup(this, barX + barW + 40, y, `+${val}`, '#00ff6a', { fontSize: '14px', dy: -28, duration: 700 })
+          }
+        },
       })
     })
   }
@@ -1440,23 +1445,39 @@ export class InterviewRoomScene extends Phaser.Scene {
 
     // BOOK A CALL — acid fill, black text (primary)
     const a = BrutalUI.drawButton(this, startX, y, btnW, btnH, 'BOOK A CALL', () => {
+      AudioCtx.fx('click')
       window.open('https://cal.com/augustinr/30min', '_blank')
     }, {
       fill: ACCENT.num, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
     })
 
     // LINKEDIN — bone fill, black text
-    BrutalUI.drawButton(this, startX + btnW + gap, y, btnW, btnH, 'LINKEDIN', () => {
+    const b = BrutalUI.drawButton(this, startX + btnW + gap, y, btnW, btnH, 'LINKEDIN', () => {
+      AudioCtx.fx('click')
       window.open('https://www.linkedin.com/in/augustinr/', '_blank')
     }, {
       fill: C.BONE, labelColor: COLORS.BLACK, fontSize: '20px', shadowOffset: 8,
     })
 
     // CV — black fill, bone text with acid border accent
-    BrutalUI.drawButton(this, startX + (btnW + gap) * 2, y, btnW, btnH, 'DOWNLOAD CV', () => {
+    const c = BrutalUI.drawButton(this, startX + (btnW + gap) * 2, y, btnW, btnH, 'DOWNLOAD CV', () => {
+      AudioCtx.fx('click')
       window.open('/cv.pdf', '_blank')
     }, {
       fill: C.BLACK, labelColor: COLORS.BONE, fontSize: '20px', shadowOffset: 8,
+    })
+
+    // Subtle hover ripple on each
+    ;[
+      { btn: a, x: startX,                      color: C.SHOCK_ACID },
+      { btn: b, x: startX + btnW + gap,         color: C.BONE },
+      { btn: c, x: startX + (btnW + gap) * 2,   color: C.BONE },
+    ].forEach(({ btn, x, color }) => {
+      if (btn && btn.hit) {
+        btn.hit.on('pointerover', () => {
+          Particles.ring(this, x, y, color, { maxRadius: 80, duration: 380, thickness: 2 })
+        })
+      }
     })
   }
 
