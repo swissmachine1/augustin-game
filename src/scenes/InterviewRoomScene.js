@@ -66,6 +66,8 @@ export class InterviewRoomScene extends Phaser.Scene {
     this._timeLeft = RECALL_TIME
     this._timerEvent = null
     this._ballTweens = []
+    this._ballGlowG = null
+    this._timerBarFlashTween = null
 
     this.cameras.main.setBackgroundColor(COLORS.BLACK)
     this.cameras.main.fadeIn(350, 10, 10, 10)
@@ -74,8 +76,40 @@ export class InterviewRoomScene extends Phaser.Scene {
     this._drawHeader()
     this._createBallTexture()
 
-    // Subtle scanlines
-    BrutalUI.drawScanlines(this, 1280, 720, { alpha: 0.03 })
+    // Scanlines
+    BrutalUI.drawScanlines(this, 1280, 720, { alpha: 0.05, spacing: 3 })
+
+    // Vignette — radial dark overlay at edges
+    const vignette = this.add.graphics()
+    vignette.setDepth(900)
+    // Four dark gradient strips to simulate vignette
+    const vAlpha = 0.45
+    ;[
+      [0, 0, 80, 720],
+      [1200, 0, 80, 720],
+      [0, 0, 1280, 80],
+      [0, 640, 1280, 80],
+    ].forEach(([x, y, w, h]) => {
+      vignette.fillStyle(C.BLACK, vAlpha)
+      vignette.fillRect(x, y, w, h)
+    })
+    // Extra corner darks
+    vignette.fillStyle(C.BLACK, 0.3)
+    vignette.fillCircle(0, 0, 200)
+    vignette.fillCircle(1280, 0, 200)
+    vignette.fillCircle(0, 720, 200)
+    vignette.fillCircle(1280, 720, 200)
+
+    // Noise overlay — random pixel stipple
+    const noiseG = this.add.graphics()
+    noiseG.setDepth(901)
+    const noiseCount = 3200
+    for (let i = 0; i < noiseCount; i++) {
+      const nx = Math.random() * 1280
+      const ny = Math.random() * 720
+      noiseG.fillStyle(Math.random() > 0.5 ? 0xffffff : 0x000000, 0.025)
+      noiseG.fillRect(nx, ny, 1, 1)
+    }
 
     // Persistent home button
     BrutalUI.drawHomeButton(this)
@@ -228,6 +262,43 @@ export class InterviewRoomScene extends Phaser.Scene {
     const g = this.add.graphics()
     this._addPhaseObject(g)
 
+    // Checkerboard cell fill — depth illusion via subtle shading
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const cx = originX + c * cellSize
+        const cy = originY + r * cellSize
+        const isAlt = (r + c) % 2 === 0
+        g.fillStyle(isAlt ? 0x141414 : 0x0a0a0a, 1)
+        g.fillRect(cx, cy, cellSize, cellSize)
+        // Inner border for cell definition
+        g.lineStyle(1, 0x1e1e1e, 1)
+        g.strokeRect(cx, cy, cellSize, cellSize)
+      }
+    }
+
+    // Per-cell inset shadow (top-left dark slivers = depth illusion)
+    g.fillStyle(C.BLACK, 0.18)
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const cx = originX + c * cellSize
+        const cy = originY + r * cellSize
+        // Top shadow strip
+        g.fillRect(cx + 2, cy + 2, cellSize - 4, 4)
+        // Left shadow strip
+        g.fillRect(cx + 2, cy + 2, 4, cellSize - 4)
+      }
+    }
+
+    // Cell inner highlight (bottom-right corner) = 3D recess effect
+    g.fillStyle(C.BONE, 0.05)
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const cx = originX + c * cellSize
+        const cy = originY + r * cellSize
+        g.fillRect(cx + cellSize - 5, cy + cellSize - 5, 3, 3)
+      }
+    }
+
     // Outer thick bone border
     g.lineStyle(5, C.BONE, 1)
     g.strokeRect(originX - 4, originY - 4, cols * cellSize + 8, rows * cellSize + 8)
@@ -311,6 +382,29 @@ export class InterviewRoomScene extends Phaser.Scene {
     g.destroy()
   }
 
+  // =================== BALL GLOW ===================
+
+  _attachBallGlow() {
+    if (this._ballGlowG) this._ballGlowG.destroy()
+    const g = this.add.graphics()
+    g.setDepth(9) // just below ball (depth 10)
+    this._ballGlowG = g
+    this._addPhaseObject(g)
+  }
+
+  _updateBallGlow(time) {
+    if (!this._ball || !this._ballGlowG) return
+    const g = this._ballGlowG
+    g.clear()
+    // Outer soft halo — pulsing alpha
+    const pulse = 0.3 + 0.2 * Math.sin(time / 180)
+    g.fillStyle(ACCENT.num, pulse)
+    g.fillCircle(this._ball.x, this._ball.y, 18)
+    // Inner bright ring
+    g.lineStyle(2, 0xffffff, 0.7)
+    g.strokeCircle(this._ball.x, this._ball.y, 12)
+  }
+
   _drawPlatform(col, row, angle, color = C.BONE, thickness = 5) {
     const x = GRID.originX + col * GRID.cellSize
     const y = GRID.originY + row * GRID.cellSize
@@ -361,10 +455,18 @@ export class InterviewRoomScene extends Phaser.Scene {
     // Side panel on the right — shows current career milestone
     this._drawWatchPanel()
 
-    PLATFORMS.forEach(p => {
+    PLATFORMS.forEach((p, i) => {
       const plat = this._drawPlatform(p.col, p.row, p.angle, C.BONE, 5)
       this._addPhaseObject(plat)
       p._graphic = plat
+      // Staggered reveal: fade in from alpha 0
+      plat.setAlpha(0)
+      this.tweens.add({
+        targets: plat, alpha: 1,
+        duration: 280,
+        delay: i * 80,
+        ease: 'Back.easeOut',
+      })
     })
 
     this.time.delayedCall(700, () => this._runBallWatch())
@@ -418,6 +520,7 @@ export class InterviewRoomScene extends Phaser.Scene {
     const start = this._cellCenter(1, 0)
     this._ball = this.add.image(start.x, GRID.originY - 60, 'l5ball').setDepth(10)
     this._addPhaseObject(this._ball)
+    this._attachBallGlow()
 
     const path = this._buildPath()
     this._animateAlongPath(path, true, () => this._endPhaseWatch())
@@ -464,6 +567,7 @@ export class InterviewRoomScene extends Phaser.Scene {
         ease: 'Linear',
         onUpdate: () => {
           if (isWatch) this._dropTrail(this._ball.x, this._ball.y)
+          this._updateBallGlow(this.time.now)
         },
         onComplete: () => {
           if (node.platform) {
@@ -485,10 +589,27 @@ export class InterviewRoomScene extends Phaser.Scene {
     if (!this._lastTrail) this._lastTrail = { x, y }
     const dx = x - this._lastTrail.x
     const dy = y - this._lastTrail.y
-    if (dx * dx + dy * dy < 180) return
+    if (dx * dx + dy * dy < 80) return // denser spacing: was 180
     this._lastTrail = { x, y }
-    const dot = this.add.circle(x, y, 2, ACCENT.num, 0.6).setDepth(5)
-    this._trailDots.push(dot)
+
+    // Three size-graded dots with fade tween
+    ;[
+      { r: 5, alpha: 0.7, delay: 0 },
+      { r: 3, alpha: 0.45, delay: 60 },
+      { r: 1.5, alpha: 0.25, delay: 120 },
+    ].forEach(({ r, alpha, delay }) => {
+      const dot = this.add.circle(x, y, r, ACCENT.num, alpha).setDepth(5)
+      this._trailDots.push(dot)
+      this.tweens.add({
+        targets: dot, alpha: 0, scale: 0.2,
+        duration: 700, delay,
+        onComplete: () => {
+          dot.destroy()
+          const idx = this._trailDots.indexOf(dot)
+          if (idx !== -1) this._trailDots.splice(idx, 1)
+        },
+      })
+    })
   }
 
   _onPlatformHit(node, isWatch, done) {
@@ -498,13 +619,26 @@ export class InterviewRoomScene extends Phaser.Scene {
     // Bounce sound (Watch + Verify both)
     AudioCtx.fx('bounce')
 
-    // Flash the platform
+    // Flash the platform — ACID overlay then fade
     if (plat._graphic) {
+      const flashG = this._drawPlatform(plat.col, plat.row, plat.angle, ACCENT.num, 8)
+      flashG.setDepth(12)
+      this._addPhaseObject(flashG)
       this.tweens.add({
-        targets: plat._graphic, alpha: 0.25, duration: 120, yoyo: true,
+        targets: flashG, alpha: 0,
+        duration: isWatch ? 400 : 220,
+        ease: 'Quad.easeOut',
+        onComplete: () => flashG.destroy(),
+      })
+      this.tweens.add({
+        targets: plat._graphic, alpha: 0.3,
+        duration: 80, yoyo: true,
         onComplete: () => { if (plat._graphic) plat._graphic.alpha = 1 },
       })
     }
+
+    // Ripple ring at cell center
+    Particles.ring(this, center.x, center.y, ACCENT.num, { maxRadius: 36, duration: 220, thickness: 3 })
 
     if (isWatch) {
       // Show sticker label above platform
@@ -520,6 +654,16 @@ export class InterviewRoomScene extends Phaser.Scene {
       // Arrow pointing in direction of travel AFTER the bounce
       const arrow = this._drawArrow(center.x, center.y, node.dirAfter)
       this._addPhaseObject(arrow)
+
+      // Floating year tag that rises and fades
+      const yearTag = this.add.text(center.x + 36, center.y - 24, plat.year, {
+        fontFamily: FONT_DISPLAY, fontSize: '18px', color: COLORS.BLACK,
+        backgroundColor: ACCENT.hex,
+        padding: { x: 6, y: 3 },
+      }).setDepth(15).setOrigin(0.5).setAlpha(0)
+      this._addPhaseObject(yearTag)
+      this.tweens.add({ targets: yearTag, alpha: 1, y: yearTag.y - 12, duration: 200 })
+      this.tweens.add({ targets: yearTag, alpha: 0, duration: 200, delay: PLATFORM_PAUSE_MS - 200 })
 
       // Update side panel
       if (this._watchYear) this._watchYear.setText(plat.year)
@@ -567,7 +711,20 @@ export class InterviewRoomScene extends Phaser.Scene {
     const center = this._cellCenter(LANDING_ZONE.col, LANDING_ZONE.row)
     this.cameras.main.shake(140, 0.004)
 
-    // Burst of acid green
+    // Enhanced landing burst — Particles API + extra ring
+    Particles.burst(this, center.x, center.y, ACCENT.num, 16, { speed: 220, size: 8, duration: 600 })
+    Particles.ring(this, center.x, center.y, ACCENT.num, { maxRadius: 80, duration: 400, thickness: 6 })
+
+    // Screen flash — brief ACID green overlay
+    const flash = this.add.rectangle(640, 360, 1280, 720, ACCENT.num, 0)
+    flash.setDepth(200)
+    this.tweens.add({
+      targets: flash, alpha: 0.18,
+      duration: 60, yoyo: true,
+      onComplete: () => flash.destroy(),
+    })
+
+    // Legacy dot burst (keep for visual density)
     for (let i = 0; i < 10; i++) {
       const a = Math.random() * Math.PI * 2
       const speed = 50 + Math.random() * 60
@@ -666,7 +823,7 @@ export class InterviewRoomScene extends Phaser.Scene {
     })
     this._addPhaseObject(trayHdr)
 
-    // Timer
+    // Timer badge
     this._timerBadge = this.add.graphics()
     this._timerBadge.fillStyle(C.BLACK, 1)
     this._timerBadge.fillRect(trayX + trayW - 108, trayY + 18, 90, 36)
@@ -676,6 +833,25 @@ export class InterviewRoomScene extends Phaser.Scene {
       fontFamily: FONT_DISPLAY, fontSize: '20px', color: ACCENT.hex,
     }).setOrigin(0.5)
     this._addPhaseObject(this._timerText)
+
+    // Timer progress bar — depleting bar under the tray header
+    const barY = trayY + 62
+    const barX = trayX + 12
+    const barW = trayW - 24
+    const barH = 6
+    const timerTrack = this.add.graphics()
+    timerTrack.fillStyle(C.BLACK, 1)
+    timerTrack.fillRect(barX, barY, barW, barH)
+    this._addPhaseObject(timerTrack)
+
+    this._timerBarFill = this.add.graphics()
+    this._timerBarFill.fillStyle(ACCENT.num, 1)
+    this._timerBarFill.fillRect(barX, barY, barW, barH)
+    this._timerBarX = barX
+    this._timerBarY = barY
+    this._timerBarW = barW
+    this._timerBarH = barH
+    this._addPhaseObject(this._timerBarFill)
 
     // Buttons at bottom of tray
     const btnY = trayY + trayH - 40
@@ -715,7 +891,34 @@ export class InterviewRoomScene extends Phaser.Scene {
     const m = Math.floor(this._timeLeft / 60)
     const s = this._timeLeft % 60
     if (this._timerText) this._timerText.setText(`${m}:${s.toString().padStart(2, '0')}`)
-    if (this._timeLeft <= 10 && this._timerText) this._timerText.setColor(COLORS.SHOCK_RED)
+
+    const ratio = this._timeLeft / RECALL_TIME
+    const isLow = ratio < 0.3
+    const barColor = isLow ? C.SHOCK_RED : ratio < 0.6 ? C.HAZARD_YELLOW : ACCENT.num
+
+    // Redraw progress bar
+    if (this._timerBarFill) {
+      this._timerBarFill.clear()
+      this._timerBarFill.fillStyle(barColor, 1)
+      this._timerBarFill.fillRect(
+        this._timerBarX, this._timerBarY,
+        Math.max(0, this._timerBarW * ratio), this._timerBarH,
+      )
+    }
+
+    if (isLow && this._timerText) {
+      this._timerText.setColor(COLORS.SHOCK_RED)
+      // Flash the bar when critically low
+      if (this._timerBarFill && !this._timerBarFlashTween) {
+        this._timerBarFlashTween = this.tweens.add({
+          targets: this._timerBarFill,
+          alpha: { from: 1, to: 0.3 },
+          duration: 250, yoyo: true, repeat: -1,
+          ease: 'Sine.easeInOut',
+        })
+      }
+    }
+
     if (this._timeLeft <= 0) this._endPhaseRecall()
   }
 
@@ -899,6 +1102,7 @@ export class InterviewRoomScene extends Phaser.Scene {
     AudioCtx.fx('lockIn')
     this.cameras.main.shake(120, 0.008)
     if (this._timerEvent) { this._timerEvent.remove(false); this._timerEvent = null }
+    if (this._timerBarFlashTween) { this._timerBarFlashTween.stop(); this._timerBarFlashTween = null }
 
     this._finalPlacements = new Map()
     this._trayPieces.forEach(p => {
@@ -953,6 +1157,7 @@ export class InterviewRoomScene extends Phaser.Scene {
     const start = this._cellCenter(1, 0)
     this._ball = this.add.image(start.x, GRID.originY - 60, 'l5ball').setDepth(10)
     this._addPhaseObject(this._ball)
+    this._attachBallGlow()
 
     // Re-add placed piece containers to phase cleanup so they get wiped at end
     placedContainers.forEach(p => this._addPhaseObject(p.container))
@@ -1027,6 +1232,7 @@ export class InterviewRoomScene extends Phaser.Scene {
       y: target.y,
       duration: VERIFY_CELL_MS,
       ease: 'Linear',
+      onUpdate: () => { this._updateBallGlow(this.time.now) },
       onComplete: () => {
         if (node.platform) {
           this._evaluatePlatform(node.platform, () => { this._verifyIdx++; this._verifyStep() }, false)
