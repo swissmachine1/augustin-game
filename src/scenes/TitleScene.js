@@ -24,10 +24,29 @@ export class TitleScene extends Scene {
       g.beginPath(); g.moveTo(0, y); g.lineTo(width, y); g.strokePath()
     }
 
+    // Noise texture — subtle grain over the grid
+    BrutalUI.drawNoise(this, 0, 0, width, height, { color: 0x1e1e1e, density: 150, alpha: 0.04 })
+
+    // Vignette — dark edges for depth
+    BrutalUI.drawVignette(this, width, height, { color: 0x000000, layers: 10, maxAlpha: 0.55 })
+
+    // Floating particles — subtle atmosphere
+    BrutalUI.drawFloatingParticles(this, width, height, { color: 0xf5f0e6, count: 8, alpha: 0.05 })
+
     // Top bar — tag + volume
+    // Sticker starts rotated -90deg then tweens to final rotation for entrance
     const tag = BrutalUI.drawSticker(this, 120, 90, 'VOL. 01 / ISSUE 01', {
       fill: C.SHOCK_RED, textColor: COLORS.BLACK, rotation: -3 * Math.PI / 180,
       fontSize: '13px', paddingX: 14, paddingY: 6,
+    })
+    // Sticker entrance: rotate in from -90deg
+    tag.setRotation(-Math.PI / 2)
+    this.tweens.add({
+      targets: tag,
+      rotation: -3 * Math.PI / 180,
+      duration: 400,
+      ease: 'Back.easeOut',
+      delay: 100,
     })
 
     this.add.text(width - 120, 90, '2014—2026', {
@@ -52,6 +71,26 @@ export class TitleScene extends Scene {
       fontFamily: FONT_DISPLAY, fontSize: '108px', color: COLORS.BONE,
     }).setOrigin(0.5)
     filesGroup.add([shadowF, mainF])
+
+    // Title entrance animation — fade in from slightly below
+    titleGroup.setAlpha(0).setY(300)
+    filesGroup.setAlpha(0).setY(400)
+
+    this.tweens.add({
+      targets: titleGroup,
+      alpha: 1,
+      y: 280,
+      duration: 600,
+      ease: 'Cubic.easeOut',
+    })
+    this.tweens.add({
+      targets: filesGroup,
+      alpha: 1,
+      y: 380,
+      duration: 600,
+      ease: 'Cubic.easeOut',
+      delay: 100,
+    })
 
     // Thick divider line
     const dividerG = this.add.graphics()
@@ -82,7 +121,20 @@ export class TitleScene extends Scene {
       }).setOrigin(0.5)
     }
 
-    // Start button — big brutalist CTA
+    // Start button pulsing glow — red rect behind button, pulses alpha
+    const pulse = this.add.graphics()
+    pulse.fillStyle(0xff2d1f, 1)
+    pulse.fillRect(width / 2 - 128, 628, 256, 72)
+    this.tweens.add({
+      targets: pulse,
+      alpha: { from: 0.15, to: 0.4 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    })
+
+    // Start button — big brutalist CTA (rendered after pulse so it's on top)
     BrutalUI.drawButton(this, width / 2, 660, 240, 64, '▶  START', () => this._start(), {
       fill: C.SHOCK_RED, labelColor: COLORS.BLACK, fontSize: '22px',
       shadowOffset: 8, borderWidth: 4,
@@ -103,7 +155,10 @@ export class TitleScene extends Scene {
       this._removeNameInput()
     }, this)
 
-    // Subtle title breathing
+    // Scanlines — increased intensity
+    BrutalUI.drawScanlines(this, width, height, { alpha: 0.06, spacing: 2 })
+
+    // Subtle title breathing (on top of entrance animation)
     this.tweens.add({
       targets: [titleGroup, filesGroup], scale: { from: 1, to: 1.015 },
       duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',

@@ -42,8 +42,25 @@ export class OpeningCinematicScene extends Scene {
       { kind: 'finale',   title: `FINISH ALL 5, ${name.toUpperCase()}.`,         sub: 'YOU\'LL KNOW WHY YOU SHOULD HIRE ME.' },
     ]
 
+    // Beat accent colors per beat index
+    this._beatAccents = [0x0a0a0a, 0xff2d1f, 0xff2d1f, 0xd4ff00, 0x0066ff, 0x0a0a0a]
+
     this._beatContainer = null
     this._currentBeat = 0
+
+    // Progress dots — 6 dots at bottom showing current position
+    this._progressDots = []
+    const dotCount = this._beats.length
+    const dotSpacing = 24
+    const dotsStartX = width / 2 - ((dotCount - 1) * dotSpacing) / 2
+    for (let i = 0; i < dotCount; i++) {
+      const dot = this.add.graphics()
+      dot.fillStyle(C.GREY_700 ?? 0x444444, 1)
+      dot.fillRect(-5, -5, 10, 10)
+      dot.setPosition(dotsStartX + i * dotSpacing, height - 30)
+      dot.setDepth(100)
+      this._progressDots.push(dot)
+    }
 
     // Skip button top-right
     BrutalUI.drawButton(this, width - 80, 640, 120, 40, 'SKIP →', () => this._finish(), {
@@ -59,6 +76,17 @@ export class OpeningCinematicScene extends Scene {
     }, this)
   }
 
+  _updateProgressDots() {
+    const accentColor = 0xff2d1f // SHOCK_RED
+    const inactiveColor = C.GREY_700 ?? 0x444444
+    this._progressDots.forEach((dot, i) => {
+      dot.clear()
+      const color = i <= this._currentBeat ? accentColor : inactiveColor
+      dot.fillStyle(color, 1)
+      dot.fillRect(-5, -5, 10, 10)
+    })
+  }
+
   _showBeat() {
     if (this._currentBeat >= this._beats.length) { this._finish(); return }
     const beat = this._beats[this._currentBeat]
@@ -66,6 +94,18 @@ export class OpeningCinematicScene extends Scene {
 
     // Remove previous
     if (this._beatContainer) this._beatContainer.destroy()
+
+    // Per-beat accent flash
+    const accentColor = this._beatAccents[this._currentBeat] ?? 0x0a0a0a
+    if (accentColor !== 0x0a0a0a) {
+      BrutalUI.addScreenFlash(this, accentColor, { alpha: 0.12, duration: 200 })
+    }
+
+    // Large semi-transparent beat number in the background
+    const beatNumStr = String(this._currentBeat + 1).padStart(2, '0')
+    const beatNumTxt = this.add.text(width / 2, height / 2, beatNumStr, {
+      fontFamily: FONT_DISPLAY, fontSize: '200px', color: '#111111',
+    }).setOrigin(0.5).setAlpha(0.12).setDepth(-1)
 
     const container = this.add.container(width / 2, height / 2)
 
@@ -107,10 +147,24 @@ export class OpeningCinematicScene extends Scene {
     container.add([shadow, main, subG, sub])
     sub.setDepth(1)
 
-    container.setAlpha(0)
-    this.tweens.add({ targets: container, alpha: 1, duration: 220 })
+    // Beat-type-aware entrance: scale from 0.92 + alpha 0 to 1
+    container.setAlpha(0).setScale(0.92)
+    this.tweens.add({
+      targets: container,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 260,
+      ease: 'Back.easeOut',
+    })
 
     this._beatContainer = container
+
+    // Tie beat number text lifetime to container — destroy when container does
+    container.once('destroy', () => { if (beatNumTxt && beatNumTxt.active) beatNumTxt.destroy() })
+
+    // Update progress dots
+    this._updateProgressDots()
 
     // Advance on click anywhere
     this.input.once('pointerdown', () => {
