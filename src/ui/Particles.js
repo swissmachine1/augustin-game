@@ -94,4 +94,106 @@ export const Particles = {
     })
     return tween
   },
+
+  // Trail dots — dense cluster of small fading dots near a point
+  // opts: { color, size, spread, alpha, duration }
+  trail(scene, x, y, count = 6, opts = {}) {
+    const {
+      color = 0xffffff,
+      size = 4,
+      spread = 12,
+      alpha = 0.7,
+      duration = 300,
+    } = opts
+    const made = []
+    for (let i = 0; i < count; i++) {
+      const ox = (Math.random() - 0.5) * spread * 2
+      const oy = (Math.random() - 0.5) * spread * 2
+      const sz = size * (0.5 + Math.random() * 0.8)
+      const p = scene.add.rectangle(x + ox, y + oy, sz, sz, color)
+      p.setAlpha(alpha)
+      scene.tweens.add({
+        targets: p,
+        alpha: 0,
+        scale: 0.1,
+        duration: duration * (0.6 + Math.random() * 0.6),
+        ease: 'Quad.easeOut',
+        onComplete: () => p.destroy(),
+      })
+      made.push(p)
+    }
+    return made
+  },
+
+  // Glitch slices — horizontal strips offset left/right, fast fade
+  // Neo-brutalist digital-corruption effect.
+  // opts: { color, width, height, count, duration }
+  glitch(scene, x, y, opts = {}) {
+    const {
+      color = 0xff2d1f,
+      width = 80,
+      height = 20,
+      count = 6,
+      duration = 150,
+    } = opts
+    const made = []
+    const sliceH = Math.ceil(height / count)
+    for (let i = 0; i < count; i++) {
+      const ox = (Math.random() - 0.5) * 40
+      const oy = i * sliceH - height / 2
+      const sw = width * (0.4 + Math.random() * 0.8)
+      const g = scene.add.graphics()
+      g.fillStyle(color, 0.55 + Math.random() * 0.35)
+      g.fillRect(-sw / 2 + ox, oy, sw, sliceH - 1)
+      g.x = x
+      g.y = y
+      scene.tweens.add({
+        targets: g,
+        alpha: 0,
+        duration: duration * (0.5 + Math.random()),
+        ease: 'Quad.easeIn',
+        onComplete: () => g.destroy(),
+      })
+      made.push(g)
+    }
+    return made
+  },
+
+  // Ink splat — heavy blobs flying outward, slow decel, brutalist feel
+  // opts: { count, minSize, maxSize, duration, spread }
+  inkSplat(scene, x, y, color = 0x0a0a0a, opts = {}) {
+    const {
+      count = 8,
+      minSize = 8,
+      maxSize = 20,
+      duration = 600,
+      spread = 60,
+    } = opts
+    const made = []
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.8
+      const dist = spread * (0.5 + Math.random() * 0.8)
+      const sz = minSize + Math.random() * (maxSize - minSize)
+      // Alternate between circles and rectangles for organic look
+      const p = (i % 3 === 0)
+        ? scene.add.circle(x, y, sz / 2, color)
+        : scene.add.rectangle(x, y, sz, sz * (0.6 + Math.random() * 0.7), color)
+      p.setAlpha(0.85)
+      const tx = x + Math.cos(angle) * dist
+      const ty = y + Math.sin(angle) * dist
+      scene.tweens.add({
+        targets: p,
+        x: tx,
+        y: ty,
+        alpha: 0,
+        angle: Math.random() * 180 - 90,
+        scale: { from: 1.2, to: 0.3 },
+        duration: duration * (0.7 + Math.random() * 0.5),
+        ease: 'Cubic.easeOut',
+        onComplete: () => p.destroy(),
+      })
+      made.push(p)
+    }
+    return made
+  },
 }

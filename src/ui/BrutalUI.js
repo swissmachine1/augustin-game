@@ -382,4 +382,203 @@ export class BrutalUI {
     txt.setValue = function(v) { this.setText(prefix + String(Math.round(v)) + suffix) }
     return txt
   }
+
+  // ── Grain / noise overlay ─────────────────────────────────────
+  // Draws random tiny rectangles to add film-grain texture to a region.
+  // opts: { color, density, alpha, minSize, maxSize }
+  static drawNoise(scene, x, y, w, h, opts = {}) {
+    const {
+      color = 0x000000,
+      density = 200,
+      alpha = 0.03,
+      minSize = 1,
+      maxSize = 3,
+    } = opts
+    const g = scene.add.graphics()
+    g.fillStyle(color, alpha)
+    for (let i = 0; i < density; i++) {
+      const px = x + Math.random() * w
+      const py = y + Math.random() * h
+      const s = minSize + Math.random() * (maxSize - minSize)
+      g.fillRect(~~px, ~~py, ~~s, ~~s)
+    }
+    return g
+  }
+
+  // ── Radial vignette overlay ───────────────────────────────────
+  // Fakes a dark-edge vignette with 4 gradient strips (top/bottom/left/right).
+  // opts: { color, layers, maxAlpha }
+  static drawVignette(scene, w, h, opts = {}) {
+    const {
+      color = 0x000000,
+      layers = 24,
+      maxAlpha = 0.45,
+    } = opts
+    const g = scene.add.graphics()
+    const bandH = Math.ceil(h * 0.38)
+    const bandW = Math.ceil(w * 0.28)
+    for (let i = 0; i < layers; i++) {
+      const t = i / (layers - 1)              // 0 = outer edge, 1 = inner fade-out
+      const a = maxAlpha * (1 - t) * (1 - t)  // quadratic falloff
+      g.fillStyle(color, a)
+      // Top strip
+      const topH = ~~(bandH * (1 - t))
+      if (topH > 0) g.fillRect(0, 0, w, topH)
+      // Bottom strip
+      if (topH > 0) g.fillRect(0, h - topH, w, topH)
+      // Left strip
+      const sideW = ~~(bandW * (1 - t))
+      if (sideW > 0) g.fillRect(0, 0, sideW, h)
+      // Right strip
+      if (sideW > 0) g.fillRect(w - sideW, 0, sideW, h)
+    }
+    g.setDepth(9997)
+    return g
+  }
+
+  // ── Full-screen flash then fade ───────────────────────────────
+  // opts: { alpha, duration }
+  static addScreenFlash(scene, color = 0xff2d1f, opts = {}) {
+    const { alpha = 0.6, duration = 120 } = opts
+    const { width, height } = scene.cameras.main
+    const g = scene.add.graphics()
+    g.fillStyle(color, alpha)
+    g.fillRect(0, 0, width, height)
+    g.setDepth(99998)
+    scene.tweens.add({
+      targets: g, alpha: 0, duration,
+      ease: 'Expo.easeOut',
+      onComplete: () => g.destroy(),
+    })
+    return g
+  }
+
+  // ── Camera shake ──────────────────────────────────────────────
+  // opts: { intensity, duration }
+  static addScreenShake(scene, opts = {}) {
+    const { intensity = 0.008, duration = 200 } = opts
+    scene.cameras.main.shake(duration, intensity)
+  }
+
+  // ── Brutalist progress bar ────────────────────────────────────
+  // Returns { bg, fill, container } so caller can animate fill.width.
+  // opts: { fillColor, bgColor, borderColor, borderWidth, shadowOffset, label }
+  static drawProgressBar(scene, x, y, w, h, value, maxValue, opts = {}) {
+    const {
+      fillColor = 0xff2d1f,
+      bgColor = 0x1e1e1e,
+      borderColor = 0x0a0a0a,
+      borderWidth = 3,
+      shadowOffset = 4,
+      label = '',
+    } = opts
+
+    const container = scene.add.container(x, y)
+    const pct = Math.max(0, Math.min(1, value / maxValue))
+
+    // Drop shadow
+    const shadowG = scene.add.graphics()
+    shadowG.fillStyle(borderColor, 1)
+    shadowG.fillRect(shadowOffset, shadowOffset, w, h)
+
+    // Background track
+    const bgG = scene.add.graphics()
+    bgG.fillStyle(bgColor, 1)
+    bgG.fillRect(0, 0, w, h)
+    bgG.lineStyle(borderWidth, borderColor, 1)
+    bgG.strokeRect(0, 0, w, h)
+
+    // Fill bar
+    const fillG = scene.add.graphics()
+    fillG.fillStyle(fillColor, 1)
+    fillG.fillRect(0, 0, Math.max(0, w * pct), h)
+
+    container.add([shadowG, bgG, fillG])
+
+    if (label) {
+      const lbl = scene.add.text(w / 2, h / 2, label.toUpperCase(), {
+        fontFamily: FONT_MONO, fontSize: '10px', fontStyle: 'bold',
+        color: '#f5f0e6',
+      }).setOrigin(0.5)
+      container.add(lbl)
+    }
+
+    return { bg: bgG, fill: fillG, container }
+  }
+
+  // ── Ambient floating particles ────────────────────────────────
+  // Small squares that drift upward, looping, for living background feel.
+  // opts: { color, count, minSize, maxSize, alpha, speed }
+  static drawFloatingParticles(scene, w, h, opts = {}) {
+    const {
+      color = 0xf5f0e6,
+      count = 10,
+      minSize = 3,
+      maxSize = 8,
+      alpha = 0.06,
+      speed = 0.3,
+    } = opts
+
+    const particles = []
+    for (let i = 0; i < count; i++) {
+      const px = Math.random() * w
+      const py = Math.random() * h
+      const sz = minSize + Math.random() * (maxSize - minSize)
+      const p = scene.add.rectangle(px, h + sz, sz, sz, color)
+      p.setAlpha(alpha * (0.5 + Math.random()))
+      p.setDepth(1)
+
+      const dur = 5000 + Math.random() * 7000
+      const delay = Math.random() * 4000
+      scene.tweens.add({
+        targets: p,
+        y: -sz - 20,
+        x: { from: px, to: px + (Math.random() - 0.5) * 80 },
+        duration: dur,
+        delay,
+        ease: 'Sine.easeInOut',
+        repeat: -1,
+        repeatDelay: Math.random() * 2000,
+        onRepeat: () => {
+          p.x = Math.random() * w
+          p.y = h + sz
+          p.setAlpha(alpha * (0.5 + Math.random()))
+        },
+      })
+      particles.push(p)
+    }
+    return particles
+  }
+
+  // ── Gradient strip (simulated, via stacked thin rects) ────────
+  // opts: { steps, vertical }
+  static drawGradientStrip(scene, x, y, w, h, colorFrom, colorTo, opts = {}) {
+    const { steps = 20, vertical = true } = opts
+    const g = scene.add.graphics()
+
+    // Extract RGB components from hex for interpolation
+    const rFrom = (colorFrom >> 16) & 0xff
+    const gFrom = (colorFrom >> 8) & 0xff
+    const bFrom = colorFrom & 0xff
+    const rTo = (colorTo >> 16) & 0xff
+    const gTo = (colorTo >> 8) & 0xff
+    const bTo = colorTo & 0xff
+
+    for (let i = 0; i < steps; i++) {
+      const t = i / (steps - 1)
+      const r = ~~(rFrom + (rTo - rFrom) * t)
+      const gC = ~~(gFrom + (gTo - gFrom) * t)
+      const b = ~~(bFrom + (bTo - bFrom) * t)
+      const col = (r << 16) | (gC << 8) | b
+      g.fillStyle(col, 1)
+      if (vertical) {
+        const stripH = Math.ceil(h / steps)
+        g.fillRect(x, y + i * stripH, w, stripH + 1)
+      } else {
+        const stripW = Math.ceil(w / steps)
+        g.fillRect(x + i * stripW, y, stripW + 1, h)
+      }
+    }
+    return g
+  }
 }
