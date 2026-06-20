@@ -135,12 +135,47 @@ export class GreenlandScene extends Phaser.Scene {
     this._gameActive = true
     this._timerStartMs = this.time.now
     this._bindInput()
+
+    // Kick off ambient speed lines — staggered start
+    for (let i = 0; i < 6; i++) {
+      this.time.delayedCall(i * 120, () => {
+        if (this._gameActive) this._createSpeedLine()
+      })
+    }
+
     const prompt = this.add.text(WIDTH / 2, HEIGHT - 56, '← →  DODGE  ·  TAP LEFT / RIGHT  ·  GRAB COINS', {
       fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.BONE,
     }).setOrigin(0.5).setAlpha(0)
     this.tweens.add({ targets: prompt, alpha: 0.85, duration: 400 })
     this.tweens.add({ targets: prompt, alpha: 0, duration: 500, delay: 3500,
       onComplete: () => prompt.destroy() })
+  }
+
+  // ── Ambient speed lines (zoom from horizon toward edges) ──────
+  _createSpeedLine() {
+    if (!this._gameActive) return
+    const x = 200 + Math.random() * 880
+    const cx = WIDTH / 2
+    const line = this.add.graphics()
+    line.lineStyle(1 + Math.random(), C.BONE, 0.12 + Math.random() * 0.08)
+    line.beginPath()
+    line.moveTo(x, HORIZON_Y)
+    // End point: spread toward bottom with perspective divergence
+    const endX = cx + (x - cx) * 1.3
+    const endY = HORIZON_Y + 340 + Math.random() * 200
+    line.lineTo(endX, endY)
+    line.strokePath()
+    line.setDepth(5)
+    this.tweens.add({
+      targets: line,
+      alpha: 0,
+      duration: 380 + Math.random() * 220,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        line.destroy()
+        if (this._gameActive) this._createSpeedLine()
+      },
+    })
   }
 
   _bindInput() {
@@ -162,6 +197,7 @@ export class GreenlandScene extends Phaser.Scene {
     const next = Phaser.Math.Clamp(this._currentLane + direction, 0, 2)
     if (next === this._currentLane) return
     this._currentLane = next
+    this._triggerSpeedBurst()
   }
 
   // ── Background ────────────────────────────────────────────────
@@ -186,6 +222,28 @@ export class GreenlandScene extends Phaser.Scene {
     const band = this.add.graphics()
     band.fillStyle(C.SHOCK_PINK, 1)
     band.fillRect(0, HORIZON_Y - 8, WIDTH, 4)
+
+    // Vignette overlay (dark edges)
+    this._drawVignette()
+  }
+
+  _drawVignette() {
+    const g = this.add.graphics()
+    g.setDepth(1400)
+    // Four corner darkening rects using gradient-like layering
+    const steps = 8
+    for (let i = 0; i < steps; i++) {
+      const a = 0.045 * (1 - i / steps)
+      g.fillStyle(C.BLACK, a)
+      const margin = i * 20
+      g.fillRect(margin, margin, WIDTH - margin * 2, HEIGHT - margin * 2)
+    }
+    // Solid dark border strips
+    g.fillStyle(C.BLACK, 0.5)
+    g.fillRect(0, 0, 60, HEIGHT)
+    g.fillRect(WIDTH - 60, 0, 60, HEIGHT)
+    g.fillRect(0, 0, WIDTH, 40)
+    g.fillRect(0, HEIGHT - 40, WIDTH, 40)
   }
 
   // ── Region scenery (silhouettes at horizon) ───────────────────
@@ -325,6 +383,19 @@ export class GreenlandScene extends Phaser.Scene {
     road.closePath()
     road.fillPath()
 
+    // Static road edge markings (short ticks at road boundary)
+    const ticks = this.add.graphics()
+    ticks.lineStyle(3, C.BONE, 0.5)
+    for (let z = 0.15; z < 0.95; z += 0.12) {
+      const y = HORIZON_Y + (ROAD_BOTTOM_Y - HORIZON_Y) * z
+      const halfW = ROAD_HALF_TOP + (ROAD_HALF_BOTTOM - ROAD_HALF_TOP) * z
+      const tickLen = 8 + z * 16
+      // Left tick
+      ticks.beginPath(); ticks.moveTo(cx - halfW, y); ticks.lineTo(cx - halfW - tickLen, y); ticks.strokePath()
+      // Right tick
+      ticks.beginPath(); ticks.moveTo(cx + halfW, y); ticks.lineTo(cx + halfW + tickLen, y); ticks.strokePath()
+    }
+
     const edges = this.add.graphics()
     edges.lineStyle(6, C.BONE, 1)
     edges.beginPath()
@@ -337,7 +408,24 @@ export class GreenlandScene extends Phaser.Scene {
     edges.strokePath()
 
     this._laneG = this.add.graphics()
+    this._centerLineG = this.add.graphics()
     this._speedG = this.add.graphics()
+  }
+
+  _updateCenterLine() {
+    const g = this._centerLineG
+    g.clear()
+    const cx = WIDTH / 2
+    const steps = 20
+    for (let i = 0; i < steps; i++) {
+      const z = ((i / steps) + (this._roadScroll * 0.6 % (1 / steps))) % 1
+      const nextZ = Math.min(1, z + 0.025)
+      const y1 = HORIZON_Y + (ROAD_BOTTOM_Y - HORIZON_Y) * z
+      const y2 = HORIZON_Y + (ROAD_BOTTOM_Y - HORIZON_Y) * nextZ
+      const alpha = 0.2 + z * 0.5
+      g.lineStyle(2 + z * 4, C.BONE, alpha)
+      g.beginPath(); g.moveTo(cx, y1); g.lineTo(cx, y2); g.strokePath()
+    }
   }
 
   _updateLaneMarkers() {
@@ -376,6 +464,73 @@ export class GreenlandScene extends Phaser.Scene {
       const ex = cx + Math.cos(angle) * len
       const ey = HORIZON_Y + Math.sin(angle) * len * 0.4
       g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.strokePath()
+    }
+  }
+
+  // ── Speed burst on dodge ──────────────────────────────────────
+  _triggerSpeedBurst() {
+    if (!this._bikeContainer) return
+    const bikeX = this._bikeContainer.x
+    for (let i = 0; i < 20; i++) {
+      const y = BIKE_Y - 80 + Math.random() * 160
+      const len = 100 + Math.random() * 200
+      const side = Math.random() < 0.5 ? -1 : 1
+      const streak = this.add.graphics()
+      streak.lineStyle(1 + Math.random() * 2, C.BONE, 0.7)
+      streak.beginPath()
+      streak.moveTo(0, 0)
+      streak.lineTo(side * len, 0)
+      streak.strokePath()
+      streak.x = bikeX
+      streak.y = y
+      streak.setDepth(1600)
+      this.tweens.add({
+        targets: streak,
+        alpha: 0,
+        scaleX: 1.4,
+        duration: 200 + Math.random() * 120,
+        ease: 'Quad.easeOut',
+        onComplete: () => streak.destroy(),
+      })
+    }
+  }
+
+  // ── Chromatic aberration hit flash ────────────────────────────
+  _hitChromaticAberration() {
+    const offsets = [
+      { col: 0xff0000, x: -8, alpha: 0.25 },
+      { col: 0x0000ff, x: 8, alpha: 0.25 },
+    ]
+    const isWebGL = this.renderer.type === Phaser.WEBGL
+    offsets.forEach(({ col, x, alpha }) => {
+      const r = this.add.rectangle(WIDTH / 2 + x, HEIGHT / 2, WIDTH, HEIGHT, col, alpha)
+      r.setDepth(2001)
+      if (isWebGL) r.setBlendMode(Phaser.BlendModes.SCREEN)
+      this.tweens.add({
+        targets: r, alpha: 0, duration: 180,
+        ease: 'Quad.easeOut',
+        onComplete: () => r.destroy(),
+      })
+    })
+  }
+
+  // ── Obstacle approach shadow ───────────────────────────────────
+  _updateObstacleShadow(ob) {
+    if (ob.z > 0.7) {
+      if (!ob._shadowEllipse) {
+        ob._shadowEllipse = this.add.graphics()
+        ob._shadowEllipse.setDepth(-1)
+      }
+      const g = ob._shadowEllipse
+      g.clear()
+      const shadowAlpha = (ob.z - 0.7) / 0.35
+      const shadowW = 180 * ob.z
+      const shadowH = 24 * ob.z
+      g.fillStyle(C.BLACK, Math.min(0.7, shadowAlpha * 0.8))
+      g.fillEllipse(ob.container.x + 6, ob.container.y + 70 * ob.z, shadowW, shadowH)
+    } else if (ob._shadowEllipse) {
+      ob._shadowEllipse.destroy()
+      ob._shadowEllipse = null
     }
   }
 
@@ -813,6 +968,7 @@ export class GreenlandScene extends Phaser.Scene {
     // Road scroll
     this._roadScroll += dt * this._scrollSpeed
     this._updateLaneMarkers()
+    this._updateCenterLine()
     this._updateSpeedLines()
 
     // Spawn obstacle
@@ -835,6 +991,7 @@ export class GreenlandScene extends Phaser.Scene {
       const ob = this._activeObstacles[i]
       ob.z += this._obstacleSpeed * dt
       this._updateObstacleTransform(ob)
+      this._updateObstacleShadow(ob)
 
       if (!ob.resolved && ob.z >= HIT_Z) {
         if (ob.lane === this._currentLane && !this._invincible) {
@@ -846,6 +1003,7 @@ export class GreenlandScene extends Phaser.Scene {
       }
 
       if (ob.z >= PASS_Z) {
+        if (ob._shadowEllipse) { ob._shadowEllipse.destroy(); ob._shadowEllipse = null }
         ob.container.destroy()
         this._activeObstacles.splice(i, 1)
       }
@@ -1040,6 +1198,10 @@ export class GreenlandScene extends Phaser.Scene {
       targets: flash, alpha: 0, duration: 320,
       onComplete: () => flash.destroy(),
     })
+
+    // Chromatic aberration flash (R/B offset layers)
+    this._hitChromaticAberration()
+
     // Show story even on hit
     this._flashStoryLine(ob.def)
   }
@@ -1049,8 +1211,15 @@ export class GreenlandScene extends Phaser.Scene {
     this._lives--
     const heart = this._hearts[this._lives]
     if (heart) {
+      // Pop-then-fade: scale up briefly before going dim
       this.tweens.add({
-        targets: heart, alpha: 0.15, duration: 300,
+        targets: heart, scale: { from: 1, to: 1.5 },
+        duration: 120, ease: 'Back.easeOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: heart, alpha: 0.15, scale: 1, duration: 260,
+          })
+        },
       })
     }
 
