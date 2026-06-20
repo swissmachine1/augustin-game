@@ -44,27 +44,56 @@ export class FinalReportScene extends Scene {
     for (let x = 0; x < width; x += 40) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, height); g.strokePath() }
     for (let y = 0; y < height; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(width, y); g.strokePath() }
 
+    // Noise texture overlay
+    const noiseG = this.add.graphics()
+    for (let i = 0; i < 300; i++) {
+      const nx = Math.random() * width
+      const ny = Math.random() * height
+      noiseG.fillStyle(0x1e1e1e, 0.03)
+      noiseG.fillRect(nx, ny, 2, 2)
+    }
+
     // Scanlines
-    BrutalUI.drawScanlines(this, width, height, { alpha: 0.04, spacing: 3 })
+    BrutalUI.drawScanlines(this, width, height, { alpha: 0.05 })
 
     // Top tag
     BrutalUI.drawSticker(this, 130, 50, 'FILE COMPLETE', {
       fill: C.SHOCK_ACID, fontSize: '13px', rotation: -3 * Math.PI / 180,
     })
 
-    // HERO TITLE
-    const titleShadow = this.add.text(width / 2 + 5, 110 + 5, 'AUGUSTIN GAME', {
+    // HERO TITLE — animated entrance (scale + fade)
+    const titleGroup = this.add.container(width / 2, 110)
+    titleGroup.setAlpha(0)
+    titleGroup.setScale(0.85)
+    const titleShadow = this.add.text(5, 5, 'AUGUSTIN GAME', {
       fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.SHOCK_RED,
     }).setOrigin(0.5)
-    this.add.text(width / 2, 110, 'AUGUSTIN GAME', {
+    const titleMain = this.add.text(0, 0, 'AUGUSTIN GAME', {
       fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.BONE,
     }).setOrigin(0.5)
-    const subShadow = this.add.text(width / 2 + 4, 168 + 4, 'COMPLETE', {
+    titleGroup.add([titleShadow, titleMain])
+
+    const completeGroup = this.add.container(width / 2, 168)
+    completeGroup.setAlpha(0)
+    completeGroup.setScale(0.85)
+    const subShadow = this.add.text(4, 4, 'COMPLETE', {
       fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.SHOCK_ACID,
     }).setOrigin(0.5)
-    this.add.text(width / 2, 168, 'COMPLETE', {
+    const subMain = this.add.text(0, 0, 'COMPLETE', {
       fontFamily: FONT_DISPLAY, fontSize: '64px', color: COLORS.BONE,
     }).setOrigin(0.5)
+    completeGroup.add([subShadow, subMain])
+
+    this.tweens.add({
+      targets: titleGroup,
+      alpha: 1, scale: 1,
+      duration: 500, ease: 'Back.easeOut',
+    })
+    this.tweens.add({
+      targets: completeGroup,
+      alpha: 1, scale: 1,
+      duration: 500, delay: 120, ease: 'Back.easeOut',
+    })
 
     // Personalized line
     const personalText = company
@@ -105,21 +134,25 @@ export class FinalReportScene extends Scene {
 
       // Bar
       const barW = 220, barX = 320, barY = y + 8
-      const bg = this.add.graphics()
-      bg.fillStyle(C.GREY_900, 1); bg.fillRect(barX, barY, barW, 12)
+      const bgBar = this.add.graphics()
+      bgBar.fillStyle(C.GREY_900, 1); bgBar.fillRect(barX, barY, barW, 12)
       const fill = this.add.graphics()
       fill.fillStyle(accent.num, 1); fill.fillRect(barX, barY, 0, 12)
+
+      // Score text that counts up with the bar
+      const scoreText = this.add.text(590, y + 14, '0%', {
+        fontFamily: FONT_DISPLAY, fontSize: '20px', color: COLORS.BONE,
+      }).setOrigin(1, 0.5)
+
       this.tweens.add({
         targets: { v: 0 }, v: barW * (score / 100), duration: 800, delay: 400 + i * 100, ease: 'Cubic.easeOut',
         onUpdate: (t) => {
-          fill.clear(); fill.fillStyle(accent.num, 1); fill.fillRect(barX, barY, t.targets[0].v, 12)
+          const v = t.targets[0].v
+          fill.clear(); fill.fillStyle(accent.num, 1); fill.fillRect(barX, barY, v, 12)
+          scoreText.setText(Math.floor(v / barW * 100) + '%')
         },
+        onComplete: () => { scoreText.setText(score + '%') },
       })
-
-      // Score
-      this.add.text(580, y + 14, `${score}%`, {
-        fontFamily: FONT_DISPLAY, fontSize: '20px', color: COLORS.BONE,
-      }).setOrigin(1, 0.5)
     })
 
     // RIGHT — stats
@@ -137,26 +170,31 @@ export class FinalReportScene extends Scene {
       }).setOrigin(0, 0.5)
 
       const barX = 850, barW = 280, barY = y + 6
-      const bg = this.add.graphics()
-      bg.fillStyle(C.GREY_900, 1); bg.fillRect(barX, barY, barW, 12)
+      const bgBar = this.add.graphics()
+      bgBar.fillStyle(C.GREY_900, 1); bgBar.fillRect(barX, barY, barW, 12)
       const fill = this.add.graphics()
+
+      // Value text that counts up with bar
+      const valText = this.add.text(1210, y + 12, '0', {
+        fontFamily: FONT_DISPLAY, fontSize: '18px', color: COLORS.BONE,
+      }).setOrigin(1, 0.5)
+
       this.tweens.add({
         targets: { v: 0 }, v: barW * (value / 100), duration: 800, delay: 500 + i * 80, ease: 'Cubic.easeOut',
         onUpdate: (t) => {
-          fill.clear(); fill.fillStyle(C.SHOCK_ACID, 1); fill.fillRect(barX, barY, t.targets[0].v, 12)
+          const v = t.targets[0].v
+          fill.clear(); fill.fillStyle(C.SHOCK_ACID, 1); fill.fillRect(barX, barY, v, 12)
+          valText.setText(String(Math.floor(v / barW * 100)))
         },
+        onComplete: () => { valText.setText(String(value)) },
       })
-
-      this.add.text(1200, y + 12, `${value}`, {
-        fontFamily: FONT_DISPLAY, fontSize: '18px', color: COLORS.BONE,
-      }).setOrigin(1, 0.5)
     })
 
     // Summary strip — avg + total time
     const stripY = 560
     BrutalUI.drawRule(this, 80, stripY, 1200, stripY, 3, C.SHOCK_RED)
 
-    const avgBlock = this.add.text(80, stripY + 18, 'OVERALL', {
+    this.add.text(80, stripY + 18, 'OVERALL', {
       fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_500,
       letterSpacing: 3,
     })
@@ -180,6 +218,27 @@ export class FinalReportScene extends Scene {
     this.add.text(720, stripY + 40, rating, {
       fontFamily: FONT_DISPLAY, fontSize: '46px', color: COLORS.SHOCK_ACID,
     })
+
+    // "ALL 5 COMPLETE" stamp — drops in after all bars finish (last bar: 500 + 4*80 = 820ms delay + 800ms dur = ~1620ms)
+    const allComplete = LEVELS.every(l => this.registry.get(l.completedKey))
+    if (allComplete) {
+      this.time.delayedCall(1800, () => {
+        const sticker = BrutalUI.drawSticker(this, width / 2, height / 2 - 20, 'ALL 5 COMPLETE', {
+          fill: C.SHOCK_ACID, fontSize: '32px', paddingX: 40, paddingY: 18,
+          rotation: -6 * Math.PI / 180,
+        })
+        sticker.setScale(0).setAlpha(0)
+        sticker.setDepth(500)
+        this.tweens.add({
+          targets: sticker, scale: 1, alpha: 1,
+          duration: 300, ease: 'Back.easeOut',
+          onComplete: () => {
+            this.tweens.add({ targets: sticker, scale: 0.9, duration: 1000, ease: 'Sine.easeOut' })
+          },
+        })
+        Particles.popup(this, width / 2, height / 2 - 80, '★', COLORS.SHOCK_ACID, { fontSize: '32px' })
+      })
+    }
 
     // CTAs — book / linkedin / cv
     const ctaY = 670
@@ -231,14 +290,35 @@ export class FinalReportScene extends Scene {
       }
     }, { fill: C.SHOCK_BLUE, labelColor: COLORS.BONE, fontSize: '11px', shadowOffset: 4 })
 
-    // Confetti for completion drama
-    this.time.delayedCall(300, () => {
-      Particles.confetti(this, width / 2, 60, 50)
+    // Share button pulse
+    this.tweens.add({
+      targets: shareBtn.container,
+      scaleX: 1.04, scaleY: 1.04,
+      duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 2000,
+    })
+
+    // Confetti burst on entry
+    this.time.delayedCall(600, () => {
+      Particles.confetti(this, width / 2, 200, 60)
+      Particles.confetti(this, width * 0.2, 150, 30)
+      Particles.confetti(this, width * 0.8, 150, 30)
       AudioCtx.fx('perfect')
     })
     this.time.delayedCall(1500, () => {
       Particles.confetti(this, width / 2, 60, 30)
     })
+
+    // Vignette overlay
+    const vigG = this.add.graphics()
+    const vigSteps = 12
+    for (let s = 0; s < vigSteps; s++) {
+      const t = s / vigSteps
+      const alpha = t * t * 0.35
+      const inset = t * Math.min(width, height) * 0.5
+      vigG.lineStyle(Math.min(width, height) * 0.5 / vigSteps + 2, 0x000000, alpha)
+      vigG.strokeRect(inset, inset, width - inset * 2, height - inset * 2)
+    }
+    vigG.setDepth(9998)
 
     this.events.once('shutdown', () => {
       this.input.keyboard.removeAllListeners()

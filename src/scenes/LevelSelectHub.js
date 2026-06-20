@@ -51,12 +51,23 @@ export class LevelSelectHub extends Scene {
     for (let x = 0; x < width; x += 40) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, height); g.strokePath() }
     for (let y = 0; y < height; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(width, y); g.strokePath() }
 
-    // Top bar — brutalist header
+    // Noise texture overlay
+    const noiseG = this.add.graphics()
+    for (let i = 0; i < 300; i++) {
+      const nx = Math.random() * width
+      const ny = Math.random() * height
+      noiseG.fillStyle(0x1e1e1e, 0.03)
+      noiseG.fillRect(nx, ny, 2, 2)
+    }
+
+    // Top bar — brutalist header, animated in
     const headerG = this.add.graphics()
     headerG.fillStyle(C.BONE, 1)
     headerG.fillRect(0, 0, width, 110)
     headerG.fillStyle(C.SHOCK_RED, 1)
     headerG.fillRect(0, 100, width, 10)
+    headerG.setAlpha(0)
+    this.tweens.add({ targets: headerG, alpha: 1, duration: 300 })
 
     this.add.text(60, 40, 'INDEX', {
       fontFamily: FONT_DISPLAY, fontSize: '44px', color: COLORS.BLACK,
@@ -67,11 +78,15 @@ export class LevelSelectHub extends Scene {
       letterSpacing: 2,
     }).setOrigin(0, 0.5)
 
-    // Progress tracker (top right)
+    // Progress tracker (top right) — animated count-up
     const completedCount = LEVELS.filter(l => this.registry.get(l.completedKey)).length
-    this.add.text(width - 60, 40, `${completedCount}/${LEVELS.length}`, {
+    const countText = this.add.text(width - 60, 40, '0/5', {
       fontFamily: FONT_DISPLAY, fontSize: '44px', color: COLORS.BLACK,
     }).setOrigin(1, 0.5)
+    this.tweens.addCounter({
+      from: 0, to: completedCount, duration: 800, ease: 'Cubic.easeOut',
+      onUpdate: (t) => { countText.setText(Math.round(t.getValue()) + '/' + LEVELS.length) },
+    })
     this.add.text(width - 60, 78, 'CHAPTERS COMPLETED', {
       fontFamily: FONT_MONO, fontSize: '12px', fontStyle: 'bold', color: COLORS.GREY_700,
       letterSpacing: 2,
@@ -85,7 +100,7 @@ export class LevelSelectHub extends Scene {
     const cardY = 390
 
     LEVELS.forEach((level, i) => {
-      this._drawLevelCard(level, startX + (cardW + gap) * i, cardY, cardW, cardH)
+      this._drawLevelCard(level, startX + (cardW + gap) * i, cardY, cardW, cardH, i)
     })
 
     // Footer
@@ -93,6 +108,21 @@ export class LevelSelectHub extends Scene {
       fontFamily: FONT_MONO, fontSize: '11px', fontStyle: 'bold', color: COLORS.GREY_500,
       letterSpacing: 2,
     }).setOrigin(0.5, 1)
+
+    // Vignette overlay
+    const vigG = this.add.graphics()
+    const vigSteps = 12
+    for (let s = 0; s < vigSteps; s++) {
+      const t = s / vigSteps
+      const alpha = t * t * 0.4
+      const inset = t * Math.min(width, height) * 0.5
+      vigG.lineStyle(Math.min(width, height) * 0.5 / vigSteps + 2, 0x000000, alpha)
+      vigG.strokeRect(inset, inset, width - inset * 2, height - inset * 2)
+    }
+    vigG.setDepth(9998)
+
+    // Scanlines
+    BrutalUI.drawScanlines(this, width, height, { alpha: 0.05, spacing: 2 })
 
     // Audio resume + music start on first click (browsers require a user gesture)
     this.input.once('pointerdown', () => {
@@ -126,12 +156,13 @@ export class LevelSelectHub extends Scene {
     this.events.once('shutdown', () => {}, this)
   }
 
-  _drawLevelCard(level, x, y, w, h) {
+  _drawLevelCard(level, x, y, w, h, index) {
     const completed = this.registry.get(level.completedKey) === true
     const score = this.registry.get(level.scoreKey) ?? 0
     const accent = LEVEL_COLORS[level.num]
 
-    const container = this.add.container(x, y)
+    const container = this.add.container(x, y + 40)
+    container.setAlpha(0)
 
     // Drop shadow
     const shadow = this.add.graphics()
@@ -224,14 +255,27 @@ export class LevelSelectHub extends Scene {
 
     container.add([shadow, bg, topBand, num, title, sub, rule, btnShadow, btnBg, btnText])
 
+    // Staggered cascade entrance
+    this.time.delayedCall(index * 80, () => {
+      this.tweens.add({
+        targets: container,
+        alpha: 1,
+        y: y,
+        duration: 350,
+        ease: 'Back.easeOut',
+      })
+    })
+
     // Click handler on entire card
     const hit = this.add.rectangle(x, y, w, h, 0x000000, 0)
     hit.setInteractive({ useHandCursor: true })
     hit.on('pointerover', () => {
       container.setScale(1.03)
+      container.setY(y - 4)
     })
     hit.on('pointerout', () => {
       container.setScale(1)
+      container.setY(y)
     })
     hit.on('pointerdown', () => {
       container.setScale(0.97)
