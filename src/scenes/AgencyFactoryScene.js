@@ -185,6 +185,24 @@ export class AgencyFactoryScene extends Phaser.Scene {
     // Range indicator (created lazily in _selectTower)
     this.rangeIndicator = null
 
+    // Vignette overlay (fake radial darkening via layered alpha rects at edges)
+    const vig = this.add.graphics().setDepth(1000)
+    vig.fillStyle(C.BLACK, 0.28)
+    // Top and bottom fade strips
+    for (let i = 0; i < 6; i++) {
+      const alpha = 0.06 * (6 - i)
+      vig.fillStyle(C.BLACK, alpha)
+      vig.fillRect(0, 66 + i * 10, width, 10)
+      vig.fillRect(0, height - 120 - (i + 1) * 10, width, 10)
+    }
+    // Left/right strips
+    for (let i = 0; i < 6; i++) {
+      const alpha = 0.05 * (6 - i)
+      vig.fillStyle(C.BLACK, alpha)
+      vig.fillRect(i * 12, 66, 12, height - 186)
+      vig.fillRect(width - (i + 1) * 12, 66, 12, height - 186)
+    }
+
     // Scanlines overlay
     BrutalUI.drawScanlines(this, width, height)
 
@@ -260,6 +278,32 @@ export class AgencyFactoryScene extends Phaser.Scene {
         dash.moveTo(a.x + nx * d, a.y + ny * d)
         dash.lineTo(a.x + nx * (d + step), a.y + ny * (d + step))
         dash.strokePath()
+      }
+    }
+
+    // Animated march overlay (updated per tick in _updatePathMarch)
+    this._pathMarchG = this.add.graphics()
+    this._pathMarchOffset = 0
+  }
+
+  _updatePathMarch(dt) {
+    this._pathMarchOffset = (this._pathMarchOffset + dt * 40) % 28
+    const g = this._pathMarchG
+    g.clear()
+    g.lineStyle(3, C.SHOCK_BLUE, 0.6)
+    for (let i = 0; i < PATH_POINTS.length - 1; i++) {
+      const a = PATH_POINTS[i], b = PATH_POINTS[i + 1]
+      const dx = b.x - a.x, dy = b.y - a.y
+      const len = Math.hypot(dx, dy)
+      const nx = dx / len, ny = dy / len
+      const step = 28
+      for (let d = -this._pathMarchOffset; d < len; d += step) {
+        const ds = Math.max(0, d), de = Math.min(len, d + 14)
+        if (de <= ds) continue
+        g.beginPath()
+        g.moveTo(a.x + nx * ds, a.y + ny * ds)
+        g.lineTo(a.x + nx * de, a.y + ny * de)
+        g.strokePath()
       }
     }
   }
@@ -1104,6 +1148,7 @@ export class AgencyFactoryScene extends Phaser.Scene {
   // ── Main tick ──
   _tick(time, deltaTime) {
     const dt = (deltaTime || 16) / 1000
+    this._updatePathMarch(dt)
     this._updateEnemies(dt)
     this._updateTowers(time)
     this._updateProjectiles(dt)
@@ -1160,13 +1205,17 @@ export class AgencyFactoryScene extends Phaser.Scene {
       e.y = a2.y + (b2.y - a2.y) * t
       e.container.setPosition(e.x, e.y)
 
-      // HP bar
+      // HP bar — color ramp: LIME (full) → YELLOW (50%) → RED (critical)
+      const ratio = e.hp / e.maxHp
+      const barColor = ratio > 0.6 ? C.SHOCK_LIME : ratio > 0.3 ? C.HAZARD_YELLOW : C.SHOCK_RED
       e._hpbar.clear()
       const bw = e.boss ? 60 : 44, bh = 4
       e._hpbar.fillStyle(C.BLACK, 1)
       e._hpbar.fillRect(e.x - bw / 2 - 1, e.y - (e.boss ? 28 : 22) - 1, bw + 2, bh + 2)
-      e._hpbar.fillStyle(C.SHOCK_RED, 1)
-      e._hpbar.fillRect(e.x - bw / 2, e.y - (e.boss ? 28 : 22), bw * (e.hp / e.maxHp), bh)
+      e._hpbar.fillStyle(0x333333, 1)
+      e._hpbar.fillRect(e.x - bw / 2, e.y - (e.boss ? 28 : 22), bw, bh)
+      e._hpbar.fillStyle(barColor, 1)
+      e._hpbar.fillRect(e.x - bw / 2, e.y - (e.boss ? 28 : 22), bw * ratio, bh)
     }
   }
 
@@ -1257,6 +1306,28 @@ export class AgencyFactoryScene extends Phaser.Scene {
     }
   }
 
+  _pulseTowerRing(tower) {
+    const def = tower.def
+    const radius = def.range * tower.rangeMul
+    if (!radius) return
+    const tierColor = def.tier === 1 ? C.GREY_500 : def.tier === 2 ? C.SHOCK_BLUE : C.HAZARD_YELLOW
+    const pulse = this.add.graphics()
+    pulse.lineStyle(3, tierColor, 0.8)
+    pulse.strokeCircle(0, 0, radius * 0.4)
+    pulse.setDepth(20)
+    pulse.x = tower.x
+    pulse.y = tower.y
+    this.tweens.add({
+      targets: pulse,
+      scaleX: { from: 1, to: 1 / 0.4 },
+      scaleY: { from: 1, to: 1 / 0.4 },
+      alpha: { from: 0.6, to: 0 },
+      duration: 280,
+      ease: 'Quad.easeOut',
+      onComplete: () => pulse.destroy(),
+    })
+  }
+
   _fireProjectile(tower, target) {
     const def = tower.def
     let projDef = def.proj
@@ -1270,6 +1341,10 @@ export class AgencyFactoryScene extends Phaser.Scene {
       }
       projDef = { ...projDef, color: colors[target.type] || C.BONE }
     }
+
+    // Throttled ring pulse: 1-in-3 fires
+    this._shootTick = (this._shootTick + 1) % 100
+    if (this._shootTick % 3 === 0) this._pulseTowerRing(tower)
 
     const proj = {
       tower, target,
@@ -1290,7 +1365,6 @@ export class AgencyFactoryScene extends Phaser.Scene {
     this._drawProjectile(proj)
 
     // Throttled shoot SFX — only ~1 in 3-4 shots to keep audio rhythmic
-    this._shootTick = (this._shootTick + 1) % 100
     if (HEAVY_KEYS.has(def.key)) {
       if (Math.random() < 0.45) AudioCtx.fx('shootBig')
     } else {
@@ -1557,6 +1631,10 @@ export class AgencyFactoryScene extends Phaser.Scene {
     saveRegistry(this)
 
     AudioCtx.fx('success')
+
+    // Celebration confetti burst across the screen
+    const { width: cw, height: ch } = this.cameras.main
+    Particles.confetti(this, cw / 2, ch / 2 - 60, 80)
 
     const secs = Math.floor(elapsedMs / 1000)
     const mm = String(Math.floor(secs / 60)).padStart(2, '0')
