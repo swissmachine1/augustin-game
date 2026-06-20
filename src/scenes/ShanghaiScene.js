@@ -135,6 +135,27 @@ export class ShanghaiScene extends Phaser.Scene {
       g.beginPath(); g.moveTo(0, y); g.lineTo(1280, y); g.strokePath()
     }
     this._bgGraphics = g
+
+    // Starfield — 60 drifting stars across 3 depth layers
+    for (let i = 0; i < 60; i++) {
+      const starX = Math.random() * 1280
+      const starY = Math.random() * 720
+      const roll = Math.random()
+      const starSize = roll < 0.65 ? 1 : roll < 0.9 ? 2 : 3
+      const starAlpha = 0.12 + Math.random() * 0.45
+      const star = this.add.rectangle(starX, starY, starSize, starSize, 0xf5f0e6)
+      star.setAlpha(starAlpha)
+      star.setDepth(-2)
+      const duration = 3500 + Math.random() * 5500
+      this.tweens.add({
+        targets: star,
+        y: -10,
+        duration: duration,
+        delay: Math.random() * duration,
+        repeat: -1,
+        onRepeat: (_tween, target) => { target.setPosition(Math.random() * 1280, 732) },
+      })
+    }
   }
 
   // ── Intro ──────────────────────────────────────────────────────
@@ -736,6 +757,68 @@ export class ShanghaiScene extends Phaser.Scene {
     AudioCtx.fx('shoot')
   }
 
+  // ── Exhaust trail ─────────────────────────────────────────────
+  _updateExhaust() {
+    // Throttle: emit every other call to avoid overdoing it
+    this._exhaustTick = (this._exhaustTick ?? 0) + 1
+    if (this._exhaustTick % 2 !== 0) return
+    const jitter = (Math.random() - 0.5) * 8
+    const size = 3 + Math.random() * 5
+    // Use rectangle for bone-white core
+    const p = this.add.rectangle(this._rocketX + jitter, this._rocketY + 8, size, size, 0xf5f0e6, 0.85)
+    p.setDepth(-1)
+    // Overlay small red accent
+    const r = this.add.rectangle(this._rocketX + jitter * 0.5, this._rocketY + 8, size * 0.55, size * 0.55, C.SHOCK_RED, 0.5)
+    r.setDepth(-1)
+    const dur = 220 + Math.random() * 140
+    this.tweens.add({
+      targets: [p, r],
+      y: '+=' + (35 + Math.random() * 25),
+      x: '+=' + ((Math.random() - 0.5) * 18),
+      alpha: 0,
+      scale: 0.15,
+      duration: dur,
+      ease: 'Quad.easeOut',
+      onComplete: () => { p.destroy(); r.destroy() },
+    })
+  }
+
+  // ── Enemy kill effect ──────────────────────────────────────────
+  _onEnemyKillEffect(enemy) {
+    const cx = enemy.x, cy = enemy.y
+    const w = enemy.itemW, h = enemy.itemH
+
+    // Camera flash
+    this.cameras.main.flash(80, 255, 255, 255, false)
+
+    // Letter-shard rectangles fly outward
+    const shardCount = 10
+    for (let i = 0; i < shardCount; i++) {
+      const sw = 4 + Math.random() * 10, sh = 3 + Math.random() * 6
+      const shard = this.add.rectangle(
+        cx + (Math.random() - 0.5) * w,
+        cy + (Math.random() - 0.5) * h,
+        sw, sh, C.BONE, 1,
+      )
+      shard.setDepth(50)
+      const ang = Math.random() * Math.PI * 2
+      const speed = 110 + Math.random() * 180
+      this.tweens.add({
+        targets: shard,
+        x: shard.x + Math.cos(ang) * speed * 0.5,
+        y: shard.y + Math.sin(ang) * speed * 0.5 - 36,
+        angle: Math.random() * 360,
+        alpha: 0, scale: 0.15,
+        duration: 380 + Math.random() * 200,
+        ease: 'Quad.easeOut',
+        onComplete: () => shard.destroy(),
+      })
+    }
+
+    // Red shockwave ring
+    Particles.ring(this, cx, cy, C.SHOCK_RED, { maxRadius: w * 0.8, duration: 280, thickness: 5 })
+  }
+
   // ── Firing ─────────────────────────────────────────────────────
   _fireBullet() {
     const now = this.time.now
@@ -801,6 +884,9 @@ export class ShanghaiScene extends Phaser.Scene {
     this._rocketY = Phaser.Math.Clamp(this._rocketY, 500, 690)
     this._rocketContainer.x = this._rocketX
     this._rocketContainer.y = this._rocketY
+
+    // Rocket exhaust trail
+    this._updateExhaust()
 
     // Fire
     if (this._keySpace.isDown) this._fireBullet()
@@ -1009,6 +1095,8 @@ export class ShanghaiScene extends Phaser.Scene {
       AudioCtx.fx('kill')
       this._totalEnemiesKilled++
       this._fuel = Math.min(100, this._fuel + 2)
+      // Enhanced kill effect: shard burst + ring
+      this._onEnemyKillEffect(enemy)
       Particles.burst(this, enemy.x, enemy.y, C.SHOCK_RED, 14, { speed: 320, size: 6 })
       Particles.popup(this, enemy.x, enemy.y - 10, '+2 FUEL', '#d4ff00', { fontSize: '18px' })
       if (enemy.pulseTween) enemy.pulseTween.stop()
@@ -1049,8 +1137,11 @@ export class ShanghaiScene extends Phaser.Scene {
     AudioCtx.fx('catchBad')
     this._flashRocket()
     this._drawDamageRing()
-    this.cameras.main.shake(260, 0.018)
-    this.cameras.main.flash(120, 80, 10, 10)
+    this.cameras.main.shake(280, 0.022)
+    this.cameras.main.flash(150, 180, 10, 10)
+    // Extra red vignette flash overlay
+    const dmgOverlay = this.add.rectangle(640, 360, 1280, 720, C.SHOCK_RED, 0.35).setDepth(300)
+    this.tweens.add({ targets: dmgOverlay, alpha: 0, duration: 250, ease: 'Quad.easeOut', onComplete: () => dmgOverlay.destroy() })
     Particles.burst(this, this._rocketX, this._rocketY, C.SHOCK_RED, 14, { speed: 240, size: 5 })
     Particles.popup(this, this._rocketX, this._rocketY - 70, '-1 HEALTH', '#ff2d1f', { fontSize: '24px' })
 
