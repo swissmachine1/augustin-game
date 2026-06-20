@@ -138,7 +138,7 @@ export class LatinAmericaScene extends Phaser.Scene {
     })
 
     // Scanline atmosphere
-    BrutalUI.drawScanlines(this, 1280, 720)
+    BrutalUI.drawScanlines(this, 1280, 720, { alpha: 0.05, spacing: 3 })
 
     // Kick off intro narrative
     this._showIntroBeat(0)
@@ -174,6 +174,37 @@ export class LatinAmericaScene extends Phaser.Scene {
     for (let y = 0; y < height; y += 40) {
       g.beginPath(); g.moveTo(0, y); g.lineTo(width, y); g.strokePath()
     }
+
+    // Atmospheric diagonal stripes
+    const stripes = this.add.graphics()
+    stripes.lineStyle(1, 0xf5f0e6, 0.03)
+    for (let i = -720; i < width + 720; i += 40) {
+      stripes.beginPath()
+      stripes.moveTo(i, 0)
+      stripes.lineTo(i + 720, 720)
+      stripes.strokePath()
+    }
+
+    // Vignette overlay (radial darkness at edges)
+    const vg = this.add.graphics()
+    const steps = 12
+    for (let s = 0; s < steps; s++) {
+      const t = s / steps
+      const alpha = 0.4 * (t * t)
+      const rw = width * (1 - t * 0.5)
+      const rh = height * (1 - t * 0.5)
+      vg.fillStyle(0x000000, alpha / steps)
+      vg.fillRect((width - rw) / 2, (height - rh) / 2, rw, rh)
+    }
+    // Solid corners to punch the vignette
+    const corners = this.add.graphics()
+    corners.fillStyle(0x000000, 0.35)
+    corners.fillRect(0, 0, width * 0.18, height)
+    corners.fillRect(width * 0.82, 0, width * 0.18, height)
+    corners.fillRect(0, 0, width, height * 0.12)
+    corners.fillRect(0, height * 0.88, width, height * 0.12)
+    // Blend the corners back transparent at centre
+    corners.fillStyle(0x000000, 0)
   }
 
   // ─── Intro narrative ─────────────────────────────────────────────
@@ -472,10 +503,35 @@ export class LatinAmericaScene extends Phaser.Scene {
     hit.on('pointerdown', () => this._onCardClick(card))
     hit.on('pointerover', () => {
       if (card.isFlipped || card.isMatched || !this._gameActive) return
-      container.setScale(1.04)
+      // Create glow graphics lazily
+      if (!card._glow) {
+        const g = this.add.graphics()
+        // Outer soft ring
+        g.lineStyle(6, C.SHOCK_LIME, 0.45)
+        g.strokeRect(-CARD_W / 2 - 4, -CARD_H / 2 - 4, CARD_W + 8, CARD_H + 8)
+        // Inner tight ring
+        g.lineStyle(2, C.SHOCK_LIME, 0.85)
+        g.strokeRect(-CARD_W / 2 - 1, -CARD_H / 2 - 1, CARD_W + 2, CARD_H + 2)
+        container.add(g)
+        card._glow = g
+      }
+      card._glow.setVisible(true)
+      // Pulse the glow
+      if (card._glowTween) card._glowTween.stop()
+      card._glowTween = this.tweens.add({
+        targets: card._glow,
+        alpha: { from: 1, to: 0.35 },
+        duration: 380,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      })
+      this.tweens.add({ targets: container, scale: 1.04, duration: 80, ease: 'Back.easeOut' })
     })
     hit.on('pointerout', () => {
       if (card.isMatched) return
+      if (card._glow) card._glow.setVisible(false)
+      if (card._glowTween) { card._glowTween.stop(); card._glowTween = null }
       container.setScale(1)
     })
 
@@ -562,25 +618,38 @@ export class LatinAmericaScene extends Phaser.Scene {
     const isSecond = this._firstPick !== null
     if (isSecond) this._inputLocked = true
 
+    // Phase 1: squash to zero with slight Y compression (forced perspective)
     this.tweens.add({
       targets: card.container,
       scaleX: 0,
+      scaleY: 0.85,
       duration: 110,
       ease: 'Quad.easeIn',
       onComplete: () => {
         card.faceDown.setVisible(false)
         card.faceUp.setVisible(true)
+        // Phase 2: overshoot expand (card snapping open)
         this.tweens.add({
           targets: card.container,
-          scaleX: 1,
+          scaleX: 1.06,
+          scaleY: 1.0,
           duration: 110,
           ease: 'Quad.easeOut',
           onComplete: () => {
-            if (this._firstPick === null) {
-              this._firstPick = card
-            } else {
-              this._resolveMatch(this._firstPick, card)
-            }
+            // Phase 3: settle back to 1.0
+            this.tweens.add({
+              targets: card.container,
+              scaleX: 1,
+              duration: 60,
+              ease: 'Sine.easeOut',
+              onComplete: () => {
+                if (this._firstPick === null) {
+                  this._firstPick = card
+                } else {
+                  this._resolveMatch(this._firstPick, card)
+                }
+              },
+            })
           },
         })
       },
@@ -627,19 +696,25 @@ export class LatinAmericaScene extends Phaser.Scene {
       if (this._streak > this._bestStreak) this._bestStreak = this._streak
       this._updateStreakSticker()
 
-      // Audio
+      // Audio + screen flash
       if (a.wild) {
         AudioCtx.fx('wild')
         this.cameras.main.shake(400, 0.02)
+        this._screenFlash(C.HAZARD_YELLOW, 0.18, 240)
       } else {
         AudioCtx.fx('match')
+        this._screenFlash(C.SHOCK_LIME, 0.12, 200)
         if (this._streak >= 5) this.cameras.main.shake(200, 0.008)
       }
 
-      // Burst at midpoint
+      // Burst at each card + midpoint star effect
       const midX = (a.container.x + b.container.x) / 2
       const midY = (a.container.y + b.container.y) / 2
-      Particles.burst(this, midX, midY, C.SHOCK_LIME, 12)
+      Particles.burst(this, a.container.x, a.container.y, C.SHOCK_LIME, 12, { speed: 200, size: 7, duration: 500 })
+      Particles.burst(this, b.container.x, b.container.y, C.SHOCK_LIME, 12, { speed: 200, size: 7, duration: 500 })
+      Particles.burst(this, midX, midY, C.SHOCK_LIME, 8)
+      // Star-point burst: 8 rects shooting out at 45-degree intervals
+      this._matchStarBurst(midX, midY, a.wild)
 
       this.time.delayedCall(180, () => {
         this._matchEffect(a, b)
@@ -665,6 +740,8 @@ export class LatinAmericaScene extends Phaser.Scene {
       this._streak = 0
       this._updateStreakSticker()
       AudioCtx.fx('mismatch')
+      // Screen shake on mismatch
+      this.cameras.main.shake(150, 0.004)
       // Red burst on each mismatched card
       ;[a, b].forEach(card => {
         Particles.burst(this, card.container.x, card.container.y, C.SHOCK_RED, 4)
@@ -746,6 +823,61 @@ export class LatinAmericaScene extends Phaser.Scene {
         duration: 300,
         delay: 200,
       })
+    })
+  }
+
+  // Inline screen flash (BrutalUI.addScreenFlash not available)
+  _screenFlash(color, alpha, duration) {
+    const { width, height } = this.cameras.main
+    const flash = this.add.rectangle(width / 2, height / 2, width, height, color, alpha)
+    flash.setDepth(99999)
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration,
+      ease: 'Quad.easeOut',
+      onComplete: () => flash.destroy(),
+    })
+  }
+
+  // Star-point burst on match: 8 rects shoot outward at 45-degree intervals
+  _matchStarBurst(cx, cy, wild) {
+    const burstColor = wild ? C.HAZARD_YELLOW : C.SHOCK_LIME
+    const dist = wild ? 140 : 90
+    const duration = wild ? 600 : 420
+
+    // Expanding ring
+    Particles.ring(this, cx, cy, burstColor, { maxRadius: 120, duration: 350, thickness: 6 })
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2
+      const rect = this.add.graphics()
+      rect.fillStyle(burstColor, 1)
+      rect.fillRect(-3, -10, 6, 20)
+      rect.lineStyle(1, C.BLACK, 1)
+      rect.strokeRect(-3, -10, 6, 20)
+      rect.x = cx
+      rect.y = cy
+      rect.setDepth(100)
+      this.tweens.add({
+        targets: rect,
+        x: cx + Math.cos(angle) * dist,
+        y: cy + Math.sin(angle) * dist,
+        angle: (i / 8) * 360,
+        alpha: 0,
+        scale: 0.2,
+        duration,
+        ease: 'Quad.easeOut',
+        onComplete: () => rect.destroy(),
+      })
+    }
+
+    // Camera punch (quick zoom in/out, non-shake)
+    this.tweens.add({
+      targets: this.cameras.main,
+      zoom: { from: 1.0, to: 1.015 },
+      duration: 80,
+      yoyo: true,
     })
   }
 
