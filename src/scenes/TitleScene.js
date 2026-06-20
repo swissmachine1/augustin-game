@@ -28,7 +28,7 @@ export class TitleScene extends Scene {
     BrutalUI.drawNoise(this, 0, 0, width, height, { color: 0x1e1e1e, density: 150, alpha: 0.04 })
 
     // Vignette — dark edges for depth
-    BrutalUI.drawVignette(this, width, height, { color: 0x000000, layers: 10, maxAlpha: 0.55 })
+    BrutalUI.drawVignette(this, width, height, { color: 0x000000, layers: 10, maxAlpha: 0.25 })
 
     // Floating particles — subtle atmosphere
     BrutalUI.drawFloatingParticles(this, width, height, { color: 0xf5f0e6, count: 8, alpha: 0.05 })

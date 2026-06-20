@@ -432,7 +432,8 @@ export class BrutalUI {
       // Right strip
       if (sideW > 0) g.fillRect(w - sideW, 0, sideW, h)
     }
-    g.setDepth(9997)
+    // No forced depth — caller's creation order determines layering.
+    // Callers should invoke drawVignette early in create(), before adding UI elements.
     return g
   }
 
